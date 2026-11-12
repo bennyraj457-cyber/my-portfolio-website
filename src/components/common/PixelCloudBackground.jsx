@@ -115,64 +115,53 @@ export default function PixelCloudBackground({
       driftingIslands.current = list
     }
 
-    // 5x5 / 5x7 Pixel Font & Geometry Shapes Bitmaps
+    // 5x7 Pixel Font & Geometry Shapes Bitmaps
     const pixelShapesAndGlyphs = [
       // Shape: Diamond (Rhombus)
       {
         name: 'Diamond',
-        width: 7,
-        height: 7,
+        width: 9,
+        height: 9,
         grid: [
-          '0001000',
-          '0010100',
-          '0100010',
-          '1000001',
-          '0100010',
-          '0010100',
-          '0001000',
-        ],
-      },
-      // Shape: Plus / Cross Target
-      {
-        name: 'Cross',
-        width: 7,
-        height: 7,
-        grid: [
-          '0001000',
-          '0001000',
-          '0001000',
-          '1111111',
-          '0001000',
-          '0001000',
-          '0001000',
+          '000010000',
+          '000111000',
+          '001111100',
+          '011111110',
+          '111111111',
+          '011111110',
+          '001111100',
+          '000111000',
+          '000010000',
         ],
       },
       // Shape: 4-Point Sparkle Star
       {
         name: 'Star',
-        width: 7,
-        height: 7,
+        width: 9,
+        height: 9,
         grid: [
-          '0001000',
-          '0001000',
-          '0111110',
-          '1111111',
-          '0111110',
-          '0001000',
-          '0001000',
+          '000010000',
+          '000111000',
+          '001111100',
+          '111111111',
+          '001111100',
+          '000111000',
+          '000010000',
         ],
       },
-      // Shape: Arrow Right (Tactile Direction)
+      // Shape: Directional Arrow Right
       {
         name: 'Arrow',
-        width: 7,
-        height: 5,
+        width: 11,
+        height: 7,
         grid: [
-          '0000100',
-          '0000010',
-          '1111111',
-          '0000010',
-          '0000100',
+          '00000010000',
+          '00000001000',
+          '00000000100',
+          '11111111111',
+          '00000000100',
+          '00000001000',
+          '00000010000',
         ],
       },
       // Word: "CREATIVE"
@@ -190,51 +179,51 @@ export default function PixelCloudBackground({
         name: 'Word-BENNY',
         text: 'BENNY',
       },
-      // Word: "2026"
-      {
-        name: 'Word-2026',
-        text: '2026',
-      },
       // Word: "CRAFT"
       {
         name: 'Word-CRAFT',
         text: 'CRAFT',
       },
+      // Word: "DESIGN"
+      {
+        name: 'Word-DESIGN',
+        text: 'DESIGN',
+      },
     ]
 
-    // Convert short text strings into micro-pixel coordinates using offscreen canvas
+    // Convert short text strings into sharp micro-pixel coordinates using offscreen canvas
     const sampleTextToPixels = (str) => {
       const offCanvas = document.createElement('canvas')
-      offCanvas.width = 160
-      offCanvas.height = 30
+      offCanvas.width = 300
+      offCanvas.height = 50
       const offCtx = offCanvas.getContext('2d')
-      offCtx.font = 'bold 12px "Courier New", monospace'
+      offCtx.font = '900 16px "Geist", monospace, sans-serif'
       offCtx.fillStyle = '#000000'
       offCtx.textBaseline = 'top'
       offCtx.fillText(str, 2, 2)
 
       const textMetrics = offCtx.measureText(str)
-      const w = Math.min(150, Math.ceil(textMetrics.width) + 4)
-      const h = 18
+      const w = Math.min(280, Math.ceil(textMetrics.width) + 4)
+      const h = 24
       const imgData = offCtx.getImageData(0, 0, w, h).data
 
       const points = []
-      // Sample every 2 pixels to keep clean pixelated crispness
-      for (let y = 0; y < h; y += 2) {
-        for (let x = 0; x < w; x += 2) {
-          const idx = (y * w + x) * 4 + 3 // Alpha channel
-          if (imgData[idx] > 110) {
-            points.push({ ox: x * 1.5, oy: y * 1.5 })
+      const step = 2 // 2px step
+      for (let y = 0; y < h; y += step) {
+        for (let x = 0; x < w; x += step) {
+          const idx = (y * w + x) * 4 + 3
+          if (imgData[idx] > 80) {
+            points.push({ ox: x * 1.8, oy: y * 1.8 })
           }
         }
       }
-      return { points, totalWidth: w * 1.5, totalHeight: h * 1.5 }
+      return { points, totalWidth: w * 1.8, totalHeight: h * 1.8 }
     }
 
     // Convert bitmap grid definition into relative pixel points
     const sampleShapeToPixels = (shapeDef) => {
       const points = []
-      const pStep = 3 // 3px step per pixel dot
+      const pStep = 4 // 4px step per block for crisp visibility
       for (let r = 0; r < shapeDef.grid.length; r++) {
         const row = shapeDef.grid[r]
         for (let c = 0; c < row.length; c++) {
@@ -256,51 +245,55 @@ export default function PixelCloudBackground({
       const isWord = Boolean(def.text)
       const sampled = isWord ? sampleTextToPixels(def.text) : sampleShapeToPixels(def)
 
-      // Each pixel particle starts dispersed and converges into its formation target!
       const pSize = 3 // 3x3 pixel dot
       const particlesList = sampled.points.map((pt) => {
-        // Dispersed start offset (-60 to +60px from target position)
         const scatterAngle = Math.random() * Math.PI * 2
-        const scatterDist = 40 + Math.random() * 80
+        const scatterDist = 30 + Math.random() * 50
         return {
           targetOx: pt.ox,
           targetOy: pt.oy,
           curOx: pt.ox + Math.cos(scatterAngle) * scatterDist,
           curOy: pt.oy + Math.sin(scatterAngle) * scatterDist,
-          color: Math.random() > 0.4 ? '#ffd700' : '#ffe766',
+          // High-contrast gold & charcoal-black pixels for maximum visibility on white background!
+          color: Math.random() > 0.35 ? '#000000' : '#d4af37',
         }
       })
 
-      // Spawn location: float gently in the peripheral/negative space of the hero
-      // Keep clear of main center by placing towards upper or lower half or sides
-      const spawnSide = Math.random() > 0.5 ? 'top-right' : 'bottom-right'
-      let spawnX = spawnNearScreen ? Math.random() * (width * 0.7) + width * 0.15 : width + 30
-      let spawnY =
-        spawnSide === 'top-right'
-          ? height * 0.12 + Math.random() * (height * 0.18)
-          : height * 0.68 + Math.random() * (height * 0.18)
+      // Spawn in open perimeter regions
+      const spawnZones = [
+        { xMin: 0.1, xMax: 0.35, yMin: 0.1, yMax: 0.25 },  // Top-left
+        { xMin: 0.65, xMax: 0.85, yMin: 0.1, yMax: 0.25 }, // Top-right
+        { xMin: 0.08, xMax: 0.3, yMin: 0.72, yMax: 0.85 }, // Bottom-left
+        { xMin: 0.7, xMax: 0.9, yMin: 0.72, yMax: 0.85 },  // Bottom-right
+      ]
+      const zone = spawnZones[Math.floor(Math.random() * spawnZones.length)]
+
+      let spawnX = spawnNearScreen
+        ? width * zone.xMin + Math.random() * (width * (zone.xMax - zone.xMin))
+        : width + 20
+      let spawnY = height * zone.yMin + Math.random() * (height * (zone.yMax - zone.yMin))
 
       return {
         x: spawnX,
         y: spawnY,
-        vx: -(0.35 + Math.random() * 0.3), // Gentle leftward drift
-        vy: (Math.random() - 0.5) * 0.1,
+        vx: -(0.3 + Math.random() * 0.25), // Drifts gently to left
+        vy: (Math.random() - 0.5) * 0.08,
         particles: particlesList,
         pixelSize: pSize,
         totalWidth: sampled.totalWidth,
         totalHeight: sampled.totalHeight,
-        progress: spawnNearScreen ? 1.0 : 0.0, // 0 -> 1 gathers together
-        stage: spawnNearScreen ? 'stable' : 'gathering', // 'gathering' -> 'stable' -> 'dissolving'
-        alpha: spawnNearScreen ? 0.9 : 0.0,
+        progress: spawnNearScreen ? 1.0 : 0.0,
+        stage: spawnNearScreen ? 'stable' : 'gathering',
+        alpha: spawnNearScreen ? 0.95 : 0.0,
         age: 0,
-        maxStableAge: 320 + Math.random() * 200, // Stays legible for ~6-8 seconds
+        maxStableAge: 400 + Math.random() * 250, // Long stable display time (~8-10 seconds)
       }
     }
 
     const initMorphEntities = () => {
       const list = []
-      // 3 initial shapes / text already assembled or assembling
-      for (let i = 0; i < 3; i++) {
+      // 4 concurrent clearly visible entities
+      for (let i = 0; i < 4; i++) {
         list.push(createMorphEntity(true))
       }
       pixelMorphEntities.current = list
@@ -674,7 +667,7 @@ export default function PixelCloudBackground({
 
       // 4. Render Morphing Shapes & Pixel Text Assemblies (Tiny pixels forming geometric shapes & clear words)
       morphEntityTimer.current++
-      if (morphEntityTimer.current % 240 === 0 && pixelMorphEntities.current.length < 5) {
+      if (morphEntityTimer.current % 180 === 0 && pixelMorphEntities.current.length < 5) {
         pixelMorphEntities.current.push(createMorphEntity(false))
       }
 
@@ -687,19 +680,20 @@ export default function PixelCloudBackground({
 
         // State Machine: gathering -> stable -> dissolving
         if (ent.stage === 'gathering') {
-          ent.progress += 0.015
-          ent.alpha = Math.min(0.9, ent.alpha + 0.02)
+          ent.progress += 0.025
+          ent.alpha = Math.min(1.0, ent.alpha + 0.04)
           if (ent.progress >= 1.0) {
             ent.progress = 1.0
             ent.stage = 'stable'
           }
         } else if (ent.stage === 'stable') {
+          ent.alpha = 1.0
           if (ent.age >= ent.maxStableAge) {
             ent.stage = 'dissolving'
           }
         } else if (ent.stage === 'dissolving') {
           ent.alpha -= 0.015
-          ent.progress += 0.012
+          ent.progress += 0.015
         }
 
         // Proximity detection to hero content (repel / dissolve before touching headline text)
@@ -712,13 +706,13 @@ export default function PixelCloudBackground({
           if (dist < minObsDist) minObsDist = dist
         }
 
-        if (minObsDist < 60) {
+        if (minObsDist < 45) {
           ent.stage = 'dissolving'
-          ent.alpha -= 0.04
+          ent.alpha -= 0.05
         }
 
         // Cleanup when faded or drifted off screen
-        if (ent.alpha <= 0 || ent.x < -160) {
+        if (ent.alpha <= 0 || ent.x < -200) {
           morphList.splice(i, 1)
           continue
         }
@@ -727,9 +721,12 @@ export default function PixelCloudBackground({
 
         // Interpolate individual pixel positions
         const t = ent.progress
-        // Ease function for snapping pixels into sharp alignment
-        const easeOutQuad = (val) => val * (2 - val)
-        const curEased = ent.stage === 'gathering' ? easeOutQuad(Math.min(1, t)) : 1.0
+        const easeOutBack = (val) => {
+          const c1 = 1.70158
+          const c3 = c1 + 1
+          return 1 + c3 * Math.pow(val - 1, 3) + c1 * Math.pow(val - 1, 2)
+        }
+        const curEased = ent.stage === 'gathering' ? Math.min(1, easeOutBack(Math.min(1, t))) : 1.0
 
         for (let k = 0; k < ent.particles.length; k++) {
           const pt = ent.particles[k]
@@ -742,15 +739,15 @@ export default function PixelCloudBackground({
             px = ent.x + pt.targetOx
             py = ent.y + pt.targetOy
           } else {
-            // Dissolving: subtle scatter drift away
-            const scatterOut = (t - 1.0) * 45
-            px = ent.x + pt.targetOx + Math.cos(k) * scatterOut
-            py = ent.y + pt.targetOy + Math.sin(k) * scatterOut
+            // Dissolving: scatter drift away
+            const scatterOut = (t - 1.0) * 55
+            px = ent.x + pt.targetOx + Math.cos(k * 1.5) * scatterOut
+            py = ent.y + pt.targetOy + Math.sin(k * 1.5) * scatterOut
           }
 
           ctx.fillStyle = pt.color
-          const snapX = Math.floor(px / 2) * 2
-          const snapY = Math.floor(py / 2) * 2
+          const snapX = Math.round(px)
+          const snapY = Math.round(py)
           ctx.fillRect(snapX, snapY, ent.pixelSize, ent.pixelSize)
         }
       }
