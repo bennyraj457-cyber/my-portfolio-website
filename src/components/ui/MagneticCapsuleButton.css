@@ -1,0 +1,66 @@
+/* Styles for the Magnetic Capsule Cursor Button */
+
+/* Hide native cursor on desktop fine-pointer devices when custom cursor is active */
+@media (hover: hover) and (pointer: fine) {
+  body.has-magnetic-cursor:not(.magnetic-cursor-input-hover) {
+    cursor: none;
+  }
+
+  body.has-magnetic-cursor:not(.magnetic-cursor-input-hover) a,
+  body.has-magnetic-cursor:not(.magnetic-cursor-input-hover) button,
+  body.has-magnetic-cursor:not(.magnetic-cursor-input-hover) [role="button"],
+  body.has-magnetic-cursor:not(.magnetic-cursor-input-hover) [data-cursor] {
+    cursor: none !important;
+  }
+
+  /* Restore cursor for text fields and editable elements */
+  body.has-magnetic-cursor input,
+  body.has-magnetic-cursor textarea,
+  body.has-magnetic-cursor select,
+  body.has-magnetic-cursor [contenteditable="true"] {
+    cursor: text !important;
+  }
+}
+
+.magnetic-capsule-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 9999;
+  will-change: transform;
+}
+
+.magnetic-capsule-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  white-space: nowrap;
+  font-family: inherit;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  user-select: none;
+  transform-origin: center center;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+  transition: width 0.3s cubic-bezier(0.2, 0.9, 0.3, 1),
+              height 0.3s cubic-bezier(0.2, 0.9, 0.3, 1),
+              padding 0.3s cubic-bezier(0.2, 0.9, 0.3, 1),
+              background-color 0.25s ease,
+              color 0.25s ease,
+              transform 0.15s cubic-bezier(0.2, 0.9, 0.3, 1),
+              opacity 0.2s ease;
+}
+
+/* Reduced motion preference override */
+@media (prefers-reduced-motion: reduce) {
+  .magnetic-capsule-container {
+    display: none !important;
+  }
+
+  body.has-magnetic-cursor {
+    cursor: auto !important;
+  }
+}
+

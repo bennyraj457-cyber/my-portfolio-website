@@ -1,0 +1,3 @@
+# Custom Hooks
+Store reusable React hooks (e.g., useTheme, useScrollPosition, useMediaQuery) here.
+

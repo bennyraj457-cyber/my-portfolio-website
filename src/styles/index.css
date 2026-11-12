@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'TRJN DaVinci';
+  src: url('../assets/fonts/TRJN DaVinci Text.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist';
+  src: url('../assets/fonts/Geist-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  /* Font Family Tokens */
+  --font-heading: 'TRJN DaVinci', serif;
+  --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Brand & Core Color Tokens */
+  --color-primary: #ffd700;
+  --color-primary-hover: #e6c200;
+  --color-primary-light: #fff3a8;
+
+  /* Background Tokens */
+  --color-bg-main: #ffffff;
+  --color-bg-surface: #f8fafc;
+  --color-bg-dark: #0a0a0a;
+
+  /* Typography / Text Tokens */
+  --color-text-heading: #000000;
+  --color-text-body: color-mix(in srgb, #000000 62%, transparent);
+  --color-text-muted: color-mix(in srgb, #000000 40%, transparent);
+
+  /* Border / Outline Tokens */
+  --color-border-subtle: color-mix(in srgb, #000000 10%, transparent);
+  --color-border-brand: #ffd700;
+}
+
+:root {
+  /* CSS Variables for direct usage */
+  --brand-primary: #ffd700;
+  --brand-heading: #000000;
+  --brand-body: color-mix(in srgb, #000000 62%, transparent);
+  --brand-bg: #ffffff;
+
+  color-scheme: light;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--brand-bg);
+  color: var(--brand-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  color: var(--brand-heading);
+  letter-spacing: -0.01em;
+}

@@ -1,0 +1,136 @@
+/* Full-Screen Split Navigation Overlay Transitions */
+
+/* Container Fade */
+.split-nav-overlay {
+  animation: splitNavFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.split-nav-overlay.closing {
+  animation: splitNavFadeOut 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Left Panel Slide */
+.split-nav-left {
+  animation: splitNavSlideLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.split-nav-overlay.closing .split-nav-left {
+  animation: splitNavSlideLeftExit 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Right Panel Slide */
+.split-nav-right {
+  animation: splitNavSlideRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.split-nav-overlay.closing .split-nav-right {
+  animation: splitNavSlideRightExit 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Keyframes */
+@keyframes splitNavFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes splitNavFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes splitNavSlideLeft {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes splitNavSlideLeftExit {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes splitNavSlideRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes splitNavSlideRightExit {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* Staggered Item Reveal */
+.split-nav-item {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: splitNavItemReveal 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes splitNavItemReveal {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Nav Item Hover Line & Text Shift */
+.split-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              color 0.25s ease;
+}
+
+.split-nav-link .nav-dash {
+  width: 28px;
+  height: 2px;
+  background-color: rgba(255, 255, 255, 0.2);
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.25s ease;
+}
+
+.split-nav-link:hover {
+  transform: translateX(14px);
+  color: var(--brand-primary, #ffd700);
+}
+
+.split-nav-link:hover .nav-dash,
+.split-nav-link.active .nav-dash {
+  width: 52px;
+  background-color: var(--brand-primary, #ffd700);
+}
+
+.split-nav-link.active {
+  color: var(--brand-primary, #ffd700);
+}
+
+/* Reduced Motion Override */
+@media (prefers-reduced-motion: reduce) {
+  .split-nav-overlay,
+  .split-nav-left,
+  .split-nav-right,
+  .split-nav-item,
+  .split-nav-link,
+  .split-nav-link .nav-dash {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
