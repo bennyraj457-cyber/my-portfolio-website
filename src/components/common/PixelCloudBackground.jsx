@@ -1,5 +1,4 @@
 import React, { useEffect, useRef } from 'react'
-import { tools } from '../../data/skills'
 
 /**
  * PixelCloudBackground
@@ -20,7 +19,6 @@ export default function PixelCloudBackground({
   interactive = true,
   contentRepelDistance = 90,
   driftSpeed = 0.45,
-  foregroundCanvasRef = null,
 }) {
   const canvasRef = useRef(null)
   const mousePos = useRef({ x: -1000, y: -1000 })
@@ -29,15 +27,12 @@ export default function PixelCloudBackground({
   const particles = useRef([])
   const sparkles = useRef([])
   const driftingIslands = useRef([])
-  const pixelMorphEntities = useRef([])
-  const loadedLogoImages = useRef({})
   const rafId = useRef(null)
 
   const bgDriftOffsetRef = useRef(0)
   const fgDriftOffsetRef = useRef(0)
   const timeRef = useRef(0)
   const islandSpawnTimer = useRef(0)
-  const morphEntityTimer = useRef(0)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -47,22 +42,12 @@ export default function PixelCloudBackground({
     let width = 0
     let height = 0
 
-    const fgCanvas = foregroundCanvasRef?.current
-    const fgCtx = fgCanvas ? fgCanvas.getContext('2d') : null
-
     const updateSize = () => {
       const parent = canvas.parentElement || document.body
       width = canvas.width = parent.clientWidth || window.innerWidth
       height = canvas.height = parent.clientHeight || window.innerHeight
-
-      if (fgCanvas) {
-        fgCanvas.width = width
-        fgCanvas.height = height
-      }
-
       initSparkles()
       initDriftingIslands()
-      initMorphEntities()
     }
 
     const initSparkles = () => {
@@ -125,121 +110,6 @@ export default function PixelCloudBackground({
         list.push(isl)
       }
       driftingIslands.current = list
-    }
-
-    // Preload actual official skill logo SVG/images for canvas rendering
-    tools.forEach((t) => {
-      if (t.icon && !loadedLogoImages.current[t.name]) {
-        const img = new Image()
-        img.crossOrigin = 'anonymous'
-        img.src = t.icon
-        img.onload = () => {
-          loadedLogoImages.current[t.name] = img
-        }
-      }
-    })
-
-    // Sample skill name text into ultra-sharp 1:1 pixel coordinates
-    const sampleSkillNameToPixels = (name) => {
-      const offCanvas = document.createElement('canvas')
-      offCanvas.width = 300
-      offCanvas.height = 40
-      const offCtx = offCanvas.getContext('2d')
-      offCtx.font = 'bold 18px "Geist", monospace, sans-serif'
-      offCtx.fillStyle = '#000000'
-      offCtx.textBaseline = 'top'
-      offCtx.fillText(name, 2, 2)
-
-      const textMetrics = offCtx.measureText(name)
-      const tw = Math.min(260, Math.ceil(textMetrics.width) + 4)
-      const th = 24
-      const imgData = offCtx.getImageData(0, 0, tw, th).data
-
-      const points = []
-      // 40x40 logo + 14px clean spacing
-      const textOffsetX = 54
-      const textOffsetY = 8 // Centered vertically with 40px logo
-
-      // Direct 2x2 grid rasterization for 100% sharp, readable letterforms
-      for (let y = 0; y < th; y += 2) {
-        for (let x = 0; x < tw; x += 2) {
-          const idx = (y * tw + x) * 4 + 3
-          if (imgData[idx] > 60) {
-            points.push({
-              ox: textOffsetX + x,
-              oy: textOffsetY + y,
-            })
-          }
-        }
-      }
-
-      const totalW = textOffsetX + tw
-      const totalH = Math.max(40, th + 12)
-
-      return { points, totalWidth: totalW, totalHeight: totalH }
-    }
-
-    // Create a new Skill Item (Real official Logo Image + Brand Yellow Pixel Name)
-    const createMorphEntity = (spawnNearScreen = false) => {
-      const toolDef = tools[Math.floor(Math.random() * tools.length)]
-      const sampled = sampleSkillNameToPixels(toolDef.name)
-
-      const pSize = 2 // 2x2 px sharp pixel blocks
-      // Vibrant, high-visibility solid brand yellow tone
-      const brandYellow = '#e6b800'
-      const particlesList = sampled.points.map((pt) => {
-        return {
-          targetOx: pt.ox,
-          targetOy: pt.oy,
-          color: brandYellow,
-        }
-      })
-
-      // Choose a drift lane across entire hero height:
-      // - Upper lanes (y: 10% - 25%): above headline
-      // - Direct Center lanes (y: 35% - 55%): directly crossing hero headline and paragraph!
-      // - Lower lanes (y: 68% - 86%): under hero bio/buttons
-      const lanes = [
-        { yMin: 0.10, yMax: 0.22, layer: 'behind' }, // Above
-        { yMin: 0.35, yMax: 0.44, layer: 'front' },  // In FRONT of hero text!
-        { yMin: 0.46, yMax: 0.56, layer: 'behind' }, // BEHIND hero text/paragraph!
-        { yMin: 0.68, yMax: 0.82, layer: 'front' },  // Lower lane in front
-        { yMin: 0.80, yMax: 0.90, layer: 'behind' }, // Lower lane behind
-      ]
-      const lane = lanes[Math.floor(Math.random() * lanes.length)]
-
-      // Assign layer: some go 'front' (above hero text), some go 'behind' (behind hero text)
-      const isFront = lane.layer === 'front' || Math.random() > 0.5
-
-      let spawnX = spawnNearScreen
-        ? Math.random() * (width * 0.85)
-        : width + 40
-      let spawnY = height * lane.yMin + Math.random() * (height * (lane.yMax - lane.yMin))
-
-      return {
-        name: toolDef.name,
-        iconUrl: toolDef.icon,
-        x: spawnX,
-        y: spawnY,
-        vx: -(0.55 + Math.random() * 0.35), // Continuous cruise speed from right to left
-        vy: 0,
-        particles: particlesList,
-        pixelSize: pSize,
-        logoSize: 40, // 40x40 px official crisp logo
-        totalWidth: sampled.totalWidth,
-        totalHeight: sampled.totalHeight,
-        alpha: 1.0,
-        layer: isFront ? 'front' : 'behind', // Some above, some behind!
-      }
-    }
-
-    const initMorphEntities = () => {
-      const list = []
-      // 5 skill logos + pixel names cruising across screen at start
-      for (let i = 0; i < 5; i++) {
-        list.push(createMorphEntity(true))
-      }
-      pixelMorphEntities.current = list
     }
 
     const updateObstacles = () => {
@@ -611,51 +481,7 @@ export default function PixelCloudBackground({
       }
       ctx.globalAlpha = 1.0
 
-      // 4. Render Morphing Shapes & Pixel Text Assemblies (Tiny pixels forming geometric shapes & clear words)
-      morphEntityTimer.current++
-      if (morphEntityTimer.current % 180 === 0 && pixelMorphEntities.current.length < 5) {
-        pixelMorphEntities.current.push(createMorphEntity(false))
-      }
-
-      const morphList = pixelMorphEntities.current
-      for (let i = morphList.length - 1; i >= 0; i--) {
-        const ent = morphList[i]
-        ent.x += ent.vx // Continuous smooth movement right-to-left
-        ent.y += ent.vy
-
-        // Once it passes completely past the left edge, remove or recycle
-        if (ent.x < -(ent.totalWidth + 60)) {
-          morphList.splice(i, 1)
-          continue
-        }
-
-        // Target Context: either fgCtx (renders ABOVE hero text) or ctx (renders BEHIND hero text)
-        const targetCtx = ent.layer === 'front' && fgCtx ? fgCtx : ctx
-
-        targetCtx.globalAlpha = 1.0
-
-        // Draw Real Official Logo Image if loaded
-        const logoImg = loadedLogoImages.current[ent.name]
-        const logoSize = ent.logoSize || 24
-        if (logoImg && logoImg.complete && logoImg.naturalWidth > 0) {
-          targetCtx.drawImage(logoImg, Math.round(ent.x), Math.round(ent.y), logoSize, logoSize)
-        }
-
-        // Draw Skill Name in brand yellow pixels directly beside the logo
-        for (let k = 0; k < ent.particles.length; k++) {
-          const pt = ent.particles[k]
-          const px = ent.x + pt.targetOx
-          const py = ent.y + pt.targetOy
-
-          targetCtx.fillStyle = pt.color
-          const snapX = Math.round(px)
-          const snapY = Math.round(py)
-          targetCtx.fillRect(snapX, snapY, ent.pixelSize, ent.pixelSize)
-        }
-      }
-      ctx.globalAlpha = 1.0
-
-      // 5. Render & Update Cursor Dust / Dither Wake Particles
+      // 4. Render & Update Cursor Dust / Dither Wake Particles
       const pList = particles.current
       for (let i = pList.length - 1; i >= 0; i--) {
         const p = pList[i]
