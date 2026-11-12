@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react'
+import { tools } from '../../data/skills'
 
 /**
  * PixelCloudBackground
@@ -28,6 +29,7 @@ export default function PixelCloudBackground({
   const sparkles = useRef([])
   const driftingIslands = useRef([])
   const pixelMorphEntities = useRef([])
+  const loadedLogoImages = useRef({})
   const rafId = useRef(null)
 
   const bgDriftOffsetRef = useRef(0)
@@ -115,168 +117,20 @@ export default function PixelCloudBackground({
       driftingIslands.current = list
     }
 
-    // Skill pixel icons and names using brand yellow palettes
-    const pixelSkillsList = [
-      {
-        name: 'React',
-        logoWidth: 11,
-        logoHeight: 11,
-        // Atom / Orbit React icon
-        logo: [
-          '00001110000',
-          '00110001100',
-          '01000100010',
-          '10001110001',
-          '10111111101',
-          '10001110001',
-          '01000100010',
-          '00110001100',
-          '00001110000',
-        ],
-      },
-      {
-        name: 'JavaScript',
-        logoWidth: 11,
-        logoHeight: 11,
-        // JS badge icon
-        logo: [
-          '11111111111',
-          '10000000001',
-          '10000011101',
-          '10000000101',
-          '10001000101',
-          '10001011101',
-          '10101000001',
-          '10111011101',
-          '11111111111',
-        ],
-      },
-      {
-        name: 'PHP',
-        logoWidth: 13,
-        logoHeight: 9,
-        // PHP letters icon
-        logo: [
-          '1110101011100',
-          '1010101010100',
-          '1110111011100',
-          '1000101010000',
-          '1000101010000',
-        ],
-      },
-      {
-        name: 'Laravel',
-        logoWidth: 11,
-        logoHeight: 11,
-        // Laravel 3D cubic layer icon
-        logo: [
-          '00000100000',
-          '00011111000',
-          '01100100110',
-          '11000100011',
-          '11111111111',
-          '11000100011',
-          '01100100110',
-          '00011111000',
-          '00000100000',
-        ],
-      },
-      {
-        name: 'Figma',
-        logoWidth: 9,
-        logoHeight: 11,
-        // Figma stacked rings icon
-        logo: [
-          '011101110',
-          '111101111',
-          '111101111',
-          '011101110',
-          '011101110',
-          '111101111',
-          '011101110',
-          '011100000',
-          '111100000',
-          '011100000',
-        ],
-      },
-      {
-        name: 'HTML5',
-        logoWidth: 11,
-        logoHeight: 11,
-        // Shield badge icon
-        logo: [
-          '11111111111',
-          '10000000001',
-          '01111111110',
-          '01011111010',
-          '01000000010',
-          '00111111100',
-          '00100000100',
-          '00011111000',
-          '00001110000',
-          '00000100000',
-        ],
-      },
-      {
-        name: 'WordPress',
-        logoWidth: 11,
-        logoHeight: 11,
-        // WP circle badge with W
-        logo: [
-          '00111111100',
-          '01100000110',
-          '11010001011',
-          '10101010101',
-          '10101010101',
-          '10010101001',
-          '11001010011',
-          '01100000110',
-          '00111111100',
-        ],
-      },
-      {
-        name: 'GitHub',
-        logoWidth: 11,
-        logoHeight: 11,
-        // Octocat ears & silhouette
-        logo: [
-          '01000000010',
-          '11100000111',
-          '11111111111',
-          '11001110011',
-          '11001110011',
-          '01111111110',
-          '00111111100',
-          '00011011000',
-          '00011011000',
-        ],
-      },
-    ]
-
-    // Sample skill logo + label text into a combined micro-pixel unit
-    const sampleSkillToPixels = (skillDef) => {
-      const pStep = 3 // 3px discrete pixel dots
-      const points = []
-
-      // 1. Draw Skill Logo Bitmap on left
-      const logoW = skillDef.logoWidth * pStep
-      const logoH = (skillDef.logo.length) * pStep
-      const logoOffsetY = 2
-
-      for (let r = 0; r < skillDef.logo.length; r++) {
-        const row = skillDef.logo[r]
-        for (let c = 0; c < row.length; c++) {
-          if (row[c] === '1') {
-            points.push({
-              ox: c * pStep,
-              oy: logoOffsetY + r * pStep,
-            })
-          }
+    // Preload actual official skill logo SVG/images for canvas rendering
+    tools.forEach((t) => {
+      if (t.icon && !loadedLogoImages.current[t.name]) {
+        const img = new Image()
+        img.crossOrigin = 'anonymous'
+        img.src = t.icon
+        img.onload = () => {
+          loadedLogoImages.current[t.name] = img
         }
       }
+    })
 
-      // 2. Draw Skill Name Text on right with clean spacing
-      const textSpacingX = logoW + 10
+    // Sample skill name text into sharp micro-pixel coordinates
+    const sampleSkillNameToPixels = (name) => {
       const offCanvas = document.createElement('canvas')
       offCanvas.width = 240
       offCanvas.height = 40
@@ -284,38 +138,43 @@ export default function PixelCloudBackground({
       offCtx.font = 'bold 15px "Geist", monospace, sans-serif'
       offCtx.fillStyle = '#000000'
       offCtx.textBaseline = 'top'
-      offCtx.fillText(skillDef.name, 2, 2)
+      offCtx.fillText(name, 2, 2)
 
-      const textMetrics = offCtx.measureText(skillDef.name)
+      const textMetrics = offCtx.measureText(name)
       const tw = Math.min(200, Math.ceil(textMetrics.width) + 4)
       const th = 20
       const imgData = offCtx.getImageData(0, 0, tw, th).data
 
+      const points = []
       const step = 2 // 2px sample step for crisp typography
+      // Place text right next to the 24x24 real logo image (+8px padding)
+      const textOffsetX = 32
+      const textOffsetY = 3
+
       for (let y = 0; y < th; y += step) {
         for (let x = 0; x < tw; x += step) {
           const idx = (y * tw + x) * 4 + 3
           if (imgData[idx] > 80) {
             points.push({
-              ox: textSpacingX + x * 1.5,
-              oy: y * 1.5,
+              ox: textOffsetX + x * 1.5,
+              oy: textOffsetY + y * 1.5,
             })
           }
         }
       }
 
-      const totalW = textSpacingX + tw * 1.5
-      const totalH = Math.max(logoH, th * 1.5)
+      const totalW = textOffsetX + tw * 1.5
+      const totalH = Math.max(26, th * 1.5 + 4)
 
       return { points, totalWidth: totalW, totalHeight: totalH }
     }
 
-    // Create a new Skill Logo + Name assembly
+    // Create a new Skill Item (Real official Logo Image + Brand Yellow Pixel Name)
     const createMorphEntity = (spawnNearScreen = false) => {
-      const skillDef = pixelSkillsList[Math.floor(Math.random() * pixelSkillsList.length)]
-      const sampled = sampleSkillToPixels(skillDef)
+      const toolDef = tools[Math.floor(Math.random() * tools.length)]
+      const sampled = sampleSkillNameToPixels(toolDef.name)
 
-      const pSize = 3 // 3x3 pixel dot
+      const pSize = 3 // 3x3 pixel dot for text
       // Only brand yellow / gold shades: primary vibrant gold #ffd700, deep amber gold #e6be00, and bright gold #ffe033
       const yellowShades = ['#ffd700', '#e6be00', '#f5c500', '#ffe033']
       const particlesList = sampled.points.map((pt) => {
@@ -341,12 +200,15 @@ export default function PixelCloudBackground({
       let spawnY = height * lane.yMin + Math.random() * (height * (lane.yMax - lane.yMin))
 
       return {
+        name: toolDef.name,
+        iconUrl: toolDef.icon,
         x: spawnX,
         y: spawnY,
         vx: -(0.55 + Math.random() * 0.35), // Continuous cruise speed from right to left
         vy: 0,
         particles: particlesList,
         pixelSize: pSize,
+        logoSize: 24, // 24x24 px official crisp logo
         totalWidth: sampled.totalWidth,
         totalHeight: sampled.totalHeight,
         alpha: 1.0, // Solid full opacity across the entire screen
@@ -355,7 +217,7 @@ export default function PixelCloudBackground({
 
     const initMorphEntities = () => {
       const list = []
-      // 4 skill logos + names cruising across screen at start
+      // 4 skill logos + pixel names cruising across screen at start
       for (let i = 0; i < 4; i++) {
         list.push(createMorphEntity(true))
       }
@@ -748,6 +610,14 @@ export default function PixelCloudBackground({
 
         ctx.globalAlpha = 1.0
 
+        // Draw Real Official Logo Image if loaded
+        const logoImg = loadedLogoImages.current[ent.name]
+        const logoSize = ent.logoSize || 24
+        if (logoImg && logoImg.complete && logoImg.naturalWidth > 0) {
+          ctx.drawImage(logoImg, Math.round(ent.x), Math.round(ent.y), logoSize, logoSize)
+        }
+
+        // Draw Skill Name in brand yellow pixels directly beside the logo
         for (let k = 0; k < ent.particles.length; k++) {
           const pt = ent.particles[k]
           const px = ent.x + pt.targetOx
