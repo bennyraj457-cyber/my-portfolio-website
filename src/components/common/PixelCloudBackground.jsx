@@ -246,12 +246,13 @@ export default function PixelCloudBackground({
       const sampled = isWord ? sampleTextToPixels(def.text) : sampleShapeToPixels(def)
 
       const pSize = 3 // 3x3 pixel dot
+      // Only brand yellow / gold shades: primary vibrant gold #ffd700, deep amber gold #e6be00, and bright gold #ffe033
+      const yellowShades = ['#ffd700', '#e6be00', '#f5c500', '#ffe033']
       const particlesList = sampled.points.map((pt) => {
         return {
           targetOx: pt.ox,
           targetOy: pt.oy,
-          // High-contrast gold & charcoal-black pixels for maximum visibility
-          color: Math.random() > 0.35 ? '#000000' : '#d4af37',
+          color: yellowShades[Math.floor(Math.random() * yellowShades.length)],
         }
       })
 
