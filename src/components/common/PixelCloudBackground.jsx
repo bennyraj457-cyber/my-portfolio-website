@@ -247,52 +247,45 @@ export default function PixelCloudBackground({
 
       const pSize = 3 // 3x3 pixel dot
       const particlesList = sampled.points.map((pt) => {
-        const scatterAngle = Math.random() * Math.PI * 2
-        const scatterDist = 30 + Math.random() * 50
         return {
           targetOx: pt.ox,
           targetOy: pt.oy,
-          curOx: pt.ox + Math.cos(scatterAngle) * scatterDist,
-          curOy: pt.oy + Math.sin(scatterAngle) * scatterDist,
-          // High-contrast gold & charcoal-black pixels for maximum visibility on white background!
+          // High-contrast gold & charcoal-black pixels for maximum visibility
           color: Math.random() > 0.35 ? '#000000' : '#d4af37',
         }
       })
 
-      // Spawn in open perimeter regions
-      const spawnZones = [
-        { xMin: 0.1, xMax: 0.35, yMin: 0.1, yMax: 0.25 },  // Top-left
-        { xMin: 0.65, xMax: 0.85, yMin: 0.1, yMax: 0.25 }, // Top-right
-        { xMin: 0.08, xMax: 0.3, yMin: 0.72, yMax: 0.85 }, // Bottom-left
-        { xMin: 0.7, xMax: 0.9, yMin: 0.72, yMax: 0.85 },  // Bottom-right
+      // Choose a drift lane:
+      // Either top margin (y: 8% - 25%), or bottom margin (y: 72% - 88%),
+      // or middle background channels so they travel cleanly across the entire screen!
+      const lanes = [
+        { yMin: 0.10, yMax: 0.22 }, // Upper lane (above headline)
+        { yMin: 0.72, yMax: 0.86 }, // Lower lane (under hero bio/buttons)
+        { yMin: 0.05, yMax: 0.15 }, // Very top edge
       ]
-      const zone = spawnZones[Math.floor(Math.random() * spawnZones.length)]
+      const lane = lanes[Math.floor(Math.random() * lanes.length)]
 
       let spawnX = spawnNearScreen
-        ? width * zone.xMin + Math.random() * (width * (zone.xMax - zone.xMin))
-        : width + 20
-      let spawnY = height * zone.yMin + Math.random() * (height * (zone.yMax - zone.yMin))
+        ? Math.random() * (width * 0.9)
+        : width + 40
+      let spawnY = height * lane.yMin + Math.random() * (height * (lane.yMax - lane.yMin))
 
       return {
         x: spawnX,
         y: spawnY,
-        vx: -(0.3 + Math.random() * 0.25), // Drifts gently to left
-        vy: (Math.random() - 0.5) * 0.08,
+        vx: -(0.5 + Math.random() * 0.4), // Continuous cruise speed from right to left
+        vy: 0,
         particles: particlesList,
         pixelSize: pSize,
         totalWidth: sampled.totalWidth,
         totalHeight: sampled.totalHeight,
-        progress: spawnNearScreen ? 1.0 : 0.0,
-        stage: spawnNearScreen ? 'stable' : 'gathering',
-        alpha: spawnNearScreen ? 0.95 : 0.0,
-        age: 0,
-        maxStableAge: 400 + Math.random() * 250, // Long stable display time (~8-10 seconds)
+        alpha: 1.0, // Solid full opacity across the entire screen
       }
     }
 
     const initMorphEntities = () => {
       const list = []
-      // 4 concurrent clearly visible entities
+      // 4 shapes & words cruising across screen at start
       for (let i = 0; i < 4; i++) {
         list.push(createMorphEntity(true))
       }
@@ -674,76 +667,21 @@ export default function PixelCloudBackground({
       const morphList = pixelMorphEntities.current
       for (let i = morphList.length - 1; i >= 0; i--) {
         const ent = morphList[i]
-        ent.x += ent.vx
+        ent.x += ent.vx // Continuous smooth movement right-to-left
         ent.y += ent.vy
-        ent.age++
 
-        // State Machine: gathering -> stable -> dissolving
-        if (ent.stage === 'gathering') {
-          ent.progress += 0.025
-          ent.alpha = Math.min(1.0, ent.alpha + 0.04)
-          if (ent.progress >= 1.0) {
-            ent.progress = 1.0
-            ent.stage = 'stable'
-          }
-        } else if (ent.stage === 'stable') {
-          ent.alpha = 1.0
-          if (ent.age >= ent.maxStableAge) {
-            ent.stage = 'dissolving'
-          }
-        } else if (ent.stage === 'dissolving') {
-          ent.alpha -= 0.015
-          ent.progress += 0.015
-        }
-
-        // Proximity detection to hero content (repel / dissolve before touching headline text)
-        let minObsDist = Infinity
-        for (let j = 0; j < obstacles.length; j++) {
-          const obs = obstacles[j]
-          const dx = Math.max(obs.rawLeft - ent.x, 0, ent.x - (obs.rawRight + ent.totalWidth))
-          const dy = Math.max(obs.rawTop - ent.y, 0, ent.y - (obs.rawBottom + ent.totalHeight))
-          const dist = Math.sqrt(dx * dx + dy * dy)
-          if (dist < minObsDist) minObsDist = dist
-        }
-
-        if (minObsDist < 45) {
-          ent.stage = 'dissolving'
-          ent.alpha -= 0.05
-        }
-
-        // Cleanup when faded or drifted off screen
-        if (ent.alpha <= 0 || ent.x < -200) {
+        // Once it passes completely past the left edge, remove or recycle
+        if (ent.x < -(ent.totalWidth + 60)) {
           morphList.splice(i, 1)
           continue
         }
 
-        ctx.globalAlpha = Math.max(0, ent.alpha)
-
-        // Interpolate individual pixel positions
-        const t = ent.progress
-        const easeOutBack = (val) => {
-          const c1 = 1.70158
-          const c3 = c1 + 1
-          return 1 + c3 * Math.pow(val - 1, 3) + c1 * Math.pow(val - 1, 2)
-        }
-        const curEased = ent.stage === 'gathering' ? Math.min(1, easeOutBack(Math.min(1, t))) : 1.0
+        ctx.globalAlpha = 1.0
 
         for (let k = 0; k < ent.particles.length; k++) {
           const pt = ent.particles[k]
-          let px, py
-
-          if (ent.stage === 'gathering') {
-            px = ent.x + pt.curOx + (pt.targetOx - pt.curOx) * curEased
-            py = ent.y + pt.curOy + (pt.targetOy - pt.curOy) * curEased
-          } else if (ent.stage === 'stable') {
-            px = ent.x + pt.targetOx
-            py = ent.y + pt.targetOy
-          } else {
-            // Dissolving: scatter drift away
-            const scatterOut = (t - 1.0) * 55
-            px = ent.x + pt.targetOx + Math.cos(k * 1.5) * scatterOut
-            py = ent.y + pt.targetOy + Math.sin(k * 1.5) * scatterOut
-          }
+          const px = ent.x + pt.targetOx
+          const py = ent.y + pt.targetOy
 
           ctx.fillStyle = pt.color
           const snapX = Math.round(px)
