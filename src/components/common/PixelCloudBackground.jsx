@@ -439,15 +439,25 @@ export default function PixelCloudBackground({
           const dy = (midY - cy) / ry
           const dist = Math.sqrt(dx * dx + dy * dy)
 
-          let mouseRepel = 0
+          // Strong dynamic cursor deflection (pixels physically move away and part around mouse)
+          let offsetX = 0
+          let offsetY = 0
           if (interactive) {
             const mx = midX - mousePos.current.x
             const my = midY - mousePos.current.y
             const mDist = Math.sqrt(mx * mx + my * my)
-            if (mDist < 180) {
-              mouseRepel = (1 - mDist / 180) * 0.28
+            const repelRadius = 220
+            if (mDist < repelRadius && mDist > 0.001) {
+              const repelForce = Math.pow(1 - mDist / repelRadius, 2)
+              // Physical push displacement outward from cursor
+              const pushDistance = repelForce * 40
+              offsetX = (mx / mDist) * pushDistance
+              offsetY = (my / mDist) * pushDistance
             }
           }
+
+          const drawX = Math.round(px + offsetX)
+          const drawY = Math.round(py + offsetY)
 
           const bgDriftX = midX + bgDrift
           const bgWave =
@@ -455,7 +465,7 @@ export default function PixelCloudBackground({
             Math.cos(midY * 0.003 - time * 0.25) * 0.35 +
             Math.sin((bgDriftX + midY) * 0.0018 + time * 0.15) * 0.2
 
-          const bgVal = dist - bgWave + mouseRepel - contentRepulsion
+          const bgVal = dist - bgWave - contentRepulsion
 
           const fgDriftX = midX + fgDrift
           const fgWave =
@@ -463,44 +473,44 @@ export default function PixelCloudBackground({
             Math.cos(midY * 0.0038 - time * 0.35) * 0.35 +
             Math.sin((fgDriftX + midY) * 0.0022 + time * 0.25) * 0.2
 
-          const fgVal = dist - fgWave + mouseRepel - contentRepulsion
+          const fgVal = dist - fgWave - contentRepulsion
 
           if (bgVal > 1.70) {
             ctx.fillStyle = tones.primary
-            ctx.fillRect(px, py, macroSize, macroSize)
+            ctx.fillRect(drawX, drawY, macroSize, macroSize)
           } else if (bgVal > 1.48) {
             ctx.fillStyle = patternPrimary_Light1
-            ctx.fillRect(px, py, macroSize, macroSize)
+            ctx.fillRect(drawX, drawY, macroSize, macroSize)
           } else if (bgVal > 1.32) {
             const checker = (c + r) % 2 === 0
             ctx.fillStyle = checker ? tones.light1 : patternPrimary_Light1
-            ctx.fillRect(px, py, macroSize, macroSize)
+            ctx.fillRect(drawX, drawY, macroSize, macroSize)
           }
 
           if (fgVal > 1.10 && fgVal <= 1.32) {
             ctx.fillStyle = patternLight1_Light2
-            ctx.fillRect(px, py, macroSize, macroSize)
+            ctx.fillRect(drawX, drawY, macroSize, macroSize)
           } else if (fgVal > 0.98 && fgVal <= 1.10) {
             ctx.fillStyle = tones.light2
-            ctx.fillRect(px, py, macroSize, macroSize)
+            ctx.fillRect(drawX, drawY, macroSize, macroSize)
           } else if (fgVal > 0.82 && fgVal <= 0.98) {
             ctx.fillStyle = patternLight2_Light3
-            ctx.fillRect(px, py, macroSize, macroSize)
+            ctx.fillRect(drawX, drawY, macroSize, macroSize)
           } else if (fgVal > 0.68 && fgVal <= 0.82) {
             ctx.fillStyle = patternLight3_White
-            ctx.fillRect(px, py, macroSize, macroSize)
+            ctx.fillRect(drawX, drawY, macroSize, macroSize)
           } else if (fgVal > 0.58 && fgVal <= 0.68) {
             const sprinkle = (c * 7 + r * 13) % 4 === 0
             if (sprinkle) {
               ctx.fillStyle = patternSparseWhite
-              ctx.fillRect(px, py, macroSize, macroSize)
+              ctx.fillRect(drawX, drawY, macroSize, macroSize)
             }
           }
 
           const isTranslucentPatch = (c * 11 + r * 7) % 23 === 0
           if (isTranslucentPatch && fgVal > 0.72 && fgVal < 1.45) {
             ctx.fillStyle = 'rgba(255, 238, 120, 0.4)'
-            ctx.fillRect(px, py, macroSize, macroSize)
+            ctx.fillRect(drawX, drawY, macroSize, macroSize)
           }
         }
       }
@@ -610,18 +620,38 @@ export default function PixelCloudBackground({
 
         ctx.globalAlpha = 1.0
 
+        // Repel skill entity away if mouse approaches it
+        let skillPushX = 0
+        let skillPushY = 0
+        if (interactive) {
+          const centerX = ent.x + ent.totalWidth / 2
+          const centerY = ent.y + ent.totalHeight / 2
+          const smx = centerX - mousePos.current.x
+          const smy = centerY - mousePos.current.y
+          const smDist = Math.sqrt(smx * smx + smy * smy)
+          const skillRepelRadius = 160
+          if (smDist < skillRepelRadius && smDist > 0.001) {
+            const force = (1 - smDist / skillRepelRadius) * 35
+            skillPushX = (smx / smDist) * force
+            skillPushY = (smy / smDist) * force
+          }
+        }
+
+        const renderX = ent.x + skillPushX
+        const renderY = ent.y + skillPushY
+
         // Draw Real Official Logo Image if loaded
         const logoImg = loadedLogoImages.current[ent.name]
         const logoSize = ent.logoSize || 24
         if (logoImg && logoImg.complete && logoImg.naturalWidth > 0) {
-          ctx.drawImage(logoImg, Math.round(ent.x), Math.round(ent.y), logoSize, logoSize)
+          ctx.drawImage(logoImg, Math.round(renderX), Math.round(renderY), logoSize, logoSize)
         }
 
         // Draw Skill Name in brand yellow pixels directly beside the logo
         for (let k = 0; k < ent.particles.length; k++) {
           const pt = ent.particles[k]
-          const px = ent.x + pt.targetOx
-          const py = ent.y + pt.targetOy
+          const px = renderX + pt.targetOx
+          const py = renderY + pt.targetOy
 
           ctx.fillStyle = pt.color
           const snapX = Math.round(px)
