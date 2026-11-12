@@ -20,7 +20,7 @@ export default function HeroSection() {
       aria-label="Introduction"
       className="relative w-full min-h-[90svh] md:min-h-screen flex flex-col items-center justify-center text-center px-4 sm:px-6 md:px-12 py-20 sm:py-24 md:py-32 select-none overflow-hidden"
     >
-      {/* Background layer: pixel cloud & perimeter dither effects */}
+      {/* Edge-to-edge pixel cloud effect */}
       <PixelCloudBackground
         className="w-full h-full"
         macroSize={28}
@@ -40,6 +40,8 @@ export default function HeroSection() {
         <p className="max-w-xl mx-auto text-sm sm:text-base md:text-lg lg:text-xl font-normal leading-relaxed text-text-body px-2 sm:px-0">
           {bio}
         </p>
+
+
       </div>
     </section>
   )

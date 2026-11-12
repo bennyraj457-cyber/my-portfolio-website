@@ -285,9 +285,6 @@ export default function PixelCloudBackground({
       const time = timeRef.current
 
       ctx.clearRect(0, 0, width, height)
-      if (fgCtx) {
-        fgCtx.clearRect(0, 0, width, height)
-      }
 
       const cx = width / 2
       const cy = height * 0.48
