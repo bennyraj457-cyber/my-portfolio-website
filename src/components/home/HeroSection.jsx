@@ -41,7 +41,10 @@ export default function HeroSection() {
           {bio}
         </p>
 
-
+        {/* Tools Marquee immediately after paragraph bio */}
+        <div className="w-full pt-4 sm:pt-6">
+          <ToolsMarquee />
+        </div>
       </div>
     </section>
   )
