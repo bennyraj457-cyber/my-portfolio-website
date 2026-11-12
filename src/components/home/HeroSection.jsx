@@ -48,15 +48,17 @@ export default function HeroSection() {
           </span>
           <ToolsMarquee />
 
-          {/* Work-in-progress status pill */}
-          <div className="inline-flex items-center gap-2 mt-5 sm:mt-6 px-3.5 py-1.5 rounded-full bg-black/[0.03] border border-black/10 text-text-muted select-none">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#ffd700] opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#e6c200]" />
-            </span>
-            <span className="text-xs sm:text-[13px] font-sans font-medium tracking-tight text-text-body">
-              Currently designing & building this portfolio — new sections shipping soon
-            </span>
+          {/* Editorial Minimalist status indicator */}
+          <div className="flex items-center gap-3 sm:gap-4 mt-6 sm:mt-7 max-w-lg mx-auto select-none">
+            <span className="w-6 sm:w-10 h-[1px] bg-black/15 shrink-0" />
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#ffd700] ring-4 ring-[#ffd700]/20 animate-pulse shrink-0" />
+              <p className="text-xs sm:text-[13px] tracking-tight text-text-body font-sans font-normal">
+                <span className="font-heading italic font-normal text-text-heading mr-1">Work in progress:</span>
+                Currently designing &amp; crafting this website
+              </p>
+            </div>
+            <span className="w-6 sm:w-10 h-[1px] bg-black/15 shrink-0" />
           </div>
         </div>
       </div>
