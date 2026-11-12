@@ -1,33 +1,54 @@
-/* Full-Screen Split Navigation Overlay Transitions */
+/* Full-Screen Split Navigation Overlay Transitions & Responsive Layout */
 
 /* Container Fade */
 .split-nav-overlay {
   animation: splitNavFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  -webkit-overflow-scrolling: touch;
 }
 
 .split-nav-overlay.closing {
   animation: splitNavFadeOut 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Left Panel Slide */
-.split-nav-left {
-  animation: splitNavSlideLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+/* Panel Slide Animations - Desktop & Tablet (Horizontal 50/50) */
+@media (min-width: 768px) {
+  .split-nav-left {
+    animation: splitNavSlideLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .split-nav-overlay.closing .split-nav-left {
+    animation: splitNavSlideLeftExit 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .split-nav-right {
+    animation: splitNavSlideRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .split-nav-overlay.closing .split-nav-right {
+    animation: splitNavSlideRightExit 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
 }
 
-.split-nav-overlay.closing .split-nav-left {
-  animation: splitNavSlideLeftExit 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+/* Panel Slide Animations - Mobile Devices (< 768px Vertical Stack) */
+@media (max-width: 767px) {
+  .split-nav-left {
+    animation: splitNavSlideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .split-nav-overlay.closing .split-nav-left {
+    animation: splitNavSlideUpExit 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .split-nav-right {
+    animation: splitNavSlideUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .split-nav-overlay.closing .split-nav-right {
+    animation: splitNavSlideDownExit 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
 }
 
-/* Right Panel Slide */
-.split-nav-right {
-  animation: splitNavSlideRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.split-nav-overlay.closing .split-nav-right {
-  animation: splitNavSlideRightExit 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/* Keyframes */
+/* Keyframes - Horizontal Desktop */
 @keyframes splitNavFadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -39,39 +60,44 @@
 }
 
 @keyframes splitNavSlideLeft {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(0);
-  }
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
 }
 
 @keyframes splitNavSlideLeftExit {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-100%);
-  }
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
 }
 
 @keyframes splitNavSlideRight {
-  from {
-    transform: translateX(100%);
-  }
-  to {
-    transform: translateX(0);
-  }
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
 }
 
 @keyframes splitNavSlideRightExit {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(100%);
-  }
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+
+/* Keyframes - Vertical Mobile */
+@keyframes splitNavSlideDown {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes splitNavSlideUpExit {
+  from { transform: translateY(0); }
+  to { transform: translateY(-100%); }
+}
+
+@keyframes splitNavSlideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes splitNavSlideDownExit {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
 }
 
 /* Staggered Item Reveal */
@@ -95,29 +121,90 @@
   gap: 1.25rem;
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
               color 0.25s ease;
+  touch-action: manipulation;
 }
 
 .split-nav-link .nav-dash {
-  width: 28px;
+  width: 24px;
   height: 2px;
   background-color: rgba(255, 255, 255, 0.2);
   transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1),
               background-color 0.25s ease;
 }
 
+@media (min-width: 640px) {
+  .split-nav-link .nav-dash {
+    width: 28px;
+  }
+}
+
 .split-nav-link:hover {
-  transform: translateX(14px);
+  transform: translateX(12px);
   color: var(--brand-primary, #ffd700);
 }
 
 .split-nav-link:hover .nav-dash,
 .split-nav-link.active .nav-dash {
-  width: 52px;
+  width: 44px;
   background-color: var(--brand-primary, #ffd700);
+}
+
+@media (min-width: 640px) {
+  .split-nav-link:hover .nav-dash,
+  .split-nav-link.active .nav-dash {
+    width: 52px;
+  }
 }
 
 .split-nav-link.active {
   color: var(--brand-primary, #ffd700);
+}
+
+/* Small Screen Typography & Padding Tuning (< 480px) */
+@media (max-width: 480px) {
+  .split-nav-link {
+    gap: 0.85rem;
+  }
+
+  .split-nav-link:hover {
+    transform: translateX(8px);
+  }
+
+  .split-nav-link .nav-dash {
+    width: 18px;
+  }
+
+  .split-nav-link:hover .nav-dash,
+  .split-nav-link.active .nav-dash {
+    width: 34px;
+  }
+}
+
+/* Landscape Mobile Device Height Adjustments (max-height: 550px) */
+@media (max-height: 550px) and (orientation: landscape) {
+  .split-nav-overlay {
+    overflow-y: auto !important;
+  }
+
+  .split-nav-left,
+  .split-nav-right {
+    min-height: auto !important;
+    padding: 1.5rem !important;
+  }
+
+  .split-nav-left .my-auto,
+  .split-nav-right .my-auto {
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+  }
+
+  .split-nav-right nav {
+    gap: 0.75rem !important;
+  }
+
+  .split-nav-link {
+    font-size: 1.5rem !important;
+  }
 }
 
 /* Reduced Motion Override */
@@ -133,4 +220,3 @@
     transform: none !important;
   }
 }
-

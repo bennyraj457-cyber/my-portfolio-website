@@ -1,0 +1,27 @@
+/* Continuous smooth marquee track animation */
+.tools-marquee-track {
+  display: flex;
+  animation: toolsMarqueeScroll 28s linear infinite;
+  will-change: transform;
+}
+
+.tools-marquee-track:hover {
+  animation-play-state: paused;
+}
+
+@keyframes toolsMarqueeScroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tools-marquee-track {
+    animation: none;
+    overflow-x: auto;
+  }
+}
+
