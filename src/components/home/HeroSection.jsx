@@ -30,12 +30,6 @@ export default function HeroSection() {
 
       {/* Hero content sitting cleanly in z-10 above canvas */}
       <div className="relative z-10 w-full max-w-4xl mx-auto flex flex-col items-center space-y-6 sm:space-y-8">
-        {/* Subtle "Work in Progress" pill badge */}
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/[0.04] border border-black/10 backdrop-blur-xs text-[11px] sm:text-xs font-mono text-text-muted select-none">
-          <span className="w-2 h-2 rounded-full bg-[#ffd700] animate-pulse shadow-[0_0_8px_#ffd700]" />
-          <span>Currently crafting & iterating on this portfolio</span>
-        </div>
-
         {/* Main Headline with responsive fluid sizing */}
         <h1 className="fluid-hero-headline font-heading italic font-normal tracking-tight text-text-heading">
           <span className="block">{headlineLine1}</span>
