@@ -135,20 +135,20 @@ export default function PixelCloudBackground({
       offCanvas.width = 300
       offCanvas.height = 40
       const offCtx = offCanvas.getContext('2d')
-      offCtx.font = 'bold 16px "Geist", monospace, sans-serif'
+      offCtx.font = 'bold 18px "Geist", monospace, sans-serif'
       offCtx.fillStyle = '#000000'
       offCtx.textBaseline = 'top'
       offCtx.fillText(name, 2, 2)
 
       const textMetrics = offCtx.measureText(name)
       const tw = Math.min(260, Math.ceil(textMetrics.width) + 4)
-      const th = 22
+      const th = 24
       const imgData = offCtx.getImageData(0, 0, tw, th).data
 
       const points = []
-      // 28x28 logo + 10px clean spacing
-      const textOffsetX = 38
-      const textOffsetY = 3
+      // 40x40 logo + 14px clean spacing
+      const textOffsetX = 54
+      const textOffsetY = 8 // Centered vertically with 40px logo
 
       // Direct 2x2 grid rasterization for 100% sharp, readable letterforms
       for (let y = 0; y < th; y += 2) {
@@ -164,7 +164,7 @@ export default function PixelCloudBackground({
       }
 
       const totalW = textOffsetX + tw
-      const totalH = Math.max(28, th + 6)
+      const totalH = Math.max(40, th + 12)
 
       return { points, totalWidth: totalW, totalHeight: totalH }
     }
@@ -208,7 +208,7 @@ export default function PixelCloudBackground({
         vy: 0,
         particles: particlesList,
         pixelSize: pSize,
-        logoSize: 26, // 26x26 px official crisp logo
+        logoSize: 40, // Increased to prominent 40x40 px official crisp logo
         totalWidth: sampled.totalWidth,
         totalHeight: sampled.totalHeight,
         alpha: 1.0, // Solid full opacity across the entire screen
@@ -439,25 +439,15 @@ export default function PixelCloudBackground({
           const dy = (midY - cy) / ry
           const dist = Math.sqrt(dx * dx + dy * dy)
 
-          // Strong dynamic cursor deflection (pixels physically move away and part around mouse)
-          let offsetX = 0
-          let offsetY = 0
+          let mouseRepel = 0
           if (interactive) {
             const mx = midX - mousePos.current.x
             const my = midY - mousePos.current.y
             const mDist = Math.sqrt(mx * mx + my * my)
-            const repelRadius = 220
-            if (mDist < repelRadius && mDist > 0.001) {
-              const repelForce = Math.pow(1 - mDist / repelRadius, 2)
-              // Physical push displacement outward from cursor
-              const pushDistance = repelForce * 40
-              offsetX = (mx / mDist) * pushDistance
-              offsetY = (my / mDist) * pushDistance
+            if (mDist < 180) {
+              mouseRepel = (1 - mDist / 180) * 0.28
             }
           }
-
-          const drawX = Math.round(px + offsetX)
-          const drawY = Math.round(py + offsetY)
 
           const bgDriftX = midX + bgDrift
           const bgWave =
@@ -465,7 +455,7 @@ export default function PixelCloudBackground({
             Math.cos(midY * 0.003 - time * 0.25) * 0.35 +
             Math.sin((bgDriftX + midY) * 0.0018 + time * 0.15) * 0.2
 
-          const bgVal = dist - bgWave - contentRepulsion
+          const bgVal = dist - bgWave + mouseRepel - contentRepulsion
 
           const fgDriftX = midX + fgDrift
           const fgWave =
@@ -473,44 +463,44 @@ export default function PixelCloudBackground({
             Math.cos(midY * 0.0038 - time * 0.35) * 0.35 +
             Math.sin((fgDriftX + midY) * 0.0022 + time * 0.25) * 0.2
 
-          const fgVal = dist - fgWave - contentRepulsion
+          const fgVal = dist - fgWave + mouseRepel - contentRepulsion
 
           if (bgVal > 1.70) {
             ctx.fillStyle = tones.primary
-            ctx.fillRect(drawX, drawY, macroSize, macroSize)
+            ctx.fillRect(px, py, macroSize, macroSize)
           } else if (bgVal > 1.48) {
             ctx.fillStyle = patternPrimary_Light1
-            ctx.fillRect(drawX, drawY, macroSize, macroSize)
+            ctx.fillRect(px, py, macroSize, macroSize)
           } else if (bgVal > 1.32) {
             const checker = (c + r) % 2 === 0
             ctx.fillStyle = checker ? tones.light1 : patternPrimary_Light1
-            ctx.fillRect(drawX, drawY, macroSize, macroSize)
+            ctx.fillRect(px, py, macroSize, macroSize)
           }
 
           if (fgVal > 1.10 && fgVal <= 1.32) {
             ctx.fillStyle = patternLight1_Light2
-            ctx.fillRect(drawX, drawY, macroSize, macroSize)
+            ctx.fillRect(px, py, macroSize, macroSize)
           } else if (fgVal > 0.98 && fgVal <= 1.10) {
             ctx.fillStyle = tones.light2
-            ctx.fillRect(drawX, drawY, macroSize, macroSize)
+            ctx.fillRect(px, py, macroSize, macroSize)
           } else if (fgVal > 0.82 && fgVal <= 0.98) {
             ctx.fillStyle = patternLight2_Light3
-            ctx.fillRect(drawX, drawY, macroSize, macroSize)
+            ctx.fillRect(px, py, macroSize, macroSize)
           } else if (fgVal > 0.68 && fgVal <= 0.82) {
             ctx.fillStyle = patternLight3_White
-            ctx.fillRect(drawX, drawY, macroSize, macroSize)
+            ctx.fillRect(px, py, macroSize, macroSize)
           } else if (fgVal > 0.58 && fgVal <= 0.68) {
             const sprinkle = (c * 7 + r * 13) % 4 === 0
             if (sprinkle) {
               ctx.fillStyle = patternSparseWhite
-              ctx.fillRect(drawX, drawY, macroSize, macroSize)
+              ctx.fillRect(px, py, macroSize, macroSize)
             }
           }
 
           const isTranslucentPatch = (c * 11 + r * 7) % 23 === 0
           if (isTranslucentPatch && fgVal > 0.72 && fgVal < 1.45) {
             ctx.fillStyle = 'rgba(255, 238, 120, 0.4)'
-            ctx.fillRect(drawX, drawY, macroSize, macroSize)
+            ctx.fillRect(px, py, macroSize, macroSize)
           }
         }
       }
@@ -620,38 +610,18 @@ export default function PixelCloudBackground({
 
         ctx.globalAlpha = 1.0
 
-        // Repel skill entity away if mouse approaches it
-        let skillPushX = 0
-        let skillPushY = 0
-        if (interactive) {
-          const centerX = ent.x + ent.totalWidth / 2
-          const centerY = ent.y + ent.totalHeight / 2
-          const smx = centerX - mousePos.current.x
-          const smy = centerY - mousePos.current.y
-          const smDist = Math.sqrt(smx * smx + smy * smy)
-          const skillRepelRadius = 160
-          if (smDist < skillRepelRadius && smDist > 0.001) {
-            const force = (1 - smDist / skillRepelRadius) * 35
-            skillPushX = (smx / smDist) * force
-            skillPushY = (smy / smDist) * force
-          }
-        }
-
-        const renderX = ent.x + skillPushX
-        const renderY = ent.y + skillPushY
-
         // Draw Real Official Logo Image if loaded
         const logoImg = loadedLogoImages.current[ent.name]
         const logoSize = ent.logoSize || 24
         if (logoImg && logoImg.complete && logoImg.naturalWidth > 0) {
-          ctx.drawImage(logoImg, Math.round(renderX), Math.round(renderY), logoSize, logoSize)
+          ctx.drawImage(logoImg, Math.round(ent.x), Math.round(ent.y), logoSize, logoSize)
         }
 
         // Draw Skill Name in brand yellow pixels directly beside the logo
         for (let k = 0; k < ent.particles.length; k++) {
           const pt = ent.particles[k]
-          const px = renderX + pt.targetOx
-          const py = renderY + pt.targetOy
+          const px = ent.x + pt.targetOx
+          const py = ent.y + pt.targetOy
 
           ctx.fillStyle = pt.color
           const snapX = Math.round(px)
