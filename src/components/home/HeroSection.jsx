@@ -42,7 +42,10 @@ export default function HeroSection() {
         </p>
 
         {/* Tools Marquee immediately after paragraph bio */}
-        <div className="w-full pt-4 sm:pt-6">
+        <div className="w-full pt-4 sm:pt-6 flex flex-col items-center">
+          <span className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.25em] text-text-muted font-medium mb-3 select-none">
+            My Skills
+          </span>
           <ToolsMarquee />
         </div>
       </div>
