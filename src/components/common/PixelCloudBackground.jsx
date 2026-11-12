@@ -129,42 +129,42 @@ export default function PixelCloudBackground({
       }
     })
 
-    // Sample skill name text into sharp micro-pixel coordinates
+    // Sample skill name text into ultra-sharp 1:1 pixel coordinates
     const sampleSkillNameToPixels = (name) => {
       const offCanvas = document.createElement('canvas')
-      offCanvas.width = 240
+      offCanvas.width = 300
       offCanvas.height = 40
       const offCtx = offCanvas.getContext('2d')
-      offCtx.font = 'bold 15px "Geist", monospace, sans-serif'
+      offCtx.font = 'bold 16px "Geist", monospace, sans-serif'
       offCtx.fillStyle = '#000000'
       offCtx.textBaseline = 'top'
       offCtx.fillText(name, 2, 2)
 
       const textMetrics = offCtx.measureText(name)
-      const tw = Math.min(200, Math.ceil(textMetrics.width) + 4)
-      const th = 20
+      const tw = Math.min(260, Math.ceil(textMetrics.width) + 4)
+      const th = 22
       const imgData = offCtx.getImageData(0, 0, tw, th).data
 
       const points = []
-      const step = 2 // 2px sample step for crisp typography
-      // Place text right next to the 24x24 real logo image (+8px padding)
-      const textOffsetX = 32
+      // 28x28 logo + 10px clean spacing
+      const textOffsetX = 38
       const textOffsetY = 3
 
-      for (let y = 0; y < th; y += step) {
-        for (let x = 0; x < tw; x += step) {
+      // Direct 2x2 grid rasterization for 100% sharp, readable letterforms
+      for (let y = 0; y < th; y += 2) {
+        for (let x = 0; x < tw; x += 2) {
           const idx = (y * tw + x) * 4 + 3
-          if (imgData[idx] > 80) {
+          if (imgData[idx] > 60) {
             points.push({
-              ox: textOffsetX + x * 1.5,
-              oy: textOffsetY + y * 1.5,
+              ox: textOffsetX + x,
+              oy: textOffsetY + y,
             })
           }
         }
       }
 
-      const totalW = textOffsetX + tw * 1.5
-      const totalH = Math.max(26, th * 1.5 + 4)
+      const totalW = textOffsetX + tw
+      const totalH = Math.max(28, th + 6)
 
       return { points, totalWidth: totalW, totalHeight: totalH }
     }
@@ -174,14 +174,14 @@ export default function PixelCloudBackground({
       const toolDef = tools[Math.floor(Math.random() * tools.length)]
       const sampled = sampleSkillNameToPixels(toolDef.name)
 
-      const pSize = 3 // 3x3 pixel dot for text
-      // Only brand yellow / gold shades: primary vibrant gold #ffd700, deep amber gold #e6be00, and bright gold #ffe033
-      const yellowShades = ['#ffd700', '#e6be00', '#f5c500', '#ffe033']
+      const pSize = 2 // 2x2 px sharp pixel blocks
+      // Vibrant, high-visibility solid brand yellow tone
+      const brandYellow = '#e6b800'
       const particlesList = sampled.points.map((pt) => {
         return {
           targetOx: pt.ox,
           targetOy: pt.oy,
-          color: yellowShades[Math.floor(Math.random() * yellowShades.length)],
+          color: brandYellow,
         }
       })
 
@@ -208,7 +208,7 @@ export default function PixelCloudBackground({
         vy: 0,
         particles: particlesList,
         pixelSize: pSize,
-        logoSize: 24, // 24x24 px official crisp logo
+        logoSize: 26, // 26x26 px official crisp logo
         totalWidth: sampled.totalWidth,
         totalHeight: sampled.totalHeight,
         alpha: 1.0, // Solid full opacity across the entire screen
