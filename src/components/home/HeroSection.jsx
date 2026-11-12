@@ -41,13 +41,7 @@ export default function HeroSection() {
           {bio}
         </p>
 
-        {/* Circular Tools Marquee next to paragraph */}
-        <div className="w-full pt-4 sm:pt-6">
-          <p className="text-[10px] sm:text-xs uppercase font-mono tracking-widest text-text-muted mb-3 font-medium">
-            My Skills
-          </p>
-          <ToolsMarquee />
-        </div>
+
       </div>
     </section>
   )

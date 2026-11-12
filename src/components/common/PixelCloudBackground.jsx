@@ -115,135 +115,205 @@ export default function PixelCloudBackground({
       driftingIslands.current = list
     }
 
-    // 5x7 Pixel Font & Geometry Shapes Bitmaps
-    const pixelShapesAndGlyphs = [
-      // Shape: Diamond (Rhombus)
+    // Skill pixel icons and names using brand yellow palettes
+    const pixelSkillsList = [
       {
-        name: 'Diamond',
-        width: 9,
-        height: 9,
-        grid: [
-          '000010000',
-          '000111000',
-          '001111100',
-          '011111110',
-          '111111111',
-          '011111110',
-          '001111100',
-          '000111000',
-          '000010000',
+        name: 'React',
+        logoWidth: 11,
+        logoHeight: 11,
+        // Atom / Orbit React icon
+        logo: [
+          '00001110000',
+          '00110001100',
+          '01000100010',
+          '10001110001',
+          '10111111101',
+          '10001110001',
+          '01000100010',
+          '00110001100',
+          '00001110000',
         ],
       },
-      // Shape: 4-Point Sparkle Star
       {
-        name: 'Star',
-        width: 9,
-        height: 9,
-        grid: [
-          '000010000',
-          '000111000',
-          '001111100',
-          '111111111',
-          '001111100',
-          '000111000',
-          '000010000',
-        ],
-      },
-      // Shape: Directional Arrow Right
-      {
-        name: 'Arrow',
-        width: 11,
-        height: 7,
-        grid: [
-          '00000010000',
-          '00000001000',
-          '00000000100',
+        name: 'JavaScript',
+        logoWidth: 11,
+        logoHeight: 11,
+        // JS badge icon
+        logo: [
           '11111111111',
-          '00000000100',
-          '00000001000',
-          '00000010000',
+          '10000000001',
+          '10000011101',
+          '10000000101',
+          '10001000101',
+          '10001011101',
+          '10101000001',
+          '10111011101',
+          '11111111111',
         ],
       },
-      // Word: "CREATIVE"
       {
-        name: 'Word-CREATIVE',
-        text: 'CREATIVE',
+        name: 'PHP',
+        logoWidth: 13,
+        logoHeight: 9,
+        // PHP letters icon
+        logo: [
+          '1110101011100',
+          '1010101010100',
+          '1110111011100',
+          '1000101010000',
+          '1000101010000',
+        ],
       },
-      // Word: "CODE"
       {
-        name: 'Word-CODE',
-        text: 'CODE',
+        name: 'Laravel',
+        logoWidth: 11,
+        logoHeight: 11,
+        // Laravel 3D cubic layer icon
+        logo: [
+          '00000100000',
+          '00011111000',
+          '01100100110',
+          '11000100011',
+          '11111111111',
+          '11000100011',
+          '01100100110',
+          '00011111000',
+          '00000100000',
+        ],
       },
-      // Word: "BENNY"
       {
-        name: 'Word-BENNY',
-        text: 'BENNY',
+        name: 'Figma',
+        logoWidth: 9,
+        logoHeight: 11,
+        // Figma stacked rings icon
+        logo: [
+          '011101110',
+          '111101111',
+          '111101111',
+          '011101110',
+          '011101110',
+          '111101111',
+          '011101110',
+          '011100000',
+          '111100000',
+          '011100000',
+        ],
       },
-      // Word: "CRAFT"
       {
-        name: 'Word-CRAFT',
-        text: 'CRAFT',
+        name: 'HTML5',
+        logoWidth: 11,
+        logoHeight: 11,
+        // Shield badge icon
+        logo: [
+          '11111111111',
+          '10000000001',
+          '01111111110',
+          '01011111010',
+          '01000000010',
+          '00111111100',
+          '00100000100',
+          '00011111000',
+          '00001110000',
+          '00000100000',
+        ],
       },
-      // Word: "DESIGN"
       {
-        name: 'Word-DESIGN',
-        text: 'DESIGN',
+        name: 'WordPress',
+        logoWidth: 11,
+        logoHeight: 11,
+        // WP circle badge with W
+        logo: [
+          '00111111100',
+          '01100000110',
+          '11010001011',
+          '10101010101',
+          '10101010101',
+          '10010101001',
+          '11001010011',
+          '01100000110',
+          '00111111100',
+        ],
+      },
+      {
+        name: 'GitHub',
+        logoWidth: 11,
+        logoHeight: 11,
+        // Octocat ears & silhouette
+        logo: [
+          '01000000010',
+          '11100000111',
+          '11111111111',
+          '11001110011',
+          '11001110011',
+          '01111111110',
+          '00111111100',
+          '00011011000',
+          '00011011000',
+        ],
       },
     ]
 
-    // Convert short text strings into sharp micro-pixel coordinates using offscreen canvas
-    const sampleTextToPixels = (str) => {
-      const offCanvas = document.createElement('canvas')
-      offCanvas.width = 300
-      offCanvas.height = 50
-      const offCtx = offCanvas.getContext('2d')
-      offCtx.font = '900 16px "Geist", monospace, sans-serif'
-      offCtx.fillStyle = '#000000'
-      offCtx.textBaseline = 'top'
-      offCtx.fillText(str, 2, 2)
-
-      const textMetrics = offCtx.measureText(str)
-      const w = Math.min(280, Math.ceil(textMetrics.width) + 4)
-      const h = 24
-      const imgData = offCtx.getImageData(0, 0, w, h).data
-
+    // Sample skill logo + label text into a combined micro-pixel unit
+    const sampleSkillToPixels = (skillDef) => {
+      const pStep = 3 // 3px discrete pixel dots
       const points = []
-      const step = 2 // 2px step
-      for (let y = 0; y < h; y += step) {
-        for (let x = 0; x < w; x += step) {
-          const idx = (y * w + x) * 4 + 3
-          if (imgData[idx] > 80) {
-            points.push({ ox: x * 1.8, oy: y * 1.8 })
-          }
-        }
-      }
-      return { points, totalWidth: w * 1.8, totalHeight: h * 1.8 }
-    }
 
-    // Convert bitmap grid definition into relative pixel points
-    const sampleShapeToPixels = (shapeDef) => {
-      const points = []
-      const pStep = 4 // 4px step per block for crisp visibility
-      for (let r = 0; r < shapeDef.grid.length; r++) {
-        const row = shapeDef.grid[r]
+      // 1. Draw Skill Logo Bitmap on left
+      const logoW = skillDef.logoWidth * pStep
+      const logoH = (skillDef.logo.length) * pStep
+      const logoOffsetY = 2
+
+      for (let r = 0; r < skillDef.logo.length; r++) {
+        const row = skillDef.logo[r]
         for (let c = 0; c < row.length; c++) {
           if (row[c] === '1') {
-            points.push({ ox: c * pStep, oy: r * pStep })
+            points.push({
+              ox: c * pStep,
+              oy: logoOffsetY + r * pStep,
+            })
           }
         }
       }
-      return {
-        points,
-        totalWidth: shapeDef.width * pStep,
-        totalHeight: shapeDef.height * pStep,
+
+      // 2. Draw Skill Name Text on right with clean spacing
+      const textSpacingX = logoW + 10
+      const offCanvas = document.createElement('canvas')
+      offCanvas.width = 240
+      offCanvas.height = 40
+      const offCtx = offCanvas.getContext('2d')
+      offCtx.font = 'bold 15px "Geist", monospace, sans-serif'
+      offCtx.fillStyle = '#000000'
+      offCtx.textBaseline = 'top'
+      offCtx.fillText(skillDef.name, 2, 2)
+
+      const textMetrics = offCtx.measureText(skillDef.name)
+      const tw = Math.min(200, Math.ceil(textMetrics.width) + 4)
+      const th = 20
+      const imgData = offCtx.getImageData(0, 0, tw, th).data
+
+      const step = 2 // 2px sample step for crisp typography
+      for (let y = 0; y < th; y += step) {
+        for (let x = 0; x < tw; x += step) {
+          const idx = (y * tw + x) * 4 + 3
+          if (imgData[idx] > 80) {
+            points.push({
+              ox: textSpacingX + x * 1.5,
+              oy: y * 1.5,
+            })
+          }
+        }
       }
+
+      const totalW = textSpacingX + tw * 1.5
+      const totalH = Math.max(logoH, th * 1.5)
+
+      return { points, totalWidth: totalW, totalHeight: totalH }
     }
 
-    // Create a new Shape or Pixel-Text assembly
+    // Create a new Skill Logo + Name assembly
     const createMorphEntity = (spawnNearScreen = false) => {
-      const def = pixelShapesAndGlyphs[Math.floor(Math.random() * pixelShapesAndGlyphs.length)]
-      const isWord = Boolean(def.text)
-      const sampled = isWord ? sampleTextToPixels(def.text) : sampleShapeToPixels(def)
+      const skillDef = pixelSkillsList[Math.floor(Math.random() * pixelSkillsList.length)]
+      const sampled = sampleSkillToPixels(skillDef)
 
       const pSize = 3 // 3x3 pixel dot
       // Only brand yellow / gold shades: primary vibrant gold #ffd700, deep amber gold #e6be00, and bright gold #ffe033
@@ -257,24 +327,23 @@ export default function PixelCloudBackground({
       })
 
       // Choose a drift lane:
-      // Either top margin (y: 8% - 25%), or bottom margin (y: 72% - 88%),
-      // or middle background channels so they travel cleanly across the entire screen!
+      // Either upper margin (y: 8% - 24%), or lower margin (y: 72% - 88%)
       const lanes = [
-        { yMin: 0.10, yMax: 0.22 }, // Upper lane (above headline)
+        { yMin: 0.08, yMax: 0.22 }, // Upper lane (above headline)
         { yMin: 0.72, yMax: 0.86 }, // Lower lane (under hero bio/buttons)
-        { yMin: 0.05, yMax: 0.15 }, // Very top edge
+        { yMin: 0.04, yMax: 0.14 }, // Very top edge
       ]
       const lane = lanes[Math.floor(Math.random() * lanes.length)]
 
       let spawnX = spawnNearScreen
-        ? Math.random() * (width * 0.9)
+        ? Math.random() * (width * 0.85)
         : width + 40
       let spawnY = height * lane.yMin + Math.random() * (height * (lane.yMax - lane.yMin))
 
       return {
         x: spawnX,
         y: spawnY,
-        vx: -(0.5 + Math.random() * 0.4), // Continuous cruise speed from right to left
+        vx: -(0.55 + Math.random() * 0.35), // Continuous cruise speed from right to left
         vy: 0,
         particles: particlesList,
         pixelSize: pSize,
@@ -286,7 +355,7 @@ export default function PixelCloudBackground({
 
     const initMorphEntities = () => {
       const list = []
-      // 4 shapes & words cruising across screen at start
+      // 4 skill logos + names cruising across screen at start
       for (let i = 0; i < 4; i++) {
         list.push(createMorphEntity(true))
       }
