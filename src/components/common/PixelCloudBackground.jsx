@@ -20,6 +20,7 @@ export default function PixelCloudBackground({
   interactive = true,
   contentRepelDistance = 90,
   driftSpeed = 0.45,
+  foregroundCanvasRef = null,
 }) {
   const canvasRef = useRef(null)
   const mousePos = useRef({ x: -1000, y: -1000 })
@@ -46,10 +47,19 @@ export default function PixelCloudBackground({
     let width = 0
     let height = 0
 
+    const fgCanvas = foregroundCanvasRef?.current
+    const fgCtx = fgCanvas ? fgCanvas.getContext('2d') : null
+
     const updateSize = () => {
       const parent = canvas.parentElement || document.body
       width = canvas.width = parent.clientWidth || window.innerWidth
       height = canvas.height = parent.clientHeight || window.innerHeight
+
+      if (fgCanvas) {
+        fgCanvas.width = width
+        fgCanvas.height = height
+      }
+
       initSparkles()
       initDriftingIslands()
       initMorphEntities()
@@ -185,14 +195,21 @@ export default function PixelCloudBackground({
         }
       })
 
-      // Choose a drift lane:
-      // Either upper margin (y: 8% - 24%), or lower margin (y: 72% - 88%)
+      // Choose a drift lane across entire hero height:
+      // - Upper lanes (y: 10% - 25%): above headline
+      // - Direct Center lanes (y: 35% - 55%): directly crossing hero headline and paragraph!
+      // - Lower lanes (y: 68% - 86%): under hero bio/buttons
       const lanes = [
-        { yMin: 0.08, yMax: 0.22 }, // Upper lane (above headline)
-        { yMin: 0.72, yMax: 0.86 }, // Lower lane (under hero bio/buttons)
-        { yMin: 0.04, yMax: 0.14 }, // Very top edge
+        { yMin: 0.10, yMax: 0.22, layer: 'behind' }, // Above
+        { yMin: 0.35, yMax: 0.44, layer: 'front' },  // In FRONT of hero text!
+        { yMin: 0.46, yMax: 0.56, layer: 'behind' }, // BEHIND hero text/paragraph!
+        { yMin: 0.68, yMax: 0.82, layer: 'front' },  // Lower lane in front
+        { yMin: 0.80, yMax: 0.90, layer: 'behind' }, // Lower lane behind
       ]
       const lane = lanes[Math.floor(Math.random() * lanes.length)]
+
+      // Assign layer: some go 'front' (above hero text), some go 'behind' (behind hero text)
+      const isFront = lane.layer === 'front' || Math.random() > 0.5
 
       let spawnX = spawnNearScreen
         ? Math.random() * (width * 0.85)
@@ -208,17 +225,18 @@ export default function PixelCloudBackground({
         vy: 0,
         particles: particlesList,
         pixelSize: pSize,
-        logoSize: 40, // Increased to prominent 40x40 px official crisp logo
+        logoSize: 40, // 40x40 px official crisp logo
         totalWidth: sampled.totalWidth,
         totalHeight: sampled.totalHeight,
-        alpha: 1.0, // Solid full opacity across the entire screen
+        alpha: 1.0,
+        layer: isFront ? 'front' : 'behind', // Some above, some behind!
       }
     }
 
     const initMorphEntities = () => {
       const list = []
-      // 4 skill logos + pixel names cruising across screen at start
-      for (let i = 0; i < 4; i++) {
+      // 5 skill logos + pixel names cruising across screen at start
+      for (let i = 0; i < 5; i++) {
         list.push(createMorphEntity(true))
       }
       pixelMorphEntities.current = list
@@ -397,6 +415,9 @@ export default function PixelCloudBackground({
       const time = timeRef.current
 
       ctx.clearRect(0, 0, width, height)
+      if (fgCtx) {
+        fgCtx.clearRect(0, 0, width, height)
+      }
 
       const cx = width / 2
       const cy = height * 0.48
@@ -608,13 +629,16 @@ export default function PixelCloudBackground({
           continue
         }
 
-        ctx.globalAlpha = 1.0
+        // Target Context: either fgCtx (renders ABOVE hero text) or ctx (renders BEHIND hero text)
+        const targetCtx = ent.layer === 'front' && fgCtx ? fgCtx : ctx
+
+        targetCtx.globalAlpha = 1.0
 
         // Draw Real Official Logo Image if loaded
         const logoImg = loadedLogoImages.current[ent.name]
         const logoSize = ent.logoSize || 24
         if (logoImg && logoImg.complete && logoImg.naturalWidth > 0) {
-          ctx.drawImage(logoImg, Math.round(ent.x), Math.round(ent.y), logoSize, logoSize)
+          targetCtx.drawImage(logoImg, Math.round(ent.x), Math.round(ent.y), logoSize, logoSize)
         }
 
         // Draw Skill Name in brand yellow pixels directly beside the logo
@@ -623,10 +647,10 @@ export default function PixelCloudBackground({
           const px = ent.x + pt.targetOx
           const py = ent.y + pt.targetOy
 
-          ctx.fillStyle = pt.color
+          targetCtx.fillStyle = pt.color
           const snapX = Math.round(px)
           const snapY = Math.round(py)
-          ctx.fillRect(snapX, snapY, ent.pixelSize, ent.pixelSize)
+          targetCtx.fillRect(snapX, snapY, ent.pixelSize, ent.pixelSize)
         }
       }
       ctx.globalAlpha = 1.0
