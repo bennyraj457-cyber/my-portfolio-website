@@ -52,7 +52,7 @@ export default function HeroSection() {
           <div className="flex items-center gap-3 sm:gap-4 mt-6 sm:mt-7 max-w-lg mx-auto select-none">
             <span className="w-6 sm:w-10 h-[1px] bg-black/15 shrink-0" />
             <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#ffd700] ring-4 ring-[#ffd700]/20 animate-pulse shrink-0" />
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 ring-4 ring-red-500/20 animate-pulse shrink-0" />
               <p className="text-xs sm:text-[13px] tracking-tight text-text-body font-sans font-normal">
                 <span className="font-heading italic font-normal text-text-heading mr-1">Work in progress:</span>
                 Currently designing &amp; crafting this website
