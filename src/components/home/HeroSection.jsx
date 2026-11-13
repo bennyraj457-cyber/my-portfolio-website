@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { personalInfo } from '../../data/personalInfo'
-import { PixelNatureLandscape } from '../common'
+import PixelPortraitBackground from './PixelPortraitBackground'
 import ToolsMarquee from './ToolsMarquee'
 import PixelAssembledHeading from './PixelAssembledHeading'
 
@@ -8,9 +8,10 @@ import PixelAssembledHeading from './PixelAssembledHeading'
  * HeroSection
  *
  * Full-screen responsive viewport hero section:
- * - Beautiful editorial nature landscape rendered in tiny discrete micro-pixels
- * - Golden sun, layered mountain ridges, and subtle sky clouds
- * - Fluid typography scaling seamlessly from mobile to desktop
+ * - Fluid typography scaling seamlessly from mobile (320px) to 4K displays
+ * - Responsive padding and breathing room
+ * - Full-width background dither canvas with zero horizontal overflow
+ * - Initial load: starts hidden behind solid yellow dither pixels, then gracefully emerges
  */
 export default function HeroSection() {
   const { headlineLine1, headlineLine2, bio } = personalInfo
@@ -21,10 +22,10 @@ export default function HeroSection() {
       aria-label="Introduction"
       className="relative w-full min-h-[90svh] md:min-h-screen flex flex-col items-center justify-center text-center px-4 sm:px-6 md:px-12 py-20 sm:py-24 md:py-32 select-none overflow-hidden"
     >
-      {/* Edge-to-edge tiny pixel nature landscape artwork */}
-      <PixelNatureLandscape
+      {/* Benny's Portrait rendered in tiny discrete micro-pixels */}
+      <PixelPortraitBackground
         className="w-full h-full"
-        pixelSize={4}
+        pixelStep={4}
         interactive={true}
       />
 
