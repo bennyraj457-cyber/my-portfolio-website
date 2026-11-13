@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { personalInfo } from '../../data/personalInfo'
 import { PixelArtBackground } from '../common'
 import ToolsMarquee from './ToolsMarquee'
-import PixelAssembledHeading from './PixelAssembledHeading'
 
 /**
  * HeroSection
@@ -31,13 +30,11 @@ export default function HeroSection() {
 
       {/* Hero content sitting cleanly in z-10 above canvas */}
       <div className="relative z-10 w-full max-w-4xl mx-auto flex flex-col items-center space-y-6 sm:space-y-8">
-        {/* Main Headline assembled from discrete micro-pixels */}
-        <PixelAssembledHeading
-          line1={headlineLine1}
-          line2={headlineLine2}
-          pixelSize={3}
-          className="w-full"
-        />
+        {/* Main Headline with responsive fluid sizing */}
+        <h1 className="fluid-hero-headline font-heading italic font-normal tracking-tight text-text-heading">
+          <span className="block">{headlineLine1}</span>
+          <span className="block mt-1 sm:mt-2">{headlineLine2}</span>
+        </h1>
 
         {/* Responsive Paragraph Bio */}
         <p className="max-w-xl mx-auto text-sm sm:text-base md:text-lg lg:text-xl font-normal leading-relaxed text-text-body px-2 sm:px-0">
