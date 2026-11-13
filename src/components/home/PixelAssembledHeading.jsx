@@ -20,8 +20,8 @@ export default function PixelAssembledHeading({
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
   const particlesRef = useRef([])
   const rafId = useRef(null)
-  // Reduced hover break radius from 60px to 26px for tight, refined fingertip dispersion
-  const mouseRef = useRef({ x: -1000, y: -1000, radius: 26 })
+  // Micro-precision hover break radius (12px) for tiny pin-point displacement
+  const mouseRef = useRef({ x: -1000, y: -1000, radius: 12 })
 
   useEffect(() => {
     const updateCanvasDimensions = () => {
@@ -133,8 +133,8 @@ export default function PixelAssembledHeading({
         const distMouse = Math.sqrt(dxMouse * dxMouse + dyMouse * dyMouse)
 
         if (distMouse < mouse.radius) {
-          // Delicate repulsion force within tight 26px circle
-          const force = (1 - distMouse / mouse.radius) * 4.5
+          // Delicate repulsion force within micro 12px circle
+          const force = (1 - distMouse / mouse.radius) * 2.5
           p.vx += (dxMouse / distMouse) * force
           p.vy += (dyMouse / distMouse) * force
         }
