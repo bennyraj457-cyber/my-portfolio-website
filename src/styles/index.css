@@ -95,6 +95,34 @@ img, svg, video, canvas {
   line-height: 1.02;
 }
 
+/* Micro-Pixel Halftone / Dot-Matrix Text Pattern Effect */
+.pixel-matrix-text {
+  position: relative;
+  display: inline-block;
+  background-color: #000000;
+  /* Micro 3x3 pixel dot matrix pattern masked onto the typography */
+  background-image: 
+    radial-gradient(circle at 1.5px 1.5px, #000000 70%, transparent 72%),
+    radial-gradient(circle at 4.5px 4.5px, #1a1a1a 70%, transparent 72%);
+  background-size: 6px 6px;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  /* Crisp pixel text rendering */
+  text-rendering: geometricPrecision;
+  filter: drop-shadow(0 0 0.5px rgba(0, 0, 0, 0.9));
+}
+
+/* Fallback for browsers that don't support background-clip text */
+@supports not (-webkit-background-clip: text) {
+  .pixel-matrix-text {
+    color: #000000;
+    -webkit-text-fill-color: initial;
+    background: none;
+  }
+}
+
 .fluid-section-headline {
   font-size: clamp(2rem, 5vw + 0.5rem, 4.5rem);
   line-height: 1.1;
