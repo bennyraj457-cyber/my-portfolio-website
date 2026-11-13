@@ -19,10 +19,9 @@ export default function PixelCloudBackground({
   interactive = true,
   contentRepelDistance = 90,
   driftSpeed = 0.45,
+  initialIntro = true,
 }) {
   const canvasRef = useRef(null)
-  const introAlpha = useRef(window.__preloaderFinished ? 1 : 0)
-  const isIntroComplete = useRef(Boolean(window.__preloaderFinished))
   const mousePos = useRef({ x: -1000, y: -1000 })
   const prevMousePos = useRef({ x: -1000, y: -1000 })
   const contentObstacles = useRef([])
@@ -35,6 +34,10 @@ export default function PixelCloudBackground({
   const fgDriftOffsetRef = useRef(0)
   const timeRef = useRef(0)
   const islandSpawnTimer = useRef(0)
+
+  // Initial Full Yellow Reveal Animation State
+  const introStartTimeRef = useRef(null)
+  const introGridRef = useRef([])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -50,6 +53,36 @@ export default function PixelCloudBackground({
       height = canvas.height = parent.clientHeight || window.innerHeight
       initSparkles()
       initDriftingIslands()
+      initIntroGrid()
+    }
+
+    const initIntroGrid = () => {
+      if (!initialIntro) return
+      const cols = Math.ceil(width / macroSize)
+      const rows = Math.ceil(height / macroSize)
+      const cx = cols / 2
+      const cy = rows / 2
+
+      const grid = []
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          // Distance from center determines order of pixel dissolve (center-out radial wave with noise)
+          const dx = (c - cx) / (cols / 2)
+          const dy = (r - cy) / (rows / 2)
+          const dist = Math.sqrt(dx * dx + dy * dy)
+          const randomJitter = Math.random() * 0.45
+
+          grid.push({
+            r,
+            c,
+            // Delay before this individual pixel starts dissolving (between 400ms and 1800ms)
+            delay: 450 + dist * 900 + randomJitter * 500,
+            duration: 350 + Math.random() * 250,
+          })
+        }
+      }
+      introGridRef.current = grid
+      introStartTimeRef.current = performance.now()
     }
 
     const initSparkles = () => {
@@ -289,21 +322,6 @@ export default function PixelCloudBackground({
 
       ctx.clearRect(0, 0, width, height)
 
-      // Hold at 0 opacity until preloader finishes, then smoothly reveal
-      if (!window.__preloaderFinished) {
-        introAlpha.current = 0
-        ctx.globalAlpha = 0
-      } else {
-        if (!isIntroComplete.current) {
-          introAlpha.current += 0.025
-          if (introAlpha.current >= 1) {
-            introAlpha.current = 1
-            isIntroComplete.current = true
-          }
-        }
-        ctx.globalAlpha = introAlpha.current
-      }
-
       const cx = width / 2
       const cy = height * 0.48
 
@@ -508,6 +526,50 @@ export default function PixelCloudBackground({
         ctx.fillRect(snapX, snapY, p.size, p.size)
       }
       ctx.globalAlpha = 1.0
+
+      // 5. Initial Full Solid Yellow Screen Reveal (Pixel-by-Pixel Dissolve)
+      if (initialIntro && introStartTimeRef.current) {
+        const elapsed = performance.now() - introStartTimeRef.current
+        const grid = introGridRef.current
+        let hasRemainingIntroPixels = false
+
+        for (let i = 0; i < grid.length; i++) {
+          const item = grid[i]
+          if (elapsed < item.delay) {
+            // Still 100% solid yellow pixel blocking view
+            ctx.fillStyle = tones.primary
+            ctx.fillRect(item.c * macroSize, item.r * macroSize, macroSize, macroSize)
+            hasRemainingIntroPixels = true
+          } else if (elapsed < item.delay + item.duration) {
+            // Dissolving pixel transition with halftone dither patterns
+            const progress = (elapsed - item.delay) / item.duration
+            hasRemainingIntroPixels = true
+
+            if (progress < 0.35) {
+              ctx.fillStyle = patternPrimary_Light1
+            } else if (progress < 0.65) {
+              ctx.fillStyle = patternLight1_Light2
+            } else if (progress < 0.85) {
+              ctx.fillStyle = patternLight2_Light3
+            } else {
+              ctx.fillStyle = patternLight3_White
+            }
+            ctx.fillRect(item.c * macroSize, item.r * macroSize, macroSize, macroSize)
+          }
+        }
+
+        // Notify window when hero content can start appearing
+        if (elapsed > 450 && !window.__introHeroRevealed) {
+          window.__introHeroRevealed = true
+          window.dispatchEvent(new CustomEvent('introHeroRevealed'))
+        }
+
+        // Clean up intro when all pixels have completely faded
+        if (!hasRemainingIntroPixels && elapsed > 2500) {
+          introStartTimeRef.current = null
+          introGridRef.current = []
+        }
+      }
 
       rafId.current = requestAnimationFrame(render)
     }
