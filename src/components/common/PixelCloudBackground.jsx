@@ -36,6 +36,7 @@ export default function PixelCloudBackground({
   const entranceStartTimeRef = useRef(null)
   const cellDelaysRef = useRef(new Map())
   const glyphsRef = useRef([])
+  const ripplesRef = useRef([])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -309,10 +310,70 @@ export default function PixelCloudBackground({
       mousePos.current.y = curY
     }
 
+    const spawnRipple = (clientX, clientY) => {
+      const canvasRect = canvas.getBoundingClientRect()
+      const x = clientX - canvasRect.left
+      const y = clientY - canvasRect.top
+
+      if (x < 0 || x > width || y < 0 || y > height) return
+
+      // Spawn ripple ring waves
+      ripplesRef.current.push({
+        x,
+        y,
+        radius: 4,
+        maxRadius: 160 + Math.random() * 40,
+        speed: 3.5,
+        alpha: 0.95,
+        decay: 0.016,
+      })
+
+      // Spawn burst of micro-pixel spark dots in circular bloom
+      const sparkCount = 18
+      for (let i = 0; i < sparkCount; i++) {
+        const angle = (i / sparkCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.2
+        const burstSpeed = 1.8 + Math.random() * 2.4
+        particles.current.push({
+          x,
+          y,
+          vx: Math.cos(angle) * burstSpeed - driftSpeed * 0.45,
+          vy: Math.sin(angle) * burstSpeed,
+          size: Math.random() > 0.4 ? 4 : 2,
+          alpha: 1.0,
+          color: Math.random() > 0.4 ? '#ffd700' : '#ffe766',
+          life: 1.0,
+          decay: 0.02 + Math.random() * 0.012,
+        })
+      }
+    }
+
+    let isPointerDown = false
+    const handlePointerDown = (e) => {
+      if (!interactive) return
+      // Only trigger if click/tap is directly on canvas or section background, not on interactive links/buttons
+      if (e.target.closest('a, button, input, textarea, [data-cursor="link"]')) return
+      isPointerDown = true
+      spawnRipple(e.clientX, e.clientY)
+    }
+
+    const handlePointerUp = () => {
+      isPointerDown = false
+    }
+
+    const handlePointerMove = (e) => {
+      if (!interactive || !isPointerDown) return
+      if (Math.random() > 0.4) {
+        spawnRipple(e.clientX, e.clientY)
+      }
+    }
+
     window.addEventListener('resize', handleResize)
     window.addEventListener('scroll', handleScroll, { passive: true })
     if (interactive) {
       window.addEventListener('mousemove', handleMouseMove, { passive: true })
+      window.addEventListener('pointerdown', handlePointerDown)
+      window.addEventListener('pointerup', handlePointerUp)
+      window.addEventListener('pointermove', handlePointerMove, { passive: true })
     }
 
     window.__isOverPixelBackground = (clientX, clientY) => {
@@ -695,7 +756,30 @@ export default function PixelCloudBackground({
       }
       ctx.globalAlpha = 1.0
 
-      // 5. Render & Update Cursor Dust / Dither Wake Particles
+      // 5. Render & Update Interactive Ripple Waves
+      const ripples = ripplesRef.current
+      for (let i = ripples.length - 1; i >= 0; i--) {
+        const rip = ripples[i]
+        rip.radius += rip.speed
+        rip.alpha -= rip.decay
+
+        if (rip.alpha <= 0 || rip.radius > rip.maxRadius) {
+          ripples.splice(i, 1)
+          continue
+        }
+
+        ctx.globalAlpha = Math.max(0, rip.alpha * 0.45)
+        ctx.strokeStyle = '#ffd700'
+        ctx.lineWidth = 1.5
+        ctx.setLineDash([4, 4]) // Dithered dashed pixel ring
+        ctx.beginPath()
+        ctx.arc(rip.x, rip.y, rip.radius, 0, Math.PI * 2)
+        ctx.stroke()
+        ctx.setLineDash([]) // Reset dash
+      }
+      ctx.globalAlpha = 1.0
+
+      // 6. Render & Update Cursor Dust / Dither Wake Particles
       const pList = particles.current
       for (let i = pList.length - 1; i >= 0; i--) {
         const p = pList[i]
@@ -728,6 +812,9 @@ export default function PixelCloudBackground({
       window.removeEventListener('scroll', handleScroll)
       if (interactive) {
         window.removeEventListener('mousemove', handleMouseMove)
+        window.removeEventListener('pointerdown', handlePointerDown)
+        window.removeEventListener('pointerup', handlePointerUp)
+        window.removeEventListener('pointermove', handlePointerMove)
       }
       if (rafId.current) cancelAnimationFrame(rafId.current)
     }
