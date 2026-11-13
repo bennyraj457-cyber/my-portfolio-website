@@ -419,31 +419,32 @@ export default function PixelCloudBackground({
 
           const fgVal = dist - fgWave - contentRepulsion
 
-          if (bgVal > 1.70) {
+          // Adjusted thresholds to create a lighter, more airy, and less dense cloud presence
+          if (bgVal > 1.95) {
             ctx.fillStyle = tones.primary
             ctx.fillRect(px, py, macroSize, macroSize)
-          } else if (bgVal > 1.48) {
+          } else if (bgVal > 1.75) {
             ctx.fillStyle = patternPrimary_Light1
             ctx.fillRect(px, py, macroSize, macroSize)
-          } else if (bgVal > 1.32) {
+          } else if (bgVal > 1.55) {
             const checker = (c + r) % 2 === 0
             ctx.fillStyle = checker ? tones.light1 : patternPrimary_Light1
             ctx.fillRect(px, py, macroSize, macroSize)
           }
 
-          if (fgVal > 1.10 && fgVal <= 1.32) {
+          if (fgVal > 1.35 && fgVal <= 1.55) {
             ctx.fillStyle = patternLight1_Light2
             ctx.fillRect(px, py, macroSize, macroSize)
-          } else if (fgVal > 0.98 && fgVal <= 1.10) {
+          } else if (fgVal > 1.20 && fgVal <= 1.35) {
             ctx.fillStyle = tones.light2
             ctx.fillRect(px, py, macroSize, macroSize)
-          } else if (fgVal > 0.82 && fgVal <= 0.98) {
+          } else if (fgVal > 1.05 && fgVal <= 1.20) {
             ctx.fillStyle = patternLight2_Light3
             ctx.fillRect(px, py, macroSize, macroSize)
-          } else if (fgVal > 0.68 && fgVal <= 0.82) {
+          } else if (fgVal > 0.90 && fgVal <= 1.05) {
             ctx.fillStyle = patternLight3_White
             ctx.fillRect(px, py, macroSize, macroSize)
-          } else if (fgVal > 0.58 && fgVal <= 0.68) {
+          } else if (fgVal > 0.78 && fgVal <= 0.90) {
             const sprinkle = (c * 7 + r * 13) % 4 === 0
             if (sprinkle) {
               ctx.fillStyle = patternSparseWhite
@@ -451,8 +452,8 @@ export default function PixelCloudBackground({
             }
           }
 
-          const isTranslucentPatch = (c * 11 + r * 7) % 23 === 0
-          if (isTranslucentPatch && fgVal > 0.72 && fgVal < 1.45) {
+          const isTranslucentPatch = (c * 11 + r * 7) % 31 === 0
+          if (isTranslucentPatch && fgVal > 0.95 && fgVal < 1.6) {
             ctx.fillStyle = 'rgba(255, 238, 120, 0.4)'
             ctx.fillRect(px, py, macroSize, macroSize)
           }

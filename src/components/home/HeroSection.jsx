@@ -15,21 +15,6 @@ import PixelAssembledHeading from './PixelAssembledHeading'
  */
 export default function HeroSection() {
   const { headlineLine1, headlineLine2, bio } = personalInfo
-  const [isRevealed, setIsRevealed] = useState(false)
-
-  useEffect(() => {
-    // Reveal hero elements only after the pixel dissolve animation has 100% completed
-    const handleReveal = () => setIsRevealed(true)
-    window.addEventListener('introHeroRevealed', handleReveal)
-
-    // Safety fallback timer
-    const timer = setTimeout(() => setIsRevealed(true), 2400)
-
-    return () => {
-      window.removeEventListener('introHeroRevealed', handleReveal)
-      clearTimeout(timer)
-    }
-  }, [])
 
   return (
     <section
@@ -37,21 +22,16 @@ export default function HeroSection() {
       aria-label="Introduction"
       className="relative w-full min-h-[90svh] md:min-h-screen flex flex-col items-center justify-center text-center px-4 sm:px-6 md:px-12 py-20 sm:py-24 md:py-32 select-none overflow-hidden"
     >
-      {/* Edge-to-edge ambient pixel cloud effect with full-cover solid yellow intro */}
+      {/* Edge-to-edge ambient pixel cloud effect with refined lighter density */}
       <PixelCloudBackground
         className="w-full h-full"
-        macroSize={28}
+        macroSize={32}
         interactive={true}
-        contentRepelDistance={80}
-        initialIntro={true}
+        contentRepelDistance={95}
       />
 
-      {/* Hero content reveals only after pixels have fully dissolved */}
-      <div
-        className={`relative z-10 w-full max-w-4xl mx-auto flex flex-col items-center space-y-6 sm:space-y-8 transition-opacity duration-300 ${
-          isRevealed ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
-      >
+      {/* Hero content sitting cleanly in z-10 above canvas */}
+      <div className="relative z-10 w-full max-w-4xl mx-auto flex flex-col items-center space-y-6 sm:space-y-8">
         {/* Main Headline assembled from discrete micro-pixels */}
         <PixelAssembledHeading
           line1={headlineLine1}
