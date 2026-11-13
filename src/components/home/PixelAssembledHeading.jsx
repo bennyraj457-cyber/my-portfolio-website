@@ -52,58 +52,88 @@ export default function PixelAssembledHeading({
     const ctx = canvas.getContext('2d')
     ctx.scale(dpr, dpr)
 
-    // 1. Offscreen measurement & sampling of headline text
+    // 1. Offscreen measurement & sampling of headline text letter by letter
     const offCanvas = document.createElement('canvas')
     offCanvas.width = width
     offCanvas.height = height
     const offCtx = offCanvas.getContext('2d')
 
     offCtx.fillStyle = '#000000'
-    offCtx.font = `italic 400 ${fontSize}px "TRJN DaVinci", "TRJN DaVinci Text", serif`
-    offCtx.textAlign = 'center'
+    const fontStr = `italic 400 ${fontSize}px "TRJN DaVinci", "TRJN DaVinci Text", serif`
+    offCtx.font = fontStr
     offCtx.textBaseline = 'middle'
 
-    // Draw lines
     const lineSpacing = fontSize * 1.08
     const startY = height / 2 - lineSpacing * 0.48
-    offCtx.fillText(line1, width / 2, startY)
-    offCtx.fillText(line2, width / 2, startY + lineSpacing)
+    const lines = [
+      { text: line1, y: startY },
+      { text: line2, y: startY + lineSpacing },
+    ]
 
-    // 2. Sample pixel coordinates
-    const imgData = offCtx.getImageData(0, 0, width, height)
-    const data = imgData.data
     const newParticles = []
     const step = pixelSize // Sample grid density
+    let globalCharIndex = 0
 
-    for (let y = 0; y < height; y += step) {
-      for (let x = 0; x < width; x += step) {
-        const index = (y * width + x) * 4
-        const alpha = data[index + 3]
+    // Measure and sample character by character for crisp letter-by-letter pixel cascade
+    lines.forEach((lineObj) => {
+      const fullText = lineObj.text
+      const fullWidth = offCtx.measureText(fullText).width
+      let currentX = (width - fullWidth) / 2
 
-        if (alpha > 120) {
-          // Point belongs to the text glyph
-          // Sequential reading order (left-to-right, line-by-line) with subtle organic noise
-          const sequenceOrder = (y * width + x) / (width * height)
-          const randomJitter = Math.random() * 260
-          // Sequential wave appearance: 150ms to 1800ms
-          const delay = 150 + sequenceOrder * 1400 + randomJitter
+      for (let c = 0; c < fullText.length; c++) {
+        const char = fullText[c]
+        const charWidth = offCtx.measureText(char).width
 
-          newParticles.push({
-            originX: x,
-            originY: y,
-            x,
-            y,
-            vx: 0,
-            vy: 0,
-            size: step - 0.4,
-            alpha: 0,
-            delay,
-            startTime: performance.now(),
-            fadeInDuration: 320 + Math.random() * 200,
-          })
+        if (char.trim() !== '') {
+          // Clear offscreen canvas and draw only this single character
+          offCtx.clearRect(0, 0, width, height)
+          offCtx.fillText(char, currentX, lineObj.y)
+
+          // Sample pixels for this specific character
+          // Add margin around character bounding box
+          const boxX1 = Math.max(0, Math.floor(currentX - 2))
+          const boxX2 = Math.min(width, Math.ceil(currentX + charWidth + 8))
+          const boxY1 = Math.max(0, Math.floor(lineObj.y - fontSize * 0.7))
+          const boxY2 = Math.min(height, Math.ceil(lineObj.y + fontSize * 0.7))
+
+          const charData = offCtx.getImageData(0, 0, width, height).data
+
+          // Letter appearance timing: each letter starts 110ms after previous letter
+          const letterBaseDelay = 180 + globalCharIndex * 110
+
+          for (let y = boxY1; y < boxY2; y += step) {
+            for (let x = boxX1; x < boxX2; x += step) {
+              const idx = (y * width + x) * 4
+              const alpha = charData[idx + 3]
+
+              if (alpha > 120) {
+                // Micro-pixel jitter within this character's reveal
+                const pixelJitter = Math.random() * 80
+                newParticles.push({
+                  originX: x,
+                  originY: y,
+                  x,
+                  y,
+                  vx: 0,
+                  vy: 0,
+                  size: step - 0.4,
+                  alpha: 0,
+                  delay: letterBaseDelay + pixelJitter,
+                  startTime: performance.now(),
+                  fadeInDuration: 240 + Math.random() * 140,
+                })
+              }
+            }
+          }
+          globalCharIndex++
+        } else {
+          // Space character: small pause
+          globalCharIndex += 0.5
         }
+
+        currentX += charWidth
       }
-    }
+    })
 
     particlesRef.current = newParticles
 
