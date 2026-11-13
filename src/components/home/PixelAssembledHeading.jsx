@@ -25,11 +25,10 @@ export default function PixelAssembledHeading({
 
   useEffect(() => {
     const updateCanvasDimensions = () => {
-      // Allow wide container width for large bold editorial display
-      const containerWidth = Math.min(window.innerWidth - 24, 1100)
-      // Large fluid font size matching the editorial showcase: clamp(48px, 9vw + 12px, 118px)
-      const fontSize = Math.max(48, Math.min(window.innerWidth * 0.088, 118))
-      const estimatedHeight = fontSize * 2.35
+      const containerWidth = Math.min(window.innerWidth - 32, 920)
+      // Estimate height based on fluid scaling
+      const fontSize = Math.max(36, Math.min(window.innerWidth * 0.072, 82))
+      const estimatedHeight = fontSize * 2.3
       setDimensions({ width: containerWidth, height: estimatedHeight, fontSize })
     }
 
@@ -82,25 +81,25 @@ export default function PixelAssembledHeading({
         const alpha = data[index + 3]
 
         if (alpha > 120) {
-          // Point belongs to the text glyph!
-          // Start dispersed in yellow cloud space
-          const angle = Math.random() * Math.PI * 2
-          const scatterDist = 60 + Math.random() * 220
-          const startX = x + Math.cos(angle) * scatterDist
-          const startY = y + Math.sin(angle) * scatterDist
+          // Point belongs to the text glyph
+          // Sequential reading order (left-to-right, line-by-line) with subtle organic noise
+          const sequenceOrder = (y * width + x) / (width * height)
+          const randomJitter = Math.random() * 260
+          // Sequential wave appearance: 150ms to 1800ms
+          const delay = 150 + sequenceOrder * 1400 + randomJitter
 
           newParticles.push({
             originX: x,
             originY: y,
-            x: startX,
-            y: startY,
+            x,
+            y,
             vx: 0,
             vy: 0,
-            size: step - 0.5,
-            // Delay per pixel so they assemble like a wave from center outward
-            delay: Math.abs(x - width / 2) * 1.5 + Math.random() * 300,
+            size: step - 0.4,
+            alpha: 0,
+            delay,
             startTime: performance.now(),
-            assembled: false,
+            fadeInDuration: 320 + Math.random() * 200,
           })
         }
       }
@@ -119,10 +118,14 @@ export default function PixelAssembledHeading({
         const p = particles[i]
         const elapsed = now - p.startTime
 
+        // Pixel has not appeared yet in sequence
         if (elapsed < p.delay) {
-          // Pixel still hovering in initial yellow cloud scatter
           continue
         }
+
+        // Smooth gradual fade-in for each individual pixel (0 to 1)
+        const appearProgress = Math.min(1, (elapsed - p.delay) / p.fadeInDuration)
+        p.alpha = appearProgress
 
         // Spring physics towards target origin
         const spring = 0.08
@@ -153,18 +156,20 @@ export default function PixelAssembledHeading({
         p.x += p.vx
         p.y += p.vy
 
-        // Color transition: yellow during flight, snapping to solid black upon assembly
-        const distFromHome = Math.sqrt(dx * dx + dy * dy)
-        if (distFromHome > 12) {
+        // Color transition: starts as brand gold (#ffd700), smoothly settles into deep editorial black (#000000)
+        ctx.globalAlpha = p.alpha
+        if (appearProgress < 0.35) {
           ctx.fillStyle = '#ffd700'
-        } else if (distFromHome > 3) {
-          ctx.fillStyle = '#444444'
+        } else if (appearProgress < 0.7) {
+          ctx.fillStyle = '#666666'
         } else {
           ctx.fillStyle = '#000000'
         }
 
         ctx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size)
       }
+
+      ctx.globalAlpha = 1.0
 
       rafId.current = requestAnimationFrame(render)
     }
