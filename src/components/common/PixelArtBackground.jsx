@@ -157,6 +157,9 @@ export default function PixelArtBackground({
         const now = performance.now()
         const particles = particlesRef.current
         const mouse = mouseRef.current
+        const mouseActive = mouse.x > -500
+        const mouseRadius = 45
+        const mouseRadiusSq = mouseRadius * mouseRadius
 
         ctx.clearRect(0, 0, width, height)
         ctx.globalAlpha = opacity
@@ -175,6 +178,21 @@ export default function PixelArtBackground({
           const rawProgress = Math.min(1, (elapsed - p.delay) / p.fadeInDuration)
           if (rawProgress < 1) anyMoving = true
 
+          // Fast O(1) squared distance check for mouse repulsion
+          if (mouseActive) {
+            const dxM = p.x - mouse.x
+            const dyM = p.y - mouse.y
+            const distSq = dxM * dxM + dyM * dyM
+
+            if (distSq < mouseRadiusSq && distSq > 0.01) {
+              const dist = Math.sqrt(distSq)
+              const force = (1 - dist / mouseRadius) * 5.0
+              p.vx += (dxM / dist) * force
+              p.vy += (dyM / dist) * force
+              anyMoving = true
+            }
+          }
+
           // Spring dampening back to origin coordinate
           const dx = p.originX - p.x
           const dy = p.originY - p.y
@@ -183,8 +201,8 @@ export default function PixelArtBackground({
             anyMoving = true
             p.vx += dx * 0.08
             p.vy += dy * 0.08
-            p.vx *= 0.8
-            p.vy *= 0.8
+            p.vx *= 0.82
+            p.vy *= 0.82
             p.x += p.vx
             p.y += p.vy
           } else {
