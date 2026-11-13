@@ -619,6 +619,36 @@ export default function PixelCloudBackground({
             ctx.fillRect(snapX, snapY, isl.pixelSize, isl.pixelSize)
           }
         }
+
+        // 3b. Pixel Constellation Lines (Very faint 1px hairline connectors between adjacent floating islands)
+        ctx.strokeStyle = '#ffd700'
+        ctx.lineWidth = 1
+        const maxLinkDist = 110 // Max distance to form a constellation link
+
+        for (let a = 0; a < islands.length; a++) {
+          const islA = islands[a]
+          for (let b = a + 1; b < islands.length; b++) {
+            const islB = islands[b]
+            const dx = islA.x - islB.x
+            const dy = islA.y - islB.y
+            const dist = Math.sqrt(dx * dx + dy * dy)
+
+            if (dist < maxLinkDist) {
+              // Smooth momentary fade based on proximity and island alpha
+              const proximity = 1 - dist / maxLinkDist
+              const lineAlpha = proximity * 0.28 * Math.min(islA.alpha, islB.alpha) * globalAuroraAlpha
+
+              if (lineAlpha > 0.02) {
+                ctx.globalAlpha = lineAlpha
+                ctx.beginPath()
+                // Snap points to crisp 1px canvas grid
+                ctx.moveTo(Math.floor(islA.x) + 0.5, Math.floor(islA.y) + 0.5)
+                ctx.lineTo(Math.floor(islB.x) + 0.5, Math.floor(islB.y) + 0.5)
+                ctx.stroke()
+              }
+            }
+          }
+        }
       }
       ctx.globalAlpha = 1.0
 
