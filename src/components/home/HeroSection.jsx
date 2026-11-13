@@ -22,12 +22,12 @@ export default function HeroSection() {
       aria-label="Introduction"
       className="relative w-full min-h-[90svh] md:min-h-screen flex flex-col items-center justify-center text-center px-4 sm:px-6 md:px-12 py-20 sm:py-24 md:py-32 select-none overflow-hidden"
     >
-      {/* Edge-to-edge ambient pixel cloud effect with refined lighter density */}
+      {/* Edge-to-edge ambient pixel cloud effect */}
       <PixelCloudBackground
         className="w-full h-full"
-        macroSize={32}
+        macroSize={28}
         interactive={true}
-        contentRepelDistance={95}
+        contentRepelDistance={80}
       />
 
       {/* Hero content sitting cleanly in z-10 above canvas */}
@@ -62,6 +62,19 @@ export default function HeroSection() {
             <span className="w-6 sm:w-10 h-[1px] bg-black/15 shrink-0" />
           </div>
         </div>
+      </div>
+
+      {/* Live Coordinates & Telemetry Stamp - Desktop & Mobile responsive */}
+      <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 z-20 pointer-events-none select-none hidden sm:flex items-center gap-2.5 font-mono text-[10px] sm:text-[11px] uppercase tracking-widest text-black/45 bg-white/60 backdrop-blur-xs px-3 py-1.5 rounded-full border border-black/8">
+        <span className="w-1.5 h-1.5 rounded-full bg-[#ffd700] ring-2 ring-[#ffd700]/30 animate-pulse" />
+        <span>LOC: 8.32° N · 77.27° E · THIRUVATTAR</span>
+        <span className="text-black/20">|</span>
+        <span className="hidden md:inline">SYSTEM: ACTIVE · PARALLAX: 0.45×</span>
+      </div>
+
+      <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 z-20 pointer-events-none select-none hidden sm:flex items-center gap-2 font-mono text-[10px] sm:text-[11px] uppercase tracking-widest text-black/45 bg-white/60 backdrop-blur-xs px-3 py-1.5 rounded-full border border-black/8">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20" />
+        <span>FPS: 60 · ENGINE: OK</span>
       </div>
     </section>
   )
