@@ -76,39 +76,45 @@ export default function PixelArtBackground({
         // 1. Draw base retro coder illustration
         offCtx.drawImage(img, drawX, drawY, drawW, drawH)
 
-        // 2. Draw Hero Headline and Bio DIRECTLY INTO THE PIXEL CANVAS (in the open sky area)
-        // Responsive font sizing based on grid columns
+        // 2. Identify text pixel coordinates with dedicated offscreen mask
+        const textMaskCanvas = document.createElement('canvas')
+        textMaskCanvas.width = cols
+        textMaskCanvas.height = rows
+        const textMaskCtx = textMaskCanvas.getContext('2d')
+
         const textFontSize = Math.max(14, Math.min(cols * 0.055, 34))
         const bioFontSize = Math.max(7, Math.min(cols * 0.022, 13))
 
         const textCenterX = cols * 0.5
         const textCenterY = Math.max(textFontSize * 2.2, rows * 0.28)
 
-        offCtx.textAlign = 'center'
-        offCtx.textBaseline = 'middle'
+        textMaskCtx.textAlign = 'center'
+        textMaskCtx.textBaseline = 'middle'
 
         // Render Headline Line 1 & Line 2
-        offCtx.font = `italic 700 ${textFontSize}px "TRJN DaVinci", "TRJN DaVinci Text", serif`
-        offCtx.fillStyle = '#080808'
-        offCtx.fillText(headlineLine1 || 'Designer who', textCenterX, textCenterY - textFontSize * 0.65)
-        offCtx.fillText(headlineLine2 || 'ships with Code', textCenterX, textCenterY + textFontSize * 0.65)
+        textMaskCtx.font = `italic 700 ${textFontSize}px "TRJN DaVinci", "TRJN DaVinci Text", serif`
+        textMaskCtx.fillStyle = '#ffffff'
+        textMaskCtx.fillText(headlineLine1 || 'Designer who', textCenterX, textCenterY - textFontSize * 0.65)
+        textMaskCtx.fillText(headlineLine2 || 'ships with Code', textCenterX, textCenterY + textFontSize * 0.65)
 
         // Render Paragraph Bio directly beneath
         if (bio) {
-          offCtx.font = `normal 400 ${bioFontSize}px "Geist", system-ui, sans-serif`
-          offCtx.fillStyle = '#222222'
+          textMaskCtx.font = `normal 400 ${bioFontSize}px "Geist", system-ui, sans-serif`
+          textMaskCtx.fillStyle = '#ffffff'
           const bioLines = bio.length > 55 ? [bio.slice(0, 50) + '...', bio.slice(50)] : [bio]
-          offCtx.fillText(bioLines[0], textCenterX, textCenterY + textFontSize * 1.55)
+          textMaskCtx.fillText(bioLines[0], textCenterX, textCenterY + textFontSize * 1.55)
         }
 
+        const textMaskData = textMaskCtx.getImageData(0, 0, cols, rows).data
         const imgData = offCtx.getImageData(0, 0, cols, rows).data
 
         // Palette mapping:
-        // 0: Deep Ink / Text (#0a0a0a)
+        // 0: Deep Ink / Outlines (#0a0a0a)
         // 1: Primary Gold (#ffd700)
         // 2: Warm Light Yellow (#ffe766)
         // 3: Soft Pale Cream (#fffadc)
         // 4: Clean White (#ffffff)
+        // 5: Pure Bright Text White (#ffffff)
         const palette = [
           { r: 10, g: 10, b: 10, hex: '#0a0a0a' },
           { r: 255, g: 215, b: 0, hex: '#ffd700' },
@@ -134,16 +140,23 @@ export default function PixelArtBackground({
         for (let r = 0; r < rows; r++) {
           for (let c = 0; c < cols; c++) {
             const idx = (r * cols + c) * 4
-            const rVal = imgData[idx]
-            const gVal = imgData[idx + 1]
-            const bVal = imgData[idx + 2]
-            const aVal = imgData[idx + 3]
+            const isTextPixel = textMaskData[idx + 3] > 80
 
-            if (aVal < 20) continue
+            let colorObj
+            if (isTextPixel) {
+              // Pure crisp white pixel for the headline and bio
+              colorObj = { r: 255, g: 255, b: 255, hex: '#ffffff' }
+            } else {
+              const rVal = imgData[idx]
+              const gVal = imgData[idx + 1]
+              const bVal = imgData[idx + 2]
+              const aVal = imgData[idx + 3]
 
-            const colorObj = getTargetColor(rVal, gVal, bVal)
-            // Leave pure white space clean
-            if (colorObj.hex === '#ffffff') continue
+              if (aVal < 20) continue
+              colorObj = getTargetColor(rVal, gVal, bVal)
+              // Skip background white space around image edges
+              if (colorObj.hex === '#ffffff') continue
+            }
 
             const originX = c * blockSize
             const originY = r * blockSize
