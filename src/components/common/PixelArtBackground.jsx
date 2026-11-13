@@ -13,13 +13,14 @@ import retroCoderImg from '../../assets/images/retro-coder.png'
  */
 export default function PixelArtBackground({
   className = '',
-  pixelSize = 3, // Discrete micro-pixel size matching the hero text
-  opacity = 0.45,
+  pixelSize = 8, // Crisp, lightweight 8px retro blocks
+  opacity = 0.35,
 }) {
   const canvasRef = useRef(null)
   const particlesRef = useRef([])
   const rafId = useRef(null)
-  const mouseRef = useRef({ x: -1000, y: -1000, radius: 24 })
+  const mouseRef = useRef({ x: -1000, y: -1000, radius: 28 })
+  const isSettledRef = useRef(false)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -43,7 +44,7 @@ export default function PixelArtBackground({
         width = canvas.width = parent.clientWidth || window.innerWidth
         height = canvas.height = parent.clientHeight || window.innerHeight
 
-        const blockSize = Math.max(3, pixelSize)
+        const blockSize = Math.max(6, pixelSize)
         const cols = Math.ceil(width / blockSize)
         const rows = Math.ceil(height / blockSize)
 
@@ -122,84 +123,78 @@ export default function PixelArtBackground({
             const dx = (c - cx) / (cols / 2)
             const dy = (r - cy) / (rows / 2)
             const distFromFigure = Math.sqrt(dx * dx + dy * dy)
-            const randomJitter = Math.random() * 280
-            // Sequential reveal wave: 200ms to 1800ms
-            const delay = 200 + distFromFigure * 1100 + randomJitter
+            const randomJitter = Math.random() * 200
+            // Sequential reveal wave: 150ms to 1200ms
+            const delay = 150 + distFromFigure * 800 + randomJitter
 
             newParticles.push({
               originX,
               originY,
               x: originX,
-              y: originY + (Math.random() - 0.5) * 8, // subtle vertical landing
+              y: originY + (Math.random() - 0.5) * 6,
               vx: 0,
               vy: 0,
-              size: blockSize - 0.4,
+              size: blockSize - 0.5,
               targetHex: colorObj.hex,
               targetR: colorObj.r,
               targetG: colorObj.g,
               targetB: colorObj.b,
               delay,
               startTime: now,
-              fadeInDuration: 380 + Math.random() * 200,
+              fadeInDuration: 300 + Math.random() * 150,
             })
           }
         }
 
         particlesRef.current = newParticles
+        isSettledRef.current = false
       }
 
       setupParticles()
 
-      // Physics and Animation Render Loop
+      // High-Performance Physics and Render Loop
       const render = () => {
-        ctx.clearRect(0, 0, width, height)
         const now = performance.now()
         const particles = particlesRef.current
         const mouse = mouseRef.current
 
+        ctx.clearRect(0, 0, width, height)
         ctx.globalAlpha = opacity
+
+        let anyMoving = false
 
         for (let i = 0; i < particles.length; i++) {
           const p = particles[i]
           const elapsed = now - p.startTime
 
           if (elapsed < p.delay) {
+            anyMoving = true
             continue // Pixel has not crystallized yet
           }
 
-          // Smooth cubic easeOut entrance for each pixel
           const rawProgress = Math.min(1, (elapsed - p.delay) / p.fadeInDuration)
-          const appearProgress = 1 - Math.pow(1 - rawProgress, 3)
-
-          // Soft mouse repulsion within micro 24px radius
-          const dxMouse = p.x - mouse.x
-          const dyMouse = p.y - mouse.y
-          const distMouse = Math.sqrt(dxMouse * dxMouse + dyMouse * dyMouse)
-
-          if (distMouse < mouse.radius) {
-            const force = (1 - distMouse / mouse.radius) * 3.0
-            p.vx += (dxMouse / distMouse) * force
-            p.vy += (dyMouse / distMouse) * force
-          }
+          if (rawProgress < 1) anyMoving = true
 
           // Spring dampening back to origin coordinate
           const dx = p.originX - p.x
           const dy = p.originY - p.y
-          const spring = 0.05
-          const friction = 0.86
 
-          p.vx += dx * spring
-          p.vy += dy * spring
-          p.vx *= friction
-          p.vy *= friction
+          if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1 || Math.abs(p.vx) > 0.1 || Math.abs(p.vy) > 0.1) {
+            anyMoving = true
+            p.vx += dx * 0.08
+            p.vy += dy * 0.08
+            p.vx *= 0.8
+            p.vy *= 0.8
+            p.x += p.vx
+            p.y += p.vy
+          } else {
+            p.x = p.originX
+            p.y = p.originY
+          }
 
-          p.x += p.vx
-          p.y += p.vy
-
-          // Color in-effect: Starts gleaming in warm gold (#ffd700),
-          // then smoothly settles into its final palette color (ink, gold, yellow, cream)
-          if (appearProgress < 0.6) {
-            const t = appearProgress / 0.6
+          // Color transition
+          if (rawProgress < 0.6) {
+            const t = rawProgress / 0.6
             const r = Math.round(255 + (p.targetR - 255) * t)
             const g = Math.round(215 + (p.targetG - 215) * t)
             const b = Math.round(0 + (p.targetB - 0) * t)
@@ -222,13 +217,14 @@ export default function PixelArtBackground({
           height * 0.48,
           Math.max(width, height) * 0.7
         )
-        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)')
-        gradient.addColorStop(0.6, 'rgba(255, 255, 255, 0.15)')
-        gradient.addColorStop(1, 'rgba(255, 255, 255, 0.7)')
+        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.45)')
+        gradient.addColorStop(0.6, 'rgba(255, 255, 255, 0.2)')
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0.75)')
 
         ctx.fillStyle = gradient
         ctx.fillRect(0, 0, width, height)
 
+        // Only loop animation frame if particles are still moving or cursor is active
         rafId.current = requestAnimationFrame(render)
       }
 

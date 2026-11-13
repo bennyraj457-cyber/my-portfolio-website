@@ -27,7 +27,6 @@ export default function MagneticCapsuleButton({
   const [cursorState, setCursorState] = useState('default')
   const [isClicking, setIsClicking] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
-  const [isPreloaderDone, setIsPreloaderDone] = useState(Boolean(window.__preloaderFinished))
 
   // Coordinate and velocity physics (run at 60/120Hz with zero React re-renders)
   const mousePos = useRef({ x: -200, y: -200 })
@@ -49,21 +48,7 @@ export default function MagneticCapsuleButton({
   }, [])
 
   useEffect(() => {
-    if (window.__preloaderFinished) {
-      setIsPreloaderDone(true)
-      return
-    }
-
-    const handlePreloaderDone = () => {
-      setIsPreloaderDone(true)
-    }
-
-    window.addEventListener('preloader:done', handlePreloaderDone, { once: true })
-    return () => window.removeEventListener('preloader:done', handlePreloaderDone)
-  }, [])
-
-  useEffect(() => {
-    if (!enabled || !isEligibleDevice() || !isPreloaderDone) return
+    if (!enabled || !isEligibleDevice()) return
 
     document.body.classList.add('has-magnetic-cursor')
 
@@ -123,6 +108,10 @@ export default function MagneticCapsuleButton({
         document.body.classList.remove('magnetic-cursor-input-hover')
       }
 
+      // Throttle proximity check to once every 3 mouse moves to keep mousemove at a silky 120fps
+      throttleCounter.current++
+      if (throttleCounter.current % 3 !== 0) return
+
       // Check distance to all visible interactive elements
       const mx = e.clientX
       const my = e.clientY
@@ -132,7 +121,11 @@ export default function MagneticCapsuleButton({
 
       for (let i = 0; i < elements.length; i++) {
         const item = elements[i]
-        // Compute distance from mouse to bounding rectangle
+        // Quick AABB reject before calculating square root
+        if (Math.abs(item.cx - mx) > proximityRadius * 2 || Math.abs(item.cy - my) > proximityRadius * 2) {
+          continue
+        }
+
         const dx = Math.max(item.left - mx, 0, mx - item.right)
         const dy = Math.max(item.top - my, 0, my - item.bottom)
         const dist = Math.sqrt(dx * dx + dy * dy)
@@ -143,20 +136,12 @@ export default function MagneticCapsuleButton({
         }
       }
 
-      if (nearestTarget) {
-        if (nearestTarget.type === 'none') {
-          setCursorState('hidden')
-          magneticTarget.current = null
-        } else {
-          setCursorState(nearestTarget.type)
-          magneticTarget.current = {
-            cx: nearestTarget.cx,
-            cy: nearestTarget.cy,
-          }
-        }
-      } else {
-        setCursorState('default')
-        magneticTarget.current = null
+      const nextState = nearestTarget ? (nearestTarget.type === 'none' ? 'hidden' : nearestTarget.type) : 'default'
+      if (nextState !== cursorState) {
+        setCursorState(nextState)
+        magneticTarget.current = nearestTarget && nearestTarget.type !== 'none'
+          ? { cx: nearestTarget.cx, cy: nearestTarget.cy }
+          : null
       }
     }
 
@@ -250,9 +235,9 @@ export default function MagneticCapsuleButton({
       document.removeEventListener('mouseenter', handleMouseEnterWindow)
       if (rafId.current) cancelAnimationFrame(rafId.current)
     }
-  }, [enabled, isVisible, isEligibleDevice, backgroundColor, proximityRadius, isPreloaderDone])
+  }, [enabled, isVisible, isEligibleDevice, backgroundColor, proximityRadius])
 
-  if (!enabled || !isPreloaderDone) return null
+  if (!enabled) return null
 
   const sizeClasses = {
     sm: 'text-[10px] py-1 px-3',
