@@ -15,13 +15,16 @@ import React, { useEffect, useRef } from 'react'
  */
 export default function PixelCloudBackground({
   className = '',
-  macroSize = 28,
+  macroSize = 14,
   interactive = true,
   contentRepelDistance = 90,
   driftSpeed = 0.45,
   initialIntro = true,
+  textMask = null,
 }) {
   const canvasRef = useRef(null)
+  const textCanvasRef = useRef(null)
+  const textMaskDataRef = useRef(null)
   const mousePos = useRef({ x: -1000, y: -1000 })
   const prevMousePos = useRef({ x: -1000, y: -1000 })
   const contentObstacles = useRef([])
@@ -51,9 +54,75 @@ export default function PixelCloudBackground({
       const parent = canvas.parentElement || document.body
       width = canvas.width = parent.clientWidth || window.innerWidth
       height = canvas.height = parent.clientHeight || window.innerHeight
+      generateTextMask()
       initSparkles()
       initDriftingIslands()
       initIntroGrid()
+    }
+
+    const generateTextMask = () => {
+      if (!textMask) {
+        textMaskDataRef.current = null
+        return
+      }
+
+      const tCanvas = document.createElement('canvas')
+      tCanvas.width = width
+      tCanvas.height = height
+      const tCtx = tCanvas.getContext('2d')
+      if (!tCtx) return
+
+      tCtx.clearRect(0, 0, width, height)
+
+      // Calculate fluid typography scale
+      const fontSizeHeadline = Math.max(34, Math.min(width * 0.082, 92))
+      const fontSizeBio = Math.max(14, Math.min(width * 0.022, 20))
+      const centerY = height * 0.42
+
+      tCtx.textAlign = 'center'
+      tCtx.textBaseline = 'middle'
+      tCtx.fillStyle = '#000000'
+
+      // Render Headline Line 1 & Line 2 in TRJN DaVinci italic serif
+      tCtx.font = `italic 400 ${fontSizeHeadline}px 'TRJN DaVinci', serif`
+      const line1Y = centerY - fontSizeHeadline * 0.65
+      const line2Y = centerY + fontSizeHeadline * 0.45
+      tCtx.fillText(textMask.line1 || 'Designer who', width / 2, line1Y)
+      tCtx.fillText(textMask.line2 || 'ships with Code', width / 2, line2Y)
+
+      // Render Bio lines in Geist
+      tCtx.font = `400 ${fontSizeBio}px 'Geist', sans-serif`
+      const bioY = line2Y + fontSizeHeadline * 0.95
+      const bioText = textMask.bio || ''
+      
+      // Multi-line word wrap for bio
+      const maxBioWidth = Math.min(width * 0.72, 600)
+      const words = bioText.split(' ')
+      let currentLine = ''
+      let lineCount = 0
+      const lineHeight = fontSizeBio * 1.5
+
+      for (let n = 0; n < words.length; n++) {
+        const testLine = currentLine + words[n] + ' '
+        const metrics = tCtx.measureText(testLine)
+        if (metrics.width > maxBioWidth && n > 0) {
+          tCtx.fillText(currentLine.trim(), width / 2, bioY + lineCount * lineHeight)
+          currentLine = words[n] + ' '
+          lineCount++
+        } else {
+          currentLine = testLine
+        }
+      }
+      if (currentLine.trim()) {
+        tCtx.fillText(currentLine.trim(), width / 2, bioY + lineCount * lineHeight)
+      }
+
+      try {
+        const imgData = tCtx.getImageData(0, 0, width, height)
+        textMaskDataRef.current = imgData.data
+      } catch (err) {
+        textMaskDataRef.current = null
+      }
     }
 
     const initIntroGrid = () => {
@@ -71,22 +140,23 @@ export default function PixelCloudBackground({
           const midX = c * macroSize + macroSize / 2
           const midY = r * macroSize + macroSize / 2
 
-          // Strict normalized distance from exact center (0 at absolute center)
+          // Normalized elliptical distance from center hero clearing
           const dx = (midX - cx) / rx
           const dy = (midY - cy) / ry
           const dist = Math.sqrt(dx * dx + dy * dy)
 
-          // Only pixels within the central opening dissolve (dist < 1.30)
-          // All other side/perimeter pixels NEVER dissolve; they stay permanently as the pixel clouds!
-          const isCenterReveal = dist < 1.30
+          // Center pixels dissolve first, perimeter cloud pixels remain or blend
+          const isRevealArea = dist < 1.35
+          const randomJitter = Math.random() * 0.35
 
           grid.push({
             r,
             c,
-            isCenterReveal,
-            // Dissolve starts strictly at center (dist = 0) and ripples outward to dist = 1.30
-            delay: isCenterReveal ? 500 + dist * 1100 : 9999999,
-            duration: 600,
+            isRevealArea,
+            // Whole screen starts 100% solid yellow.
+            // Center reveal pixels start fading after 450ms. Outer perimeter pixels hold solid or blend into clouds.
+            delay: isRevealArea ? 450 + dist * 950 + randomJitter * 400 : 999999,
+            duration: 600 + Math.random() * 300,
           })
         }
       }
@@ -340,14 +410,25 @@ export default function PixelCloudBackground({
       const cols = Math.ceil(width / macroSize)
       const rows = Math.ceil(height / macroSize)
       const obstacles = contentObstacles.current
+      const maskData = textMaskDataRef.current
 
       // 1. Render Layered Parallax Cloud Grid
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           const px = c * macroSize
           const py = r * macroSize
-          const midX = px + macroSize / 2
-          const midY = py + macroSize / 2
+          const midX = Math.floor(px + macroSize / 2)
+          const midY = Math.floor(py + macroSize / 2)
+
+          // Negative space letter punch-out: if center of pixel falls inside a letter glyph, keep it pure blank white
+          if (maskData && midX >= 0 && midX < width && midY >= 0 && midY < height) {
+            const pixelIndex = (midY * width + midX) * 4
+            const alpha = maskData[pixelIndex + 3]
+            if (alpha > 40) {
+              // Letter shape area: blank white, created by background
+              continue
+            }
+          }
 
           let contentRepulsion = 0
           for (let i = 0; i < obstacles.length; i++) {
@@ -426,6 +507,37 @@ export default function PixelCloudBackground({
           if (isTranslucentPatch && fgVal > 0.72 && fgVal < 1.45) {
             ctx.fillStyle = 'rgba(255, 238, 120, 0.4)'
             ctx.fillRect(px, py, macroSize, macroSize)
+          }
+
+          // If textMask is active, surround letters with rich yellow pixel field so the white letters emerge distinctly
+          if (textMask) {
+            // Check proximity to letters
+            if (maskData && midX >= 0 && midX < width && midY >= 0 && midY < height) {
+              const pixelIndex = (midY * width + midX) * 4
+              // If nearby a letter stroke (halo zone), fill with primary or light yellow dither
+              const radius = macroSize * 2
+              let nearLetter = false
+              for (let dy = -radius; dy <= radius; dy += macroSize) {
+                for (let dx = -radius; dx <= radius; dx += macroSize) {
+                  const checkX = midX + dx
+                  const checkY = midY + dy
+                  if (checkX >= 0 && checkX < width && checkY >= 0 && checkY < height) {
+                    const idx = (checkY * width + checkX) * 4
+                    if (maskData[idx + 3] > 60) {
+                      nearLetter = true
+                      break
+                    }
+                  }
+                }
+                if (nearLetter) break
+              }
+
+              if (nearLetter) {
+                const checker = (c + r) % 2 === 0
+                ctx.fillStyle = checker ? tones.primary : patternPrimary_Light1
+                ctx.fillRect(px, py, macroSize, macroSize)
+              }
+            }
           }
         }
       }
@@ -536,60 +648,73 @@ export default function PixelCloudBackground({
       }
       ctx.globalAlpha = 1.0
 
-      // 5. Initial Full Solid Yellow Screen Reveal (Only Central Clearing Dissolves Outward)
+      // 5. Initial Full Solid Yellow Screen Reveal (Full Screen Solid Yellow -> Smooth Center Dissolve)
       if (initialIntro && introStartTimeRef.current) {
         const elapsed = performance.now() - introStartTimeRef.current
         const grid = introGridRef.current
-        let hasRemainingCenterPixels = false
-        let centerTotal = 0
-        let centerDissolved = 0
+        let hasRemainingIntroPixels = false
+        let revealTotal = 0
+        let revealDissolved = 0
 
         for (let i = 0; i < grid.length; i++) {
           const item = grid[i]
           const px = item.c * macroSize
           const py = item.r * macroSize
 
-          if (item.isCenterReveal) {
-            centerTotal++
+          if (item.isRevealArea) {
+            revealTotal++
             if (elapsed < item.delay) {
-              // Still solid yellow before its dissolve wave arrives
+              // Still solid yellow in reveal zone
               ctx.fillStyle = tones.primary
               ctx.fillRect(px, py, macroSize, macroSize)
-              hasRemainingCenterPixels = true
+              hasRemainingIntroPixels = true
             } else if (elapsed < item.delay + item.duration) {
-              // Smooth halftone dither dissolve expanding radially from center
+              // Dissolving pixel transition with halftone dither patterns
               const progress = (elapsed - item.delay) / item.duration
-              hasRemainingCenterPixels = true
+              hasRemainingIntroPixels = true
 
-              if (progress < 0.20) {
+              if (progress < 0.22) {
                 ctx.fillStyle = tones.primary
-              } else if (progress < 0.40) {
+              } else if (progress < 0.45) {
                 ctx.fillStyle = patternPrimary_Light1
-              } else if (progress < 0.65) {
+              } else if (progress < 0.68) {
                 ctx.fillStyle = patternLight1_Light2
-              } else if (progress < 0.85) {
+              } else if (progress < 0.88) {
                 ctx.fillStyle = patternLight2_Light3
               } else {
                 ctx.fillStyle = patternLight3_White
               }
               ctx.fillRect(px, py, macroSize, macroSize)
             } else {
-              centerDissolved++
+              revealDissolved++
+            }
+          } else {
+            // Non-reveal outer perimeter pixels start 100% solid yellow, then smoothly blend into the underlying ambient clouds
+            if (elapsed < 600) {
+              ctx.fillStyle = tones.primary
+              ctx.fillRect(px, py, macroSize, macroSize)
+              hasRemainingIntroPixels = true
+            } else if (elapsed < 1400) {
+              const alphaBlend = 1.0 - (elapsed - 600) / 800
+              ctx.fillStyle = tones.primary
+              ctx.globalAlpha = alphaBlend
+              ctx.fillRect(px, py, macroSize, macroSize)
+              ctx.globalAlpha = 1.0
+              hasRemainingIntroPixels = true
             }
           }
-          // Note: All other perimeter / side pixels never dissolve; they remain untouched
-          // as the natural background pixel clouds.
         }
 
-        // Notify window ONLY when central area has cleared (>85%)
-        const dissolveRatio = centerTotal > 0 ? centerDissolved / centerTotal : 1
+        // Notify window ONLY after center pixels have completed dissolving (>85%)
+        // so hero text content appears cleanly afterward
+        const dissolveRatio = revealTotal > 0 ? revealDissolved / revealTotal : 1
         if (dissolveRatio > 0.85 && !window.__introHeroRevealed) {
           window.__introHeroRevealed = true
           window.dispatchEvent(new CustomEvent('introHeroRevealed'))
         }
 
-        // Complete intro once center clearing is finished
-        if (!hasRemainingCenterPixels && elapsed > 2500) {
+        // Clean up intro state when clearing is complete
+        if (!hasRemainingIntroPixels && elapsed > 2800) {
           introStartTimeRef.current = null
           introGridRef.current = []
         }
