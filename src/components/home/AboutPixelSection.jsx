@@ -164,37 +164,27 @@ export default function AboutPixelSection({ className = '' }) {
           }
         })
 
-        // Mountain Sky & Nature Palette
+        // Brand Color Palette (identical to Hero section):
         // 0: Deep Ink / Charcoal (#0a0a0a)
-        // 1: Primary Warm Gold (#ffd700)
-        // 2: Sunset Coral / Jeep Orange (#e76f51)
-        // 3: Pine Mountain Moss (#2a9d8f)
-        // 4: Alpine Mist Sky (#e9f5f9)
-        // 5: Peak Snow (#ffffff)
+        // 1: Primary Gold (#ffd700)
+        // 2: Warm Light Yellow (#ffe766)
+        // 3: Soft Pale Cream (#fffadc)
+        // 4: Clean White (#ffffff)
         const palette = [
           { r: 10, g: 10, b: 10, hex: '#0a0a0a' },
           { r: 255, g: 215, b: 0, hex: '#ffd700' },
-          { r: 231, g: 111, b: 81, hex: '#e76f51' },
-          { r: 42, g: 157, b: 143, hex: '#2a9d8f' },
-          { r: 220, g: 240, b: 245, hex: '#e9f5f9' },
+          { r: 255, g: 231, b: 102, hex: '#ffe766' },
+          { r: 255, g: 250, b: 220, hex: '#fffadc' },
           { r: 255, g: 255, b: 255, hex: '#ffffff' },
         ]
 
         const getTargetColor = (r, g, b) => {
-          // Color-quantize using nearest RGB distance in palette
-          let minDist = Infinity
-          let chosen = palette[4]
-          for (let p of palette) {
-            const dr = r - p.r
-            const dg = g - p.g
-            const db = b - p.b
-            const d = dr * dr + dg * dg + db * db
-            if (d < minDist) {
-              minDist = d
-              chosen = p
-            }
-          }
-          return chosen
+          const lum = 0.299 * r + 0.587 * g + 0.114 * b
+          if (lum < 52) return palette[0]
+          if (lum < 118) return palette[1]
+          if (lum < 185) return palette[2]
+          if (lum < 240) return palette[3]
+          return palette[4]
         }
 
         const newParticles = []
@@ -216,7 +206,9 @@ export default function AboutPixelSection({ className = '' }) {
             if (aVal < 20 && !isTextPixel) continue
 
             // Determine base color from image
-            const bgDefault = aVal >= 20 ? getTargetColor(rVal, gVal, bVal) : palette[4]
+            const bgDefault = aVal >= 20 ? getTargetColor(rVal, gVal, bVal) : palette[3]
+            // Skip pure white pixels to blend seamlessly into background
+            if (bgDefault.hex === '#ffffff' && !isTextPixel) continue
 
             // Ink color for text
             const targetColor = isTextPixel ? palette[0] : bgDefault
@@ -407,3 +399,4 @@ export default function AboutPixelSection({ className = '' }) {
     </section>
   )
 }
+
