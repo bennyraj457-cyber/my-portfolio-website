@@ -259,7 +259,7 @@ export default function PixelArtBackground({
               y: originY + (Math.random() - 0.5) * 6,
               vx: 0,
               vy: 0,
-              size: blockSize - 0.4,
+              size: blockSize + 0.1, // Full flush coverage with zero gap between pixels
               // Background image pixel colors
               initHex: bgDefault.hex,
               initR: bgDefault.r,
@@ -428,7 +428,7 @@ export default function PixelArtBackground({
             ctx.fillStyle = currentHex
           }
 
-          ctx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size)
+          ctx.fillRect(Math.floor(p.x), Math.floor(p.y), Math.ceil(p.size), Math.ceil(p.size))
         }
 
         ctx.globalAlpha = 1.0
