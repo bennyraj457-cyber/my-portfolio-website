@@ -7,7 +7,7 @@ export default function HomePage() {
       {/* Full-width edge-to-edge Hero section with retro coder pixel-art */}
       <HeroSection />
 
-      {/* Full-width About Me section with white pixel background */}
+      {/* Full-width edge-to-edge About Me section with Thoughts Are Not Real pixel-art */}
       <AboutSection />
     </div>
   )
