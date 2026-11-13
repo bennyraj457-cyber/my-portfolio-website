@@ -33,7 +33,6 @@ export default function PixelCloudBackground({
   const fgDriftOffsetRef = useRef(0)
   const timeRef = useRef(0)
   const islandSpawnTimer = useRef(0)
-  const textGridRef = useRef(null)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -43,42 +42,10 @@ export default function PixelCloudBackground({
     let width = 0
     let height = 0
 
-    // Sample "BENNY" onto the macroSize grid so matching background pixels can blink in/out to reveal it
-    const updateTextMask = () => {
-      const cols = Math.ceil(width / macroSize)
-      const rows = Math.ceil(height / macroSize)
-      if (cols <= 0 || rows <= 0) return
-
-      const offCanvas = document.createElement('canvas')
-      offCanvas.width = cols
-      offCanvas.height = rows
-      const offCtx = offCanvas.getContext('2d')
-      if (!offCtx) return
-
-      offCtx.clearRect(0, 0, cols, rows)
-      offCtx.fillStyle = '#ffffff'
-      // Scale font size proportionally to grid columns
-      const fontSize = Math.max(10, Math.floor(cols * 0.28))
-      offCtx.font = `900 ${fontSize}px sans-serif`
-      offCtx.textAlign = 'center'
-      offCtx.textBaseline = 'middle'
-      // Draw centered in the grid
-      offCtx.fillText('BENNY', cols / 2, rows * 0.48)
-
-      const imgData = offCtx.getImageData(0, 0, cols, rows).data
-      const grid = new Float32Array(cols * rows)
-      for (let i = 0; i < cols * rows; i++) {
-        // Opacity / brightness of the letter pixel
-        grid[i] = imgData[i * 4 + 3] > 64 ? imgData[i * 4 + 3] / 255 : 0
-      }
-      textGridRef.current = { cols, rows, data: grid }
-    }
-
     const updateSize = () => {
       const parent = canvas.parentElement || document.body
       width = canvas.width = parent.clientWidth || window.innerWidth
       height = canvas.height = parent.clientHeight || window.innerHeight
-      updateTextMask()
       initSparkles()
       initDriftingIslands()
     }
@@ -309,9 +276,10 @@ export default function PixelCloudBackground({
     const patternSparseWhite = createDitherPattern('rgba(255, 230, 80, 0.4)', '#ffffff')
 
     const render = () => {
-      bgDriftOffsetRef.current += driftSpeed * 0.3
-      fgDriftOffsetRef.current += driftSpeed * 0.65
-      timeRef.current += 0.004
+      // Smooth continuous right-to-left wind drift for natural clouds
+      bgDriftOffsetRef.current -= driftSpeed * 0.45
+      fgDriftOffsetRef.current -= driftSpeed * 0.85
+      timeRef.current += 0.007
 
       const bgDrift = bgDriftOffsetRef.current
       const fgDrift = fgDriftOffsetRef.current
@@ -360,51 +328,25 @@ export default function PixelCloudBackground({
           const dy = (midY - cy) / ry
           const dist = Math.sqrt(dx * dx + dy * dy)
 
-          const bgDriftX = midX + bgDrift
+          // Background cloud layer: puffy wave harmonics drifting left
+          const bgDriftX = midX - bgDrift
           const bgWave =
-            Math.sin(bgDriftX * 0.0028 + time * 0.3) * 0.35 +
-            Math.cos(midY * 0.003 - time * 0.25) * 0.35 +
-            Math.sin((bgDriftX + midY) * 0.0018 + time * 0.15) * 0.2
+            Math.sin(bgDriftX * 0.0025 + time * 0.4) * 0.42 +
+            Math.cos(midY * 0.0032 + bgDriftX * 0.001 - time * 0.3) * 0.38 +
+            Math.sin((bgDriftX * 0.0018 + midY * 0.0025) + time * 0.2) * 0.25
 
           const bgVal = dist - bgWave - contentRepulsion
 
-          const fgDriftX = midX + fgDrift
+          // Foreground cloud layer: faster micro-texture drifting left
+          const fgDriftX = midX - fgDrift
           const fgWave =
-            Math.sin(fgDriftX * 0.0035 + time * 0.45) * 0.35 +
-            Math.cos(midY * 0.0038 - time * 0.35) * 0.35 +
-            Math.sin((fgDriftX + midY) * 0.0022 + time * 0.25) * 0.2
+            Math.sin(fgDriftX * 0.0035 + time * 0.55) * 0.4 +
+            Math.cos(midY * 0.0042 + fgDriftX * 0.0015 - time * 0.4) * 0.38 +
+            Math.sin((fgDriftX * 0.0024 + midY * 0.003) + time * 0.3) * 0.22
 
           const fgVal = dist - fgWave - contentRepulsion
 
-          // Check if this cell belongs to the background text wordmark "BENNY"
-          let isTextCell = false
-          let textIntensity = 0
-          if (textGridRef.current && textGridRef.current.cols === cols) {
-            const val = textGridRef.current.data[r * cols + c]
-            if (val > 0.15) {
-              isTextCell = true
-              textIntensity = val
-            }
-          }
-
-          // Text pixels gently blink / breathe into visibility in rhythmic waves
-          let showTextPixel = false
-          if (isTextCell) {
-            // Pulse wave moving smoothly across time with per-cell twinkle variation
-            const cellJitter = Math.sin(c * 1.7 + r * 2.3) * 0.4
-            const textWave = (Math.sin(time * 1.8 + cellJitter) + 1) / 2
-            // Threshold triggers blinking in and out matching neighboring pixels
-            if (textWave > 0.35 && textIntensity > 0.3) {
-              showTextPixel = true
-            }
-          }
-
-          if (showTextPixel) {
-            // Render text pixel using existing tones/patterns matching the cloud system
-            const textChecker = (c + r) % 2 === 0
-            ctx.fillStyle = textChecker ? patternLight2_Light3 : patternLight3_White
-            ctx.fillRect(px, py, macroSize, macroSize)
-          } else if (bgVal > 1.70) {
+          if (bgVal > 1.70) {
             ctx.fillStyle = tones.primary
             ctx.fillRect(px, py, macroSize, macroSize)
           } else if (bgVal > 1.48) {
