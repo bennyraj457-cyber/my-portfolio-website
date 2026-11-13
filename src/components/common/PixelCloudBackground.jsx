@@ -15,7 +15,7 @@ import React, { useEffect, useRef } from 'react'
  */
 export default function PixelCloudBackground({
   className = '',
-  macroSize = 14,
+  macroSize = 4,
   interactive = true,
   contentRepelDistance = 90,
   driftSpeed = 0.45,
@@ -74,33 +74,33 @@ export default function PixelCloudBackground({
 
       tCtx.clearRect(0, 0, width, height)
 
-      // Calculate fluid typography scale
-      const fontSizeHeadline = Math.max(34, Math.min(width * 0.082, 92))
-      const fontSizeBio = Math.max(14, Math.min(width * 0.022, 20))
-      const centerY = height * 0.42
+      // Calculate fluid typography scale - bold and prominent
+      const fontSizeHeadline = Math.max(48, Math.min(width * 0.088, 110))
+      const fontSizeBio = Math.max(16, Math.min(width * 0.024, 22))
+      const centerY = height * 0.40
 
       tCtx.textAlign = 'center'
       tCtx.textBaseline = 'middle'
       tCtx.fillStyle = '#000000'
 
-      // Render Headline Line 1 & Line 2 in TRJN DaVinci italic serif
-      tCtx.font = `italic 400 ${fontSizeHeadline}px 'TRJN DaVinci', serif`
+      // Render Headline Line 1 & Line 2 in TRJN DaVinci italic serif with bold stroke for maximum clarity
+      tCtx.font = `italic 700 ${fontSizeHeadline}px 'TRJN DaVinci', serif`
       const line1Y = centerY - fontSizeHeadline * 0.65
       const line2Y = centerY + fontSizeHeadline * 0.45
       tCtx.fillText(textMask.line1 || 'Designer who', width / 2, line1Y)
       tCtx.fillText(textMask.line2 || 'ships with Code', width / 2, line2Y)
 
-      // Render Bio lines in Geist
-      tCtx.font = `400 ${fontSizeBio}px 'Geist', sans-serif`
-      const bioY = line2Y + fontSizeHeadline * 0.95
+      // Render Bio lines in Geist Medium
+      tCtx.font = `500 ${fontSizeBio}px 'Geist', sans-serif`
+      const bioY = line2Y + fontSizeHeadline * 0.92
       const bioText = textMask.bio || ''
       
       // Multi-line word wrap for bio
-      const maxBioWidth = Math.min(width * 0.72, 600)
+      const maxBioWidth = Math.min(width * 0.75, 620)
       const words = bioText.split(' ')
       let currentLine = ''
       let lineCount = 0
-      const lineHeight = fontSizeBio * 1.5
+      const lineHeight = fontSizeBio * 1.55
 
       for (let n = 0; n < words.length; n++) {
         const testLine = currentLine + words[n] + ' '
@@ -513,17 +513,18 @@ export default function PixelCloudBackground({
           if (textMask) {
             // Check proximity to letters
             if (maskData && midX >= 0 && midX < width && midY >= 0 && midY < height) {
-              const pixelIndex = (midY * width + midX) * 4
-              // If nearby a letter stroke (halo zone), fill with primary or light yellow dither
-              const radius = macroSize * 2
+              // Check if pixel lies within letter bounding box or halo zone (radius 24px)
+              const radius = 24
               let nearLetter = false
-              for (let dy = -radius; dy <= radius; dy += macroSize) {
-                for (let dx = -radius; dx <= radius; dx += macroSize) {
+
+              // Fast stepped radius sampling
+              for (let dy = -radius; dy <= radius; dy += 6) {
+                for (let dx = -radius; dx <= radius; dx += 6) {
                   const checkX = midX + dx
                   const checkY = midY + dy
                   if (checkX >= 0 && checkX < width && checkY >= 0 && checkY < height) {
                     const idx = (checkY * width + checkX) * 4
-                    if (maskData[idx + 3] > 60) {
+                    if (maskData[idx + 3] > 40) {
                       nearLetter = true
                       break
                     }
@@ -533,6 +534,7 @@ export default function PixelCloudBackground({
               }
 
               if (nearLetter) {
+                // Dense solid brand gold surrounding the letter edges with micro dither falloff
                 const checker = (c + r) % 2 === 0
                 ctx.fillStyle = checker ? tones.primary : patternPrimary_Light1
                 ctx.fillRect(px, py, macroSize, macroSize)

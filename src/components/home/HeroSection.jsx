@@ -39,7 +39,7 @@ export default function HeroSection() {
       {/* Edge-to-edge pixel cloud effect forming negative-space text with white letter interior */}
       <PixelCloudBackground
         className="w-full h-full"
-        macroSize={14}
+        macroSize={4}
         interactive={true}
         contentRepelDistance={0}
         initialIntro={true}
