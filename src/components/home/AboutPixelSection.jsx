@@ -1,348 +1,328 @@
 import React, { useEffect, useRef } from 'react'
-import aboutImg from '../../assets/images/about-mountain-jeep.jpg'
 
 /**
- * AboutPixelSection
+ * AboutPixelBackground
  *
- * Full-width About Me section following the seamless pixel art design:
- * - Uses the mountain & jeep illustration rasterized into solid, gapless pixels
- * - Embeds "ABOUT ME" and narrative headline directly into the expansive sky pixels
- * - Features reactive tactile mouse/boat repulsion on both desktop and mobile
- * - Reveals smoothly when scrolled into view
+ * Renders an interactive white pixel mosaic background for the About section:
+ * - White & subtle warm cream/silver tones (#ffffff, #fafafa, #f4f4f5, #fffdf0)
+ * - Seamless edge-to-edge flush pixels (zero gaps)
+ * - Rasterizes the "ABOUT ME" title and bio text DIRECTLY into the pixel canvas matrix
+ * - Letters appear letter-by-letter as deep ink pixels (#0a0a0a) with brand gold (#ffd700) accents
+ * - Responsive to desktop mouse hover and mobile boat navigation ('boatmove') with spring repulsion physics
  */
-export default function AboutPixelSection({ className = '' }) {
-  const containerRef = useRef(null)
+export default function AboutPixelBackground({
+  className = '',
+  pixelSize = 6,
+  opacity = 0.98,
+}) {
   const canvasRef = useRef(null)
   const particlesRef = useRef([])
   const rafId = useRef(null)
   const mouseRef = useRef({ x: -1000, y: -1000, radius: 50 })
-  const hasTriggeredRef = useRef(false)
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
 
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
-    img.src = aboutImg
+    let width = 0
+    let height = 0
 
-    let isCancelled = false
+    const setupParticles = () => {
+      const parent = canvas.parentElement || document.body
+      width = canvas.width = parent.clientWidth || window.innerWidth
+      height = canvas.height = parent.clientHeight || window.innerHeight
 
-    img.onload = () => {
-      if (isCancelled) return
+      const isMobileScreen = width < 640
+      const blockSize = isMobileScreen ? 4 : Math.max(5, pixelSize)
+      const cols = Math.ceil(width / blockSize)
+      const rows = Math.ceil(height / blockSize)
 
-      let width = 0
-      let height = 0
+      // Offscreen canvas to measure and rasterize the About typography
+      const textCanvas = document.createElement('canvas')
+      textCanvas.width = cols
+      textCanvas.height = rows
+      const textCtx = textCanvas.getContext('2d')
 
-      const setupParticles = () => {
-        const parent = canvas.parentElement || document.body
-        width = canvas.width = parent.clientWidth || window.innerWidth
-        height = canvas.height = parent.clientHeight || window.innerHeight
+      // Responsive font sizing
+      const titleFontSize = isMobileScreen
+        ? Math.max(14, Math.min(cols * 0.12, 18))
+        : Math.max(18, Math.min(cols * 0.05, 32))
 
-        const isMobileScreen = width < 640
-        const isPortrait = height > width
-        const blockSize = isMobileScreen ? 4 : 6
-        const cols = Math.ceil(width / blockSize)
-        const rows = Math.ceil(height / blockSize)
+      const bodyFontSize = isMobileScreen
+        ? Math.max(8, Math.min(cols * 0.048, 10))
+        : Math.max(10, Math.min(cols * 0.024, 15))
 
-        // Offscreen canvas to downsample image & rasterize text
-        const offCanvas = document.createElement('canvas')
-        offCanvas.width = cols
-        offCanvas.height = rows
-        const offCtx = offCanvas.getContext('2d')
+      const titleFontStr = isMobileScreen
+        ? `900 ${titleFontSize}px "Geist", system-ui, sans-serif`
+        : `italic 700 ${titleFontSize}px "TRJN DaVinci", "TRJN DaVinci Text", serif`
 
-        // Aspect ratio cover calculation
-        const imgRatio = img.width / img.height
-        const targetRatio = width / height
+      const bodyFontStr = `600 ${bodyFontSize}px "Geist", system-ui, sans-serif`
 
-        let drawW, drawH, drawX, drawY
-        if (targetRatio > imgRatio) {
-          drawW = cols
-          drawH = cols / imgRatio
-          drawX = 0
-          drawY = (rows - drawH) / 2
+      const textCenterX = cols * 0.5
+      const startY = rows * 0.22
+
+      // Content blocks
+      const titleText = isMobileScreen ? 'ABOUT BENNY' : 'About Benny'
+      
+      const bodyLines = isMobileScreen
+        ? [
+            'DESIGNER & ENGINEER',
+            'CRAFTING INTENTIONAL INTERFACES',
+            'BRIDGING FORM AND PRODUCTION CODE',
+            'BASED IN THIRUVATTAR',
+          ]
+        : [
+            'Designer & creative engineer crafting intentional digital interfaces.',
+            'Bridging human-centered aesthetics with high-performance production code.',
+            'Obsessed with tactile micro-interactions, typography, and joyful web physics.',
+          ]
+
+      // Map coordinate key -> letter reveal timing
+      const textPixelMap = new Map()
+      let globalIdx = 0
+      const baseDelay = 600
+
+      // 1. Draw Title
+      textCtx.font = titleFontStr
+      textCtx.textBaseline = 'middle'
+      const titleWidth = textCtx.measureText(titleText).width
+      let curX = textCenterX - titleWidth / 2
+      const titleY = startY
+
+      for (let ch = 0; ch < titleText.length; ch++) {
+        const char = titleText[ch]
+        const cWidth = textCtx.measureText(char).width
+
+        if (char.trim() !== '') {
+          textCtx.clearRect(0, 0, cols, rows)
+          textCtx.fillText(char, curX, titleY)
+
+          const x1 = Math.max(0, Math.floor(curX - 2))
+          const x2 = Math.min(cols, Math.ceil(curX + cWidth + 2))
+          const y1 = Math.max(0, Math.floor(titleY - titleFontSize * 0.75))
+          const y2 = Math.min(rows, Math.ceil(titleY + titleFontSize * 0.75))
+
+          const cData = textCtx.getImageData(0, 0, cols, rows).data
+          const charDelay = baseDelay + globalIdx * 75
+
+          for (let y = y1; y < y2; y++) {
+            for (let x = x1; x < x2; x++) {
+              const idx = (y * cols + x) * 4
+              if (cData[idx + 3] > 30) {
+                textPixelMap.set(`${y},${x}`, {
+                  delay: charDelay + Math.random() * 50,
+                  isTitle: true,
+                })
+              }
+            }
+          }
+          globalIdx++
         } else {
-          drawH = rows
-          drawW = rows * imgRatio
-          drawX = (cols - drawW) / 2
-          drawY = 0
+          globalIdx += 0.4
         }
+        curX += cWidth
+      }
 
-        // Draw background image to offscreen canvas
-        offCtx.drawImage(img, drawX, drawY, drawW, drawH)
-        const bgImgData = offCtx.getImageData(0, 0, cols, rows).data
+      // 2. Draw Body Lines
+      textCtx.font = bodyFontStr
+      const lineSpacing = bodyFontSize * 1.6
+      let currentLineY = titleY + titleFontSize * 1.4 + lineSpacing
 
-        // 2. Measure & draw About Me headline in the sky
-        const textCanvas = document.createElement('canvas')
-        textCanvas.width = cols
-        textCanvas.height = rows
-        const textCtx = textCanvas.getContext('2d')
+      bodyLines.forEach((line) => {
+        const lineWidth = textCtx.measureText(line).width
+        let lineX = textCenterX - lineWidth / 2
 
-        let textFontSize
-        let subFontSize
-        let fontStr
-        let subFontStr
-        let textCenterY
-        let lineGap
+        for (let ch = 0; ch < line.length; ch++) {
+          const char = line[ch]
+          const cWidth = textCtx.measureText(char).width
 
-        if (isMobileScreen) {
-          textFontSize = Math.max(14, Math.min(cols * 0.12, 18))
-          subFontSize = Math.max(10, Math.min(cols * 0.075, 12))
-          textCenterY = Math.max(textFontSize * 2.6, rows * 0.15)
-          lineGap = textFontSize * 1.35
-          fontStr = `900 ${textFontSize}px "Geist", system-ui, -apple-system, sans-serif`
-          subFontStr = `700 ${subFontSize}px "Geist", system-ui, -apple-system, sans-serif`
-        } else {
-          const baseRatio = isPortrait ? cols * 0.06 : cols * 0.038
-          textFontSize = Math.max(18, Math.min(baseRatio, 32))
-          subFontSize = Math.max(12, Math.min(baseRatio * 0.65, 18))
-          textCenterY = isPortrait
-            ? Math.max(textFontSize * 2.4, rows * 0.18)
-            : Math.max(textFontSize * 2.0, rows * 0.16)
-          lineGap = textFontSize * 1.3
-          fontStr = `italic 700 ${textFontSize}px "TRJN DaVinci", "TRJN DaVinci Text", serif`
-          subFontStr = `500 ${subFontSize}px "Geist", system-ui, -apple-system, sans-serif`
-        }
+          if (char.trim() !== '') {
+            textCtx.clearRect(0, 0, cols, rows)
+            textCtx.fillText(char, lineX, currentLineY)
 
-        const textCenterX = cols * 0.5
+            const x1 = Math.max(0, Math.floor(lineX - 1))
+            const x2 = Math.min(cols, Math.ceil(lineX + cWidth + 1))
+            const y1 = Math.max(0, Math.floor(currentLineY - bodyFontSize * 0.7))
+            const y2 = Math.min(rows, Math.ceil(currentLineY + bodyFontSize * 0.7))
 
-        // Narrative lines embedded in the mountain sky
-        const lines = isMobileScreen
-          ? [
-              { text: 'ABOUT ME', y: textCenterY - lineGap, isTitle: true },
-              { text: 'EXPLORING BEYOND', y: textCenterY, isTitle: true },
-              { text: 'THE PIXELS', y: textCenterY + lineGap, isTitle: true },
-            ]
-          : [
-              { text: 'About Benny', y: textCenterY - lineGap * 0.6, isTitle: true },
-              { text: 'Exploring interfaces, code & mountains', y: textCenterY + lineGap * 0.6, isTitle: false },
-            ]
+            const cData = textCtx.getImageData(0, 0, cols, rows).data
+            const charDelay = baseDelay + globalIdx * 25
 
-        const textPixelTimings = new Map()
-        let globalLetterIdx = 0
-        const baseStartDelay = 400
-
-        lines.forEach((lineObj) => {
-          textCtx.font = lineObj.isTitle ? fontStr : subFontStr
-          textCtx.textBaseline = 'middle'
-
-          const fullLine = lineObj.text
-          const fullWidth = textCtx.measureText(fullLine).width
-          let curX = textCenterX - fullWidth / 2
-
-          for (let ch = 0; ch < fullLine.length; ch++) {
-            const char = fullLine[ch]
-            const charWidth = textCtx.measureText(char).width
-
-            if (char.trim() !== '') {
-              textCtx.clearRect(0, 0, cols, rows)
-              textCtx.fillText(char, curX, lineObj.y)
-
-              const x1 = Math.max(0, Math.floor(curX - 2))
-              const x2 = Math.min(cols, Math.ceil(curX + charWidth + 2))
-              const y1 = Math.max(0, Math.floor(lineObj.y - textFontSize * 0.7))
-              const y2 = Math.min(rows, Math.ceil(lineObj.y + textFontSize * 0.7))
-
-              const cData = textCtx.getImageData(0, 0, cols, rows).data
-              const letterDelay = baseStartDelay + globalLetterIdx * 75
-
-              for (let y = y1; y < y2; y++) {
-                for (let x = x1; x < x2; x++) {
-                  const idx = (y * cols + x) * 4
-                  if (cData[idx + 3] > 30) {
-                    textPixelTimings.set(`${y},${x}`, letterDelay + Math.random() * 50)
-                  }
+            for (let y = y1; y < y2; y++) {
+              for (let x = x1; x < x2; x++) {
+                const idx = (y * cols + x) * 4
+                if (cData[idx + 3] > 30) {
+                  textPixelMap.set(`${y},${x}`, {
+                    delay: charDelay + Math.random() * 40,
+                    isTitle: false,
+                  })
                 }
               }
-              globalLetterIdx++
-            } else {
-              globalLetterIdx += 0.35
             }
-
-            curX += charWidth
-          }
-        })
-
-        // Brand Color Palette (identical to Hero section):
-        // 0: Deep Ink / Charcoal (#0a0a0a)
-        // 1: Primary Gold (#ffd700)
-        // 2: Warm Light Yellow (#ffe766)
-        // 3: Soft Pale Cream (#fffadc)
-        // 4: Clean White (#ffffff)
-        const palette = [
-          { r: 10, g: 10, b: 10, hex: '#0a0a0a' },
-          { r: 255, g: 215, b: 0, hex: '#ffd700' },
-          { r: 255, g: 231, b: 102, hex: '#ffe766' },
-          { r: 255, g: 250, b: 220, hex: '#fffadc' },
-          { r: 255, g: 255, b: 255, hex: '#ffffff' },
-        ]
-
-        const getTargetColor = (r, g, b) => {
-          const lum = 0.299 * r + 0.587 * g + 0.114 * b
-          if (lum < 52) return palette[0]
-          if (lum < 118) return palette[1]
-          if (lum < 185) return palette[2]
-          if (lum < 240) return palette[3]
-          return palette[4]
-        }
-
-        const newParticles = []
-        const now = performance.now()
-        const cx = cols / 2
-        const cy = rows * 0.5
-
-        for (let r = 0; r < rows; r++) {
-          for (let c = 0; c < cols; c++) {
-            const idx = (r * cols + c) * 4
-            const rVal = bgImgData[idx]
-            const gVal = bgImgData[idx + 1]
-            const bVal = bgImgData[idx + 2]
-            const aVal = bgImgData[idx + 3]
-
-            const letterTiming = textPixelTimings.get(`${r},${c}`)
-            const isTextPixel = letterTiming !== undefined
-
-            if (aVal < 20 && !isTextPixel) continue
-
-            // Determine base color from image
-            const bgDefault = aVal >= 20 ? getTargetColor(rVal, gVal, bVal) : palette[3]
-            // Skip pure white pixels to blend seamlessly into background
-            if (bgDefault.hex === '#ffffff' && !isTextPixel) continue
-
-            // Ink color for text
-            const targetColor = isTextPixel ? palette[0] : bgDefault
-
-            const originX = c * blockSize
-            const originY = r * blockSize
-
-            const dx = (c - cx) / (cols / 2)
-            const dy = (r - cy) / (rows / 2)
-            const dist = Math.sqrt(dx * dx + dy * dy)
-            const initialDelay = 100 + dist * 500 + Math.random() * 150
-
-            newParticles.push({
-              originX,
-              originY,
-              x: originX,
-              y: originY + (Math.random() - 0.5) * 6,
-              vx: 0,
-              vy: 0,
-              size: blockSize + 0.1, // Flush solid coverage without gap
-              initHex: bgDefault.hex,
-              initR: bgDefault.r,
-              initG: bgDefault.g,
-              initB: bgDefault.b,
-              targetHex: targetColor.hex,
-              targetR: targetColor.r,
-              targetG: targetColor.g,
-              targetB: targetColor.b,
-              isTextPixel,
-              initialDelay,
-              textRevealDelay: letterTiming || 0,
-              startTime: now,
-              fadeInDuration: 280 + Math.random() * 100,
-              textShiftDuration: 320 + Math.random() * 80,
-            })
-          }
-        }
-
-        particlesRef.current = newParticles
-      }
-
-      setupParticles()
-
-      const render = () => {
-        const now = performance.now()
-        const particles = particlesRef.current
-        const mouse = mouseRef.current
-        const mouseActive = mouse.x > -500
-        const mouseRadius = mouse.radius
-        const mouseRadiusSq = mouseRadius * mouseRadius
-
-        ctx.clearRect(0, 0, width, height)
-
-        for (let i = 0; i < particles.length; i++) {
-          const p = particles[i]
-          const elapsed = now - p.startTime
-
-          if (elapsed < p.initialDelay) continue
-
-          const rawAppear = Math.min(1, (elapsed - p.initialDelay) / p.fadeInDuration)
-          const appearProgress = 1 - Math.pow(1 - rawAppear, 3)
-
-          // Mouse / Boat repulsion physics
-          if (mouseActive) {
-            const dxM = p.x - mouse.x
-            const dyM = p.y - mouse.y
-            const distSq = dxM * dxM + dyM * dyM
-
-            if (distSq < mouseRadiusSq && distSq > 0.01) {
-              const dist = Math.sqrt(distSq)
-              const force = (1 - dist / mouseRadius) * 4.5
-              p.vx += (dxM / dist) * force
-              p.vy += (dyM / dist) * force
-            }
-          }
-
-          // Spring dampening back to position
-          const dx = p.originX - p.x
-          const dy = p.originY - p.y
-
-          if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1 || Math.abs(p.vx) > 0.1 || Math.abs(p.vy) > 0.1) {
-            p.vx += dx * 0.08
-            p.vy += dy * 0.08
-            p.vx *= 0.82
-            p.vy *= 0.82
-            p.x += p.vx
-            p.y += p.vy
+            globalIdx++
           } else {
-            p.x = p.originX
-            p.y = p.originY
+            globalIdx += 0.2
           }
-
-          let currentR = p.initR
-          let currentG = p.initG
-          let currentB = p.initB
-          let currentHex = p.initHex
-
-          // Text shift letter by letter
-          if (p.isTextPixel && elapsed > p.textRevealDelay) {
-            const rawTextShift = Math.min(1, (elapsed - p.textRevealDelay) / p.textShiftDuration)
-            const textShiftProgress = 1 - Math.pow(1 - rawTextShift, 3)
-
-            currentR = Math.round(p.initR + (p.targetR - p.initR) * textShiftProgress)
-            currentG = Math.round(p.initG + (p.targetG - p.initG) * textShiftProgress)
-            currentB = Math.round(p.initB + (p.targetB - p.initB) * textShiftProgress)
-            currentHex = `rgb(${currentR},${currentG},${currentB})`
-          }
-
-          if (appearProgress < 0.6) {
-            const t = appearProgress / 0.6
-            const r = Math.round(255 + (currentR - 255) * t)
-            const g = Math.round(215 + (currentG - 215) * t)
-            const b = Math.round(0 + (currentB - 0) * t)
-            ctx.fillStyle = `rgb(${r},${g},${b})`
-          } else {
-            ctx.fillStyle = currentHex
-          }
-
-          ctx.fillRect(Math.floor(p.x), Math.floor(p.y), Math.ceil(p.size), Math.ceil(p.size))
+          lineX += cWidth
         }
+        currentLineY += lineSpacing
+      })
 
-        rafId.current = requestAnimationFrame(render)
+      // Generate White Mosaic Particles with zero gap
+      const newParticles = []
+      const now = performance.now()
+      const cx = cols / 2
+      const cy = rows * 0.4
+
+      // White pixel palette with subtle ambient tones
+      const whitePalette = [
+        { r: 255, g: 255, b: 255, hex: '#ffffff' },
+        { r: 250, g: 250, b: 250, hex: '#fafafa' },
+        { r: 245, g: 245, b: 247, hex: '#f5f5f7' },
+        { r: 255, g: 252, b: 235, hex: '#fffceb' }, // Soft warm ivory accent
+      ]
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const key = `${r},${c}`
+          const textInfo = textPixelMap.get(key)
+          const isTextPixel = textInfo !== undefined
+
+          const originX = c * blockSize
+          const originY = r * blockSize
+
+          // Random white hue variation
+          const baseColor = whitePalette[Math.floor(Math.random() * whitePalette.length)]
+
+          // Ink text colors: deep black ink (#0d0d0d) or gold highlight
+          const textR = 13
+          const textG = 13
+          const textB = 13
+
+          const dx = (c - cx) / (cols / 2)
+          const dy = (r - cy) / (rows / 2)
+          const dist = Math.sqrt(dx * dx + dy * dy)
+          const initialDelay = 80 + dist * 450 + Math.random() * 160
+
+          newParticles.push({
+            originX,
+            originY,
+            x: originX,
+            y: originY + (Math.random() - 0.5) * 5,
+            vx: 0,
+            vy: 0,
+            size: blockSize + 0.1, // Full flush coverage
+            initR: baseColor.r,
+            initG: baseColor.g,
+            initB: baseColor.b,
+            textR,
+            textG,
+            textB,
+            isTextPixel,
+            isTitle: textInfo?.isTitle || false,
+            textRevealDelay: textInfo?.delay || 0,
+            initialDelay,
+            startTime: now,
+            fadeInDuration: 260 + Math.random() * 100,
+            textShiftDuration: 300 + Math.random() * 80,
+          })
+        }
       }
 
-      render()
-
-      const handleResize = () => setupParticles()
-      window.addEventListener('resize', handleResize)
-
-      return () => {
-        window.removeEventListener('resize', handleResize)
-        if (rafId.current) cancelAnimationFrame(rafId.current)
-      }
+      particlesRef.current = newParticles
     }
+
+    setupParticles()
+
+    // 60-120 FPS animation loop
+    const render = () => {
+      const now = performance.now()
+      const particles = particlesRef.current
+      const mouse = mouseRef.current
+      const mouseActive = mouse.x > -500
+      const mouseRadius = mouse.radius
+      const mouseRadiusSq = mouseRadius * mouseRadius
+
+      ctx.clearRect(0, 0, width, height)
+      ctx.globalAlpha = opacity
+
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i]
+        const elapsed = now - p.startTime
+
+        if (elapsed < p.initialDelay) continue
+
+        const rawAppear = Math.min(1, (elapsed - p.initialDelay) / p.fadeInDuration)
+        const appearProgress = 1 - Math.pow(1 - rawAppear, 3)
+
+        // Mouse / boat displacement
+        if (mouseActive) {
+          const dxM = p.x - mouse.x
+          const dyM = p.y - mouse.y
+          const distSq = dxM * dxM + dyM * dyM
+
+          if (distSq < mouseRadiusSq && distSq > 0.01) {
+            const dist = Math.sqrt(distSq)
+            const force = (1 - dist / mouseRadius) * 4.2
+            p.vx += (dxM / dist) * force
+            p.vy += (dyM / dist) * force
+          }
+        }
+
+        // Spring return
+        const dx = p.originX - p.x
+        const dy = p.originY - p.y
+
+        if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1 || Math.abs(p.vx) > 0.1 || Math.abs(p.vy) > 0.1) {
+          p.vx += dx * 0.08
+          p.vy += dy * 0.08
+          p.vx *= 0.82
+          p.vy *= 0.82
+          p.x += p.vx
+          p.y += p.vy
+        } else {
+          p.x = p.originX
+          p.y = p.originY
+        }
+
+        // Color determination: initial white canvas -> smooth shift to ink letters
+        let currentR = p.initR
+        let currentG = p.initG
+        let currentB = p.initB
+
+        if (p.isTextPixel && elapsed > p.textRevealDelay) {
+          const rawTextShift = Math.min(1, (elapsed - p.textRevealDelay) / p.textShiftDuration)
+          const textShiftProgress = 1 - Math.pow(1 - rawTextShift, 3)
+
+          currentR = Math.round(p.initR + (p.textR - p.initR) * textShiftProgress)
+          currentG = Math.round(p.initG + (p.textG - p.initG) * textShiftProgress)
+          currentB = Math.round(p.initB + (p.textB - p.initB) * textShiftProgress)
+        }
+
+        ctx.fillStyle = `rgb(${currentR},${currentG},${currentB})`
+        ctx.fillRect(Math.floor(p.x), Math.floor(p.y), Math.ceil(p.size), Math.ceil(p.size))
+      }
+
+      ctx.globalAlpha = 1.0
+
+      // Ambient top & bottom transition vignette
+      const vGrad = ctx.createLinearGradient(0, 0, 0, height)
+      vGrad.addColorStop(0, 'rgba(0, 119, 182, 0.22)') // soft sea horizon blend at top
+      vGrad.addColorStop(0.12, 'rgba(255, 255, 255, 0)')
+      vGrad.addColorStop(0.88, 'rgba(255, 255, 255, 0)')
+      vGrad.addColorStop(1, 'rgba(0, 119, 182, 0.25)') // blend into sea at bottom
+
+      ctx.fillStyle = vGrad
+      ctx.fillRect(0, 0, width, height)
+
+      rafId.current = requestAnimationFrame(render)
+    }
+
+    render()
+
+    const handleResize = () => setupParticles()
+    window.addEventListener('resize', handleResize)
 
     const handleMouseMove = (e) => {
       const rect = canvas.getBoundingClientRect()
@@ -368,35 +348,19 @@ export default function AboutPixelSection({ className = '' }) {
     window.addEventListener('mouseleave', handleMouseLeave)
 
     return () => {
-      isCancelled = true
+      window.removeEventListener('resize', handleResize)
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('boatmove', handleBoatMove)
       window.removeEventListener('mouseleave', handleMouseLeave)
       if (rafId.current) cancelAnimationFrame(rafId.current)
     }
-  }, [])
+  }, [pixelSize, opacity])
 
   return (
-    <section
-      ref={containerRef}
-      id="about"
-      aria-label="About Benny"
-      className={`relative w-full min-h-[90svh] md:min-h-screen flex flex-col items-center justify-center select-none overflow-hidden ${className}`}
-    >
-      <canvas
-        ref={canvasRef}
-        className="w-full h-full absolute inset-0 pointer-events-none z-0"
-        aria-hidden="true"
-      />
-
-      {/* Screen-reader accessible bio text */}
-      <div className="sr-only">
-        <h2>About Benny</h2>
-        <p>
-          I am Benny, a designer and creative engineer crafting playful, precise digital experiences and tools.
-        </p>
-      </div>
-    </section>
+    <canvas
+      ref={canvasRef}
+      className={`absolute inset-0 pointer-events-none z-0 w-full h-full ${className}`}
+      aria-label="About Benny - Designer & creative engineer"
+    />
   )
 }
-
