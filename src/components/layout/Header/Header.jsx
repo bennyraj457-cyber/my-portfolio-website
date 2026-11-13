@@ -67,7 +67,7 @@ export default function Header({
     <>
       <header
         role="banner"
-        className={`fixed top-0 left-0 right-0 z-40 pointer-events-none transition-all duration-300 py-6 md:py-8 px-6 md:px-12 ${className}`}
+        className={`fixed top-0 left-0 right-0 z-40 pointer-events-none transition-all duration-300 py-4 sm:py-6 md:py-8 px-4 sm:px-6 md:px-12 ${className}`}
       >
         <div className="w-full flex items-center justify-between">
           {/* Left: Floating Brand Logo (turns white on scroll) */}
