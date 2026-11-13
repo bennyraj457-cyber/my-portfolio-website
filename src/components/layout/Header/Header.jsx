@@ -7,7 +7,8 @@ import { personalInfo } from '../../../data/personalInfo'
  *
  * Fixed navigation banner floating seamlessly above the page:
  * - Left: Name Logo ("BENNY.")
- * - Right: "Let's Talk" interactive pill CTA button
+ * - Center: Nav links ("About", "Skills", "Works") with smooth scroll & glass pill capsule
+ * - Right: "Let's Talk" interactive CTA pill
  */
 export default function Header({
   logo = 'BENNY.',
@@ -27,6 +28,20 @@ export default function Header({
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  const navLinks = [
+    { label: 'About', href: '#about' },
+    { label: 'Skills', href: '#skills' },
+    { label: 'Works', href: '#works' },
+  ]
+
+  const handleNavClick = (e, href) => {
+    e.preventDefault()
+    const target = document.querySelector(href)
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
+
   return (
     <header
       role="banner"
@@ -34,7 +49,7 @@ export default function Header({
     >
       <div className="w-full flex items-center justify-between">
         {/* Left: Name Logo */}
-        <div className="pointer-events-auto">
+        <div className="pointer-events-auto flex-shrink-0">
           <Link
             to="/"
             data-cursor="link"
@@ -53,8 +68,26 @@ export default function Header({
           </Link>
         </div>
 
+        {/* Center: Nav links (About, Skills, Works) */}
+        <nav
+          aria-label="Primary Navigation"
+          className="pointer-events-auto hidden sm:flex items-center gap-1 sm:gap-2 px-3 py-1.5 rounded-full bg-white/70 backdrop-blur-md border border-black/10 shadow-sm transition-all duration-300 hover:shadow-md"
+        >
+          {navLinks.map((item) => (
+            <a
+              key={item.label}
+              href={item.href}
+              onClick={(e) => handleNavClick(e, item.href)}
+              data-cursor="link"
+              className="px-4 py-1.5 rounded-full text-xs sm:text-sm font-sans font-medium text-black/80 hover:text-black hover:bg-black/5 active:scale-95 transition-all duration-200"
+            >
+              {item.label}
+            </a>
+          ))}
+        </nav>
+
         {/* Right: "Let's Talk" Button */}
-        <div className="pointer-events-auto">
+        <div className="pointer-events-auto flex-shrink-0">
           <a
             href={`mailto:${personalInfo.email}?subject=Project%20Inquiry%20-%20Let's%20Talk`}
             data-cursor="link"
