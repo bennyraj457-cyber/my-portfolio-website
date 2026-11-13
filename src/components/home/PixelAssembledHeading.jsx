@@ -98,8 +98,8 @@ export default function PixelAssembledHeading({
 
           const charData = offCtx.getImageData(0, 0, width, height).data
 
-          // Letter appearance timing: each letter starts 110ms after previous letter
-          const letterBaseDelay = 180 + globalCharIndex * 110
+          // Letter appearance timing: overlapping soft cadence (75ms between letter starts)
+          const letterBaseDelay = 180 + globalCharIndex * 75
 
           for (let y = boxY1; y < boxY2; y += step) {
             for (let x = boxX1; x < boxX2; x += step) {
@@ -107,20 +107,20 @@ export default function PixelAssembledHeading({
               const alpha = charData[idx + 3]
 
               if (alpha > 120) {
-                // Micro-pixel jitter within this character's reveal
-                const pixelJitter = Math.random() * 80
+                // Gentle organic scatter within letter
+                const pixelJitter = Math.random() * 120
                 newParticles.push({
                   originX: x,
                   originY: y,
                   x,
-                  y,
+                  y: y + (Math.random() - 0.5) * 6, // subtle soft vertical settling (floating in by a few pixels)
                   vx: 0,
                   vy: 0,
-                  size: step - 0.4,
+                  size: step - 0.35,
                   alpha: 0,
                   delay: letterBaseDelay + pixelJitter,
                   startTime: performance.now(),
-                  fadeInDuration: 240 + Math.random() * 140,
+                  fadeInDuration: 420 + Math.random() * 180, // Extended smooth fade-in duration
                 })
               }
             }
@@ -128,7 +128,7 @@ export default function PixelAssembledHeading({
           globalCharIndex++
         } else {
           // Space character: small pause
-          globalCharIndex += 0.5
+          globalCharIndex += 0.35
         }
 
         currentX += charWidth
@@ -153,13 +153,14 @@ export default function PixelAssembledHeading({
           continue
         }
 
-        // Smooth gradual fade-in for each individual pixel (0 to 1)
-        const appearProgress = Math.min(1, (elapsed - p.delay) / p.fadeInDuration)
+        // Smooth cubic easeOut easing curve for individual pixel fade
+        const rawProgress = Math.min(1, (elapsed - p.delay) / p.fadeInDuration)
+        const appearProgress = 1 - Math.pow(1 - rawProgress, 3)
         p.alpha = appearProgress
 
         // Spring physics towards target origin
-        const spring = 0.08
-        const friction = 0.82
+        const spring = 0.05
+        const friction = 0.86
 
         // Mouse repulsion
         const dxMouse = p.x - mouse.x
@@ -186,14 +187,19 @@ export default function PixelAssembledHeading({
         p.x += p.vx
         p.y += p.vy
 
-        // Color transition: starts as brand gold (#ffd700), smoothly settles into deep editorial black (#000000)
+        // Continuous smooth color interpolation:
+        // Starts soft brand gold (255, 215, 0), transitions smoothly to crisp black (0, 0, 0)
         ctx.globalAlpha = p.alpha
-        if (appearProgress < 0.35) {
-          ctx.fillStyle = '#ffd700'
-        } else if (appearProgress < 0.7) {
-          ctx.fillStyle = '#666666'
+        if (appearProgress < 0.6) {
+          const t = appearProgress / 0.6
+          const r = Math.round(255 * (1 - t * 0.75))
+          const g = Math.round(215 * (1 - t * 0.75))
+          const b = 0
+          ctx.fillStyle = `rgb(${r},${g},${b})`
         } else {
-          ctx.fillStyle = '#000000'
+          const t = (appearProgress - 0.6) / 0.4
+          const shade = Math.round(64 * (1 - t))
+          ctx.fillStyle = `rgb(${shade},${shade},${shade})`
         }
 
         ctx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size)
