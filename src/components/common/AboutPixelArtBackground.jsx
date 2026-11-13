@@ -51,21 +51,19 @@ export default function AboutPixelArtBackground({
         offCanvas.height = rows
         const offCtx = offCanvas.getContext('2d')
 
+        // Responsive image fit calculation:
+        // Use 'contain' with max bounds so the thoughts profile is fully visible
+        // and centered without clipping off the top or bottom edges
         const imgRatio = img.width / img.height
         const targetRatio = width / height
 
         let drawW, drawH, drawX, drawY
-        if (targetRatio > imgRatio) {
-          drawW = cols
-          drawH = cols / imgRatio
-          drawX = 0
-          drawY = (rows - drawH) / 2
-        } else {
-          drawH = rows
-          drawW = rows * imgRatio
-          drawX = (cols - drawW) / 2
-          drawY = 0
-        }
+        // Contain with slight padding factor (0.92) for elegant framing
+        const scale = Math.min((cols * 0.92) / img.width, (rows * 0.92) / img.height)
+        drawW = img.width * scale
+        drawH = img.height * scale
+        drawX = (cols - drawW) / 2
+        drawY = (rows - drawH) / 2
 
         offCtx.drawImage(img, drawX, drawY, drawW, drawH)
         const bgImgData = offCtx.getImageData(0, 0, cols, rows).data
@@ -224,3 +222,4 @@ export default function AboutPixelArtBackground({
     />
   )
 }
+

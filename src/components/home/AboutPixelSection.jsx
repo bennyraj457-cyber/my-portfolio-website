@@ -58,7 +58,7 @@ export default function AboutSection() {
       </div>
 
       {/* Bottom Block: Mind Profile Thoughts Artwork in Pixel Art */}
-      <div className="relative w-full min-h-[70vh] md:min-h-[80vh] overflow-hidden">
+      <div className="relative w-full h-[70vh] sm:h-[80vh] md:h-[90vh] overflow-hidden flex items-center justify-center bg-white">
         <AboutPixelArtBackground
           className="w-full h-full"
           pixelSize={6}
