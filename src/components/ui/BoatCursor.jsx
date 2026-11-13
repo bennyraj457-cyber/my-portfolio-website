@@ -147,22 +147,25 @@ export default function BoatCursor({
         })
       )
 
-      // Smooth inertia-dampened page scrolling:
-      // Translates boat vertical momentum into silky smooth camera gliding
-      let targetScrollSpeed = 0
-      if (ctrl.down) {
-        targetScrollSpeed = 5.2
-      } else if (ctrl.up) {
-        targetScrollSpeed = -5.2
-      } else if (Math.abs(velocity.current.y) > 0.4) {
-        targetScrollSpeed = velocity.current.y * 1.3
+      // Reliable page scrolling bound to Downward / Upward sailing:
+      // When Down button/key is held OR boat is sailing downward in bottom zone of screen, scroll smoothly
+      const isSailingDown = ctrl.down || velocity.current.y > 0.6
+      const isSailingUp = ctrl.up || velocity.current.y < -0.6
+
+      let scrollDelta = 0
+      if (isSailingDown) {
+        scrollDelta = Math.max(2.5, velocity.current.y * 1.5)
+      } else if (isSailingUp) {
+        scrollDelta = Math.min(-2.5, velocity.current.y * 1.5)
       }
 
-      // Smooth lerp scroll velocity
-      scrollVelocity.current += (targetScrollSpeed - scrollVelocity.current) * 0.12
-
-      if (Math.abs(scrollVelocity.current) > 0.05) {
-        window.scrollBy(0, scrollVelocity.current)
+      if (scrollDelta !== 0) {
+        // Direct reliable scroll dispatch across all browser engines
+        const targetScroll = window.scrollY + scrollDelta
+        window.scrollTo({
+          top: targetScroll,
+          behavior: 'instant',
+        })
       }
 
       const speedSq = velocity.current.x * velocity.current.x + velocity.current.y * velocity.current.y
