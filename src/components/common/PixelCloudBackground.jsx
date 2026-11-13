@@ -34,6 +34,7 @@ export default function PixelCloudBackground({
   const timeRef = useRef(0)
   const islandSpawnTimer = useRef(0)
   const entranceStartTimeRef = useRef(null)
+  const cellDelaysRef = useRef(new Map())
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -49,6 +50,44 @@ export default function PixelCloudBackground({
       height = canvas.height = parent.clientHeight || window.innerHeight
       initSparkles()
       initDriftingIslands()
+      initCellDelays()
+    }
+
+    const initCellDelays = () => {
+      const cols = Math.ceil(width / macroSize)
+      const rows = Math.ceil(height / macroSize)
+      const cx = width / 2
+      const cy = height * 0.48
+      const rx = Math.min(width * 0.55, 680)
+      const ry = Math.min(height * 0.38, 320)
+      const map = new Map()
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const midX = c * macroSize + macroSize / 2
+          const midY = r * macroSize + macroSize / 2
+
+          // Distance from center clearing
+          const dx = (midX - cx) / rx
+          const dy = (midY - cy) / ry
+          const dist = Math.sqrt(dx * dx + dy * dy)
+
+          // Discrete organic hash for individual pixel delay
+          // Perimeter pixels start appearing from 350ms to 2400ms in an organic, dithered crystallization
+          const hash = Math.sin(c * 12.9898 + r * 78.233) * 43758.5453
+          const jitter = (hash - Math.floor(hash)) // 0 to 1
+
+          // Deepest outer clouds emerge first, sweeping inward towards the clearing perimeter
+          const radialFactor = Math.max(0, 2.2 - dist) / 2.2
+          const delay = 350 + radialFactor * 1200 + jitter * 700
+
+          map.set(`${r},${c}`, {
+            delay,
+            duration: 380 + jitter * 200,
+          })
+        }
+      }
+      cellDelaysRef.current = map
     }
 
     const initSparkles = () => {
@@ -312,8 +351,9 @@ export default function PixelCloudBackground({
       const rows = Math.ceil(height / macroSize)
       const obstacles = contentObstacles.current
 
-      // 1. Render Layered Parallax Cloud Grid with Soft Aurora Shimmer Expansion
-      ctx.globalAlpha = globalAuroraAlpha
+      // 1. Render Layered Parallax Cloud Grid with Organic Pixel-by-Pixel Crystallization
+      const cellDelays = cellDelaysRef.current
+      const isIntroActive = elapsedEntrance < 2800
 
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
@@ -321,6 +361,22 @@ export default function PixelCloudBackground({
           const py = r * macroSize
           const midX = px + macroSize / 2
           const midY = py + macroSize / 2
+
+          // Pixel-by-pixel individual appearance check
+          let pixelAlpha = 1.0
+          if (isIntroActive) {
+            const timing = cellDelays?.get(`${r},${c}`)
+            if (timing) {
+              if (elapsedEntrance < timing.delay) {
+                // Not manifested yet: remains blank white
+                continue
+              }
+              const p = Math.min(1, (elapsedEntrance - timing.delay) / timing.duration)
+              pixelAlpha = 1 - Math.pow(1 - p, 2)
+            }
+          }
+
+          ctx.globalAlpha = pixelAlpha
 
           let contentRepulsion = 0
           for (let i = 0; i < obstacles.length; i++) {
