@@ -8,10 +8,9 @@ import PixelAssembledHeading from './PixelAssembledHeading'
  * HeroSection
  *
  * Full-screen responsive viewport hero section:
- * - Fluid typography scaling seamlessly from mobile (320px) to 4K displays
- * - Responsive padding and breathing room
- * - Full-width background dither canvas with zero horizontal overflow
- * - Initial load: starts hidden behind solid yellow dither pixels, then gracefully emerges
+ * - Iconic creator at CRT computer in open landscape pixel art background
+ * - Rendered cleanly with portfolio's brand colors (#ffd700, white, charcoal/black)
+ * - Headline assembled with discrete micro-pixels and subtle pinpoint hover
  */
 export default function HeroSection() {
   const { headlineLine1, headlineLine2, bio } = personalInfo
@@ -22,11 +21,11 @@ export default function HeroSection() {
       aria-label="Introduction"
       className="relative w-full min-h-[90svh] md:min-h-screen flex flex-col items-center justify-center text-center px-4 sm:px-6 md:px-12 py-20 sm:py-24 md:py-32 select-none overflow-hidden"
     >
-      {/* Edge-to-edge tiny pixel art illustration background */}
+      {/* Pixel Art Scene Background (Creator with CRT in field) rendered in brand colors */}
       <PixelArtBackground
         className="w-full h-full"
-        pixelSize={4}
-        opacity={0.85}
+        pixelSize={8}
+        interactive={true}
       />
 
       {/* Hero content sitting cleanly in z-10 above canvas */}

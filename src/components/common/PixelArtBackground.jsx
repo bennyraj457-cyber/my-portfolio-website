@@ -1,158 +1,255 @@
 import React, { useEffect, useRef } from 'react'
-import heroPixelArtImage from '../../assets/images/hero-pixel-art.png'
+import heroPixelArtSrc from '../../assets/pixel-art-hero.jpg'
 
 /**
  * PixelArtBackground
  *
- * Renders the user's lofi pixel art illustration directly onto an interactive canvas
- * made of thousands of tiny discrete micro-pixels:
- * - Samples the pixel colors from the artwork.
- * - Renders them as crisp micro-pixel blocks.
- * - Gentle atmospheric vignette / radial breathing clearing in the center to maintain perfect legibility for hero text.
- * - Subtle micro-twinkle / ambient drift particles matching the sunset sky.
+ * Renders the iconic scene (creator typing on a CRT computer in an open field)
+ * reimagined through your portfolio's dithered color palette (#ffd700, white, charcoal/black):
+ * - Samples the scene into discrete macro-pixels matching the pixel aesthetic
+ * - Maps the image tones cleanly to our brand colors:
+ *     - Sky / bright areas -> Clean white space (#ffffff) with fine dither dots (#fffadc)
+ *     - Field & grass -> Subtle yellow dither gradients (#ffd700, #ffe766, #fff3b0)
+ *     - Creator in suit & CRT computer shadows -> Deep contrast black/charcoal (#1a1a1a)
+ *     - Glowing CRT monitor screen & chair accents -> Golden highlight (#ffd700)
+ * - Keeps central text readability clear with dynamic soft clearing
+ * - Subtle ambient CRT monitor pulse
  */
 export default function PixelArtBackground({
   className = '',
-  pixelSize = 4, // 4x4 crisp retro pixel blocks
-  opacity = 0.88,
+  pixelSize = 10, // Crisp retro pixel block size
+  interactive = true,
 }) {
   const canvasRef = useRef(null)
+  const imageRef = useRef(null)
   const rafId = useRef(null)
+  const mouseRef = useRef({ x: -1000, y: -1000, radius: 45 })
 
   useEffect(() => {
+    const img = new Image()
+    img.src = heroPixelArtSrc
+    img.onload = () => {
+      imageRef.current = img
+      initAndRender()
+    }
+
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
 
     let width = 0
     let height = 0
-
-    const img = new Image()
-    img.src = heroPixelArtImage
-
     let sampledPixels = []
 
-    const processImage = () => {
+    const initAndRender = () => {
+      if (!imageRef.current) return
       const parent = canvas.parentElement || document.body
       width = canvas.width = parent.clientWidth || window.innerWidth
       height = canvas.height = parent.clientHeight || window.innerHeight
 
-      if (!img.complete || img.naturalWidth === 0) return
-
-      // Offscreen canvas to scale and sample image pixels to fit canvas
+      // 1. Offscreen canvas for aspect-ratio covering and pixel sampling
       const offCanvas = document.createElement('canvas')
-      const targetCols = Math.ceil(width / pixelSize)
-      const targetRows = Math.ceil(height / pixelSize)
-
-      offCanvas.width = targetCols
-      offCanvas.height = targetRows
+      const cols = Math.ceil(width / pixelSize)
+      const rows = Math.ceil(height / pixelSize)
+      offCanvas.width = cols
+      offCanvas.height = rows
       const offCtx = offCanvas.getContext('2d')
 
-      // Cover scaling math (object-fit: cover)
-      const imgRatio = img.naturalWidth / img.naturalHeight
-      const screenRatio = width / height
+      // Cover-fit image calculation
+      const img = imageRef.current
+      const imgRatio = img.width / img.height
+      const canvasRatio = cols / rows
 
       let drawW, drawH, drawX, drawY
-      if (screenRatio > imgRatio) {
-        drawW = targetCols
-        drawH = Math.round(targetCols / imgRatio)
+      if (canvasRatio > imgRatio) {
+        drawW = cols
+        drawH = cols / imgRatio
         drawX = 0
-        drawY = Math.round((targetRows - drawH) / 2)
+        // Bias slightly towards bottom where creator sits
+        drawY = rows - drawH
       } else {
-        drawH = targetRows
-        drawW = Math.round(targetRows * imgRatio)
-        drawX = Math.round((targetCols - drawW) / 2)
+        drawH = rows
+        drawW = rows * imgRatio
+        drawX = (cols - drawW) / 2
         drawY = 0
       }
 
-      // Draw downscaled to get discrete pixel block values
-      offCtx.imageSmoothingEnabled = false
       offCtx.drawImage(img, drawX, drawY, drawW, drawH)
+      const imgData = offCtx.getImageData(0, 0, cols, rows).data
 
-      const imgData = offCtx.getImageData(0, 0, targetCols, targetRows)
-      const data = imgData.data
+      // 2. Map sampled pixels to our brand palette (#ffd700, whites, dark charcoals)
+      sampledPixels = []
+      const cx = cols / 2
+      const cy = rows * 0.42
 
-      const pixels = []
-      const cx = targetCols / 2
-      const cy = targetRows / 2
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const idx = (r * cols + c) * 4
+          const red = imgData[idx]
+          const green = imgData[idx + 1]
+          const blue = imgData[idx + 2]
+          const alpha = imgData[idx + 3]
 
-      for (let r = 0; r < targetRows; r++) {
-        for (let c = 0; c < targetCols; c++) {
-          const idx = (r * targetCols + c) * 4
-          const red = data[idx]
-          const green = data[idx + 1]
-          const blue = data[idx + 2]
-          const alpha = data[idx + 3]
+          if (alpha < 30) continue
 
-          if (alpha > 20) {
-            // Distance from center for soft contrast attenuation behind the headline
-            const dx = (c - cx) / (targetCols * 0.48)
-            const dy = (r - cy) / (targetRows * 0.42)
-            const dist = Math.sqrt(dx * dx + dy * dy)
+          // Perceived luminance (0 to 255)
+          const lum = 0.299 * red + 0.587 * green + 0.114 * blue
 
-            // Center has soft lightness boost/translucency so black text is effortlessly readable
-            let centerFade = 1.0
-            if (dist < 1.0) {
-              centerFade = 0.22 + dist * 0.78
+          // Color detection in original image:
+          // Sky (blue-ish / high blue)
+          const isSky = blue > red * 1.15 && blue > 100 && lum > 80
+          // Grass/Hill (green dominant)
+          const isGrass = green > red && green > blue * 0.9 && lum > 60
+          // Suit / Deep Shadows (very dark)
+          const isDeepDark = lum < 55
+          // CRT Monitor Screen (bright blueish highlight)
+          const isMonitor = c > cols * 0.55 && c < cols * 0.85 && r > rows * 0.45 && r < rows * 0.75 && blue > 140
+
+          // Center headline buffer: fade pixels subtly near center so text remains ultra-legible
+          const dx = (c - cx) / (cols * 0.42)
+          const dy = (r - cy) / (rows * 0.35)
+          const distCenter = Math.sqrt(dx * dx + dy * dy)
+          const textAvoidFactor = distCenter < 1.0 ? distCenter * 0.4 : 1.0
+
+          // Map color to our design system
+          let color = null
+          let dotAlpha = textAvoidFactor
+
+          if (isMonitor) {
+            // CRT monitor glows in brand yellow
+            color = '#ffd700'
+            dotAlpha = 0.95
+          } else if (isDeepDark) {
+            // Suit, desk shadow, chair structure
+            color = '#111111'
+            dotAlpha = Math.min(0.85, 0.2 + textAvoidFactor * 0.65)
+          } else if (isSky) {
+            // Sky represented by white negative space with sparse dither
+            const dither = (c * 11 + r * 17) % 19 === 0
+            if (dither && lum > 140) {
+              color = '#ffe766'
+              dotAlpha = 0.25 * textAvoidFactor
+            } else {
+              color = null // Clear white space
             }
+          } else if (isGrass) {
+            // Rolling hill & grass field mapped to rich brand yellows and halftone dither
+            if (lum < 95) {
+              color = '#caa700' // Darker field shading
+              dotAlpha = 0.65 * textAvoidFactor
+            } else if (lum < 140) {
+              color = '#ffd700' // Primary gold
+              dotAlpha = 0.55 * textAvoidFactor
+            } else {
+              color = (c + r) % 2 === 0 ? '#ffe766' : '#fff3b0' // Soft pale yellow
+              dotAlpha = 0.45 * textAvoidFactor
+            }
+          } else {
+            // Intermediate tones / chair woodwork / CRT beige casing
+            if (lum < 110) {
+              color = '#222222'
+              dotAlpha = 0.7
+            } else if (lum < 170) {
+              color = '#ffd700'
+              dotAlpha = 0.6
+            } else {
+              color = '#ffe766'
+              dotAlpha = 0.3
+            }
+          }
 
-            pixels.push({
+          if (color && dotAlpha > 0.05) {
+            sampledPixels.push({
               x: c * pixelSize,
               y: r * pixelSize,
-              color: `rgba(${red}, ${green}, ${blue}, ${centerFade})`,
+              size: pixelSize - 1, // 1px clean grid separation
+              color,
+              baseAlpha: dotAlpha,
+              isMonitor,
             })
           }
         }
       }
-
-      sampledPixels = pixels
-      render()
     }
 
     const render = () => {
       ctx.clearRect(0, 0, width, height)
-      ctx.globalAlpha = opacity
+      const now = performance.now()
+      const mouse = mouseRef.current
 
-      // Draw all discrete tiny pixels
+      // Monitor gentle pulse
+      const monitorPulse = 0.85 + Math.sin(now * 0.005) * 0.15
+
       for (let i = 0; i < sampledPixels.length; i++) {
         const p = sampledPixels[i]
+
+        let alpha = p.baseAlpha
+        if (p.isMonitor) {
+          alpha = monitorPulse
+        }
+
+        // Subtle interactive hover disperse on mouse proximity
+        const dx = (p.x + p.size / 2) - mouse.x
+        const dy = (p.y + p.size / 2) - mouse.y
+        const dist = Math.sqrt(dx * dx + dy * dy)
+
+        let offsetX = 0
+        let offsetY = 0
+
+        if (dist < mouse.radius) {
+          const force = (1 - dist / mouse.radius) * 8
+          offsetX = (dx / dist) * force
+          offsetY = (dy / dist) * force
+          alpha = Math.min(1.0, alpha + 0.3)
+        }
+
+        ctx.globalAlpha = alpha
         ctx.fillStyle = p.color
-        ctx.fillRect(p.x, p.y, pixelSize, pixelSize)
+        ctx.fillRect(
+          Math.floor(p.x + offsetX),
+          Math.floor(p.y + offsetY),
+          p.size,
+          p.size
+        )
       }
-
-      // Soft white gradient veil overlay in center for ultra-crisp typography contrast
-      const gradient = ctx.createRadialGradient(
-        width / 2,
-        height * 0.46,
-        40,
-        width / 2,
-        height * 0.46,
-        Math.min(width * 0.52, 540)
-      )
-      gradient.addColorStop(0, 'rgba(255, 255, 255, 0.88)')
-      gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.65)')
-      gradient.addColorStop(0.85, 'rgba(255, 255, 255, 0.25)')
-      gradient.addColorStop(1, 'rgba(255, 255, 255, 0)')
-
       ctx.globalAlpha = 1.0
-      ctx.fillStyle = gradient
-      ctx.fillRect(0, 0, width, height)
+
+      rafId.current = requestAnimationFrame(render)
     }
 
-    img.onload = processImage
-    if (img.complete) processImage()
+    render()
 
     const handleResize = () => {
-      processImage()
+      initAndRender()
+    }
+
+    const handleMouseMove = (e) => {
+      if (!interactive) return
+      const rect = canvas.getBoundingClientRect()
+      mouseRef.current.x = e.clientX - rect.left
+      mouseRef.current.y = e.clientY - rect.top
+    }
+
+    const handleMouseLeave = () => {
+      mouseRef.current.x = -1000
+      mouseRef.current.y = -1000
     }
 
     window.addEventListener('resize', handleResize)
+    if (interactive) {
+      window.addEventListener('mousemove', handleMouseMove, { passive: true })
+      window.addEventListener('mouseleave', handleMouseLeave)
+    }
 
     return () => {
-      window.removeEventListener('resize', handleResize)
       if (rafId.current) cancelAnimationFrame(rafId.current)
+      window.removeEventListener('resize', handleResize)
+      if (interactive) {
+        window.removeEventListener('mousemove', handleMouseMove)
+        window.removeEventListener('mouseleave', handleMouseLeave)
+      }
     }
-  }, [pixelSize, opacity])
+  }, [pixelSize, interactive])
 
   return (
     <canvas
