@@ -133,6 +133,14 @@ export default function BoatCursor({
         currentPos.current.x = Math.max(marginX, Math.min(window.innerWidth - marginX, currentPos.current.x))
         currentPos.current.y = Math.max(marginY, Math.min(window.innerHeight - 150, currentPos.current.y))
 
+        // Dispatch boat coordinates so background pixel canvases and interactive elements
+        // react with the exact same tactile repulsion on mobile as desktop mouse hover
+        window.dispatchEvent(
+          new CustomEvent('boatmove', {
+            detail: { clientX: currentPos.current.x, clientY: currentPos.current.y }
+          })
+        )
+
         // When moving DOWN (or any vertical navigation), move page scroll organically!
         // Down button sails boat downward and scrolls page down to reveal content
         if (ctrl.down || velocity.current.y > 0.5) {

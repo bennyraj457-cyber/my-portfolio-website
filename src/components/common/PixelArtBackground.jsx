@@ -369,17 +369,27 @@ export default function PixelArtBackground({
       mouseRef.current.y = e.clientY - rect.top
     }
 
+    const handleBoatMove = (e) => {
+      const rect = canvas.getBoundingClientRect()
+      if (e.detail) {
+        mouseRef.current.x = e.detail.clientX - rect.left
+        mouseRef.current.y = e.detail.clientY - rect.top
+      }
+    }
+
     const handleMouseLeave = () => {
       mouseRef.current.x = -1000
       mouseRef.current.y = -1000
     }
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true })
+    window.addEventListener('boatmove', handleBoatMove, { passive: true })
     window.addEventListener('mouseleave', handleMouseLeave)
 
     return () => {
       isCancelled = true
       window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('boatmove', handleBoatMove)
       window.removeEventListener('mouseleave', handleMouseLeave)
       if (rafId.current) cancelAnimationFrame(rafId.current)
     }
