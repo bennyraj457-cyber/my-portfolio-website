@@ -17,11 +17,11 @@ export default function HeroSection() {
     <section
       id="hero"
       aria-label="Introduction"
-      className="relative w-full min-h-[90svh] md:min-h-screen flex items-center justify-center px-4 sm:px-6 md:px-12 lg:px-16 py-20 sm:py-24 md:py-28 select-none overflow-hidden"
+      className="relative w-full min-h-screen h-screen flex flex-col lg:flex-row p-0 m-0 select-none overflow-hidden"
     >
-      <div className="relative z-10 w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-        {/* ================= LEFT COLUMN: TEXT CONTENT ================= */}
-        <div className="lg:col-span-7 flex flex-col items-center lg:items-start text-center lg:text-left space-y-6 sm:space-y-8">
+      {/* ================= LEFT COLUMN: TEXT CONTENT (Full Height, 50% Desktop) ================= */}
+      <div className="w-full lg:w-1/2 h-full flex flex-col justify-center px-6 sm:px-10 md:px-14 lg:px-16 xl:px-20 py-16 sm:py-20 lg:py-0 bg-bg-main relative z-10 border-b lg:border-b-0 lg:border-r border-black/10">
+        <div className="w-full max-w-xl mx-auto lg:mx-0 flex flex-col items-start space-y-6 sm:space-y-7">
           {/* Main Headline assembled from discrete micro-pixels with left alignment */}
           <div className="w-full">
             <PixelAssembledHeading
@@ -34,7 +34,7 @@ export default function HeroSection() {
           </div>
 
           {/* Responsive Paragraph Bio */}
-          <p className="max-w-xl text-base sm:text-lg lg:text-xl font-normal leading-relaxed text-text-body">
+          <p className="text-base sm:text-lg lg:text-xl font-normal leading-relaxed text-text-body">
             {bio}
           </p>
 
@@ -51,34 +51,23 @@ export default function HeroSection() {
           </div>
 
           {/* Tools Marquee */}
-          <div className="w-full pt-2 flex flex-col items-center lg:items-start">
+          <div className="w-full pt-2 flex flex-col items-start">
             <span className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.25em] text-text-muted font-medium mb-3 select-none">
               My Skills
             </span>
-            <ToolsMarquee className="max-w-xl" />
+            <ToolsMarquee className="w-full max-w-lg" />
           </div>
         </div>
+      </div>
 
-        {/* ================= RIGHT COLUMN: PIXEL IMAGE CANVAS ================= */}
-        <div className="lg:col-span-5 flex items-center justify-center w-full">
-          <div className="relative w-full max-w-md lg:max-w-none aspect-[4/5] sm:aspect-square lg:aspect-[4/5] rounded-2xl overflow-hidden border border-black/10 bg-white/50 shadow-sm p-2 sm:p-3 group">
-            {/* Soft inner vignette and corner accents */}
-            <div className="absolute top-2 left-2 w-3 h-3 border-t-2 border-l-2 border-black/30 z-10 pointer-events-none" />
-            <div className="absolute top-2 right-2 w-3 h-3 border-t-2 border-r-2 border-black/30 z-10 pointer-events-none" />
-            <div className="absolute bottom-2 left-2 w-3 h-3 border-b-2 border-l-2 border-black/30 z-10 pointer-events-none" />
-            <div className="absolute bottom-2 right-2 w-3 h-3 border-b-2 border-r-2 border-black/30 z-10 pointer-events-none" />
-
-            {/* Standalone pixel art canvas */}
-            <div className="w-full h-full rounded-xl overflow-hidden relative">
-              <PixelArtBackground
-                className="w-full h-full"
-                pixelSize={7}
-                interactive={true}
-                standAlone={true}
-              />
-            </div>
-          </div>
-        </div>
+      {/* ================= RIGHT COLUMN: PIXEL IMAGE CANVAS (Full Height, 50% Desktop, Edge-to-Edge) ================= */}
+      <div className="w-full lg:w-1/2 h-full relative overflow-hidden bg-white">
+        <PixelArtBackground
+          className="absolute inset-0 w-full h-full object-cover"
+          pixelSize={8}
+          interactive={true}
+          standAlone={true}
+        />
       </div>
     </section>
   )
