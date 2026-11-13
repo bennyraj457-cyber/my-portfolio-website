@@ -33,17 +33,7 @@ export default function PixelCloudBackground({
   const fgDriftOffsetRef = useRef(0)
   const timeRef = useRef(0)
   const islandSpawnTimer = useRef(0)
-
-  // Floating Word Formation State
-  const wordState = useRef({
-    words: ['BENNY', 'CREATE', 'DESIGN'],
-    currentIndex: 0,
-    timer: 0,
-    cycleDuration: 360, // ~6 seconds per cycle at 60fps
-    dots: [],
-    pixelSize: 4,
-    dotSpacing: 6,
-  })
+  const textGridRef = useRef(null)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -52,6 +42,46 @@ export default function PixelCloudBackground({
 
     let width = 0
     let height = 0
+
+    // Sample "BENNY" onto the macroSize grid so matching background pixels can blink in/out to reveal it
+    const updateTextMask = () => {
+      const cols = Math.ceil(width / macroSize)
+      const rows = Math.ceil(height / macroSize)
+      if (cols <= 0 || rows <= 0) return
+
+      const offCanvas = document.createElement('canvas')
+      offCanvas.width = cols
+      offCanvas.height = rows
+      const offCtx = offCanvas.getContext('2d')
+      if (!offCtx) return
+
+      offCtx.clearRect(0, 0, cols, rows)
+      offCtx.fillStyle = '#ffffff'
+      // Scale font size proportionally to grid columns
+      const fontSize = Math.max(10, Math.floor(cols * 0.28))
+      offCtx.font = `900 ${fontSize}px sans-serif`
+      offCtx.textAlign = 'center'
+      offCtx.textBaseline = 'middle'
+      // Draw centered in the grid
+      offCtx.fillText('BENNY', cols / 2, rows * 0.48)
+
+      const imgData = offCtx.getImageData(0, 0, cols, rows).data
+      const grid = new Float32Array(cols * rows)
+      for (let i = 0; i < cols * rows; i++) {
+        // Opacity / brightness of the letter pixel
+        grid[i] = imgData[i * 4 + 3] > 64 ? imgData[i * 4 + 3] / 255 : 0
+      }
+      textGridRef.current = { cols, rows, data: grid }
+    }
+
+    const updateSize = () => {
+      const parent = canvas.parentElement || document.body
+      width = canvas.width = parent.clientWidth || window.innerWidth
+      height = canvas.height = parent.clientHeight || window.innerHeight
+      updateTextMask()
+      initSparkles()
+      initDriftingIslands()
+    }
 
     const initSparkles = () => {
       const list = []
@@ -68,11 +98,14 @@ export default function PixelCloudBackground({
       sparkles.current = list
     }
 
+    // Initialize initial drifting micro-pixel islands
     const createIsland = (spawnAtEdge = true) => {
+      // 2x2 or 3x3 pixel grid structure for each cluster
       const sizeType = Math.random() > 0.4 ? 3 : 2
-      const pixelSize = 3
+      const pixelSize = 3 // 3px discrete pixels per dot
       const cluster = []
 
+      // Generate random organic mini island shape
       for (let ox = 0; ox < sizeType; ox++) {
         for (let oy = 0; oy < sizeType; oy++) {
           if (Math.random() > 0.25) {
@@ -85,27 +118,25 @@ export default function PixelCloudBackground({
         }
       }
 
-      const currentW = width || window.innerWidth || 1200
-      const currentH = height || window.innerHeight || 800
-      const spawnX = spawnAtEdge ? currentW + 20 : Math.random() * currentW
-      const spawnY = currentH * 0.15 + Math.random() * (currentH * 0.7)
+      const spawnX = spawnAtEdge ? width + 20 : Math.random() * width
+      const spawnY = height * 0.15 + Math.random() * (height * 0.7)
 
       return {
         x: spawnX,
         y: spawnY,
-        vx: -(0.5 + Math.random() * 0.4),
-        vy: (Math.random() - 0.5) * 0.15,
+        vx: -(0.5 + Math.random() * 0.4), // Drifts right to left
+        vy: (Math.random() - 0.5) * 0.15, // Subtle vertical float
         cluster,
         pixelSize,
         opacity: 0.85,
-        alpha: 0.0,
+        alpha: 0.0, // Fades in smoothly
         fadeIn: true,
       }
     }
 
     const initDriftingIslands = () => {
       const list = []
-      const count = 12
+      const count = 12 // Concurrent floating micro-islands
       for (let i = 0; i < count; i++) {
         const isl = createIsland(false)
         isl.alpha = 0.4 + Math.random() * 0.4
@@ -113,63 +144,6 @@ export default function PixelCloudBackground({
       }
       driftingIslands.current = list
     }
-
-    const sampleWordPixels = (word) => {
-      const safeWidth = Math.max(width || 0, window.innerWidth || 1200)
-      const safeHeight = Math.max(height || 0, window.innerHeight || 800)
-      if (safeWidth <= 0 || safeHeight <= 0) return []
-
-      const offCanvas = document.createElement('canvas')
-      const offCtx = offCanvas.getContext('2d')
-      const fontSize = Math.max(28, Math.min(safeWidth * 0.08, 64))
-      offCanvas.width = safeWidth
-      offCanvas.height = Math.max(1, Math.round(fontSize * 2))
-
-      offCtx.font = `bold ${fontSize}px "Geist", -apple-system, sans-serif`
-      offCtx.fillStyle = '#ffffff'
-      offCtx.textAlign = 'center'
-      offCtx.textBaseline = 'middle'
-      offCtx.fillText(word, safeWidth / 2, offCanvas.height / 2)
-
-      const imgData = offCtx.getImageData(0, 0, offCanvas.width, offCanvas.height).data
-      const step = 6 // Discrete step distance between pixel points
-      const points = []
-
-      // Choose vertical positioning above or below hero text in open negative space
-      const anchorY = safeHeight > 650 ? safeHeight * 0.16 : safeHeight * 0.12
-
-      for (let y = 0; y < offCanvas.height; y += step) {
-        for (let x = 0; x < offCanvas.width; x += step) {
-          const idx = (y * offCanvas.width + x) * 4
-          if (imgData[idx + 3] > 120) {
-            points.push({
-              targetX: x,
-              targetY: anchorY + (y - offCanvas.height / 2),
-              // Initial spawn scatter position
-              x: x + (Math.random() - 0.5) * 80,
-              y: anchorY + (y - offCanvas.height / 2) + (Math.random() - 0.5) * 50,
-              size: Math.random() > 0.4 ? 4 : 2,
-              color: Math.random() > 0.4 ? '#ffd700' : '#ffe766',
-              scatterVx: (Math.random() - 0.5) * 1.5 - 0.4,
-              scatterVy: (Math.random() - 0.5) * 1.2,
-              seed: Math.random() * Math.PI * 2,
-            })
-          }
-        }
-      }
-      return points
-    }
-
-    const updateSize = () => {
-      const parent = canvas.parentElement || document.body
-      width = canvas.width = parent.clientWidth || window.innerWidth || 1200
-      height = canvas.height = parent.clientHeight || window.innerHeight || 800
-      initSparkles()
-      initDriftingIslands()
-      wordState.current.dots = sampleWordPixels(wordState.current.words[wordState.current.currentIndex])
-    }
-
-    updateSize()
 
     const updateObstacles = () => {
       const canvasRect = canvas.getBoundingClientRect()
@@ -402,7 +376,35 @@ export default function PixelCloudBackground({
 
           const fgVal = dist - fgWave - contentRepulsion
 
-          if (bgVal > 1.70) {
+          // Check if this cell belongs to the background text wordmark "BENNY"
+          let isTextCell = false
+          let textIntensity = 0
+          if (textGridRef.current && textGridRef.current.cols === cols) {
+            const val = textGridRef.current.data[r * cols + c]
+            if (val > 0.15) {
+              isTextCell = true
+              textIntensity = val
+            }
+          }
+
+          // Text pixels gently blink / breathe into visibility in rhythmic waves
+          let showTextPixel = false
+          if (isTextCell) {
+            // Pulse wave moving smoothly across time with per-cell twinkle variation
+            const cellJitter = Math.sin(c * 1.7 + r * 2.3) * 0.4
+            const textWave = (Math.sin(time * 1.8 + cellJitter) + 1) / 2
+            // Threshold triggers blinking in and out matching neighboring pixels
+            if (textWave > 0.35 && textIntensity > 0.3) {
+              showTextPixel = true
+            }
+          }
+
+          if (showTextPixel) {
+            // Render text pixel using existing tones/patterns matching the cloud system
+            const textChecker = (c + r) % 2 === 0
+            ctx.fillStyle = textChecker ? patternLight2_Light3 : patternLight3_White
+            ctx.fillRect(px, py, macroSize, macroSize)
+          } else if (bgVal > 1.70) {
             ctx.fillStyle = tones.primary
             ctx.fillRect(px, py, macroSize, macroSize)
           } else if (bgVal > 1.48) {
@@ -527,71 +529,7 @@ export default function PixelCloudBackground({
       }
       ctx.globalAlpha = 1.0
 
-      // 4. Render & Animate Rotating Pixel Words ("BENNY" / "CREATE" / "DESIGN")
-      const ws = wordState.current
-      ws.timer++
-      const cycleProgress = (ws.timer % ws.cycleDuration) / ws.cycleDuration
-
-      // Phase transitions:
-      // 0.00 -> 0.20: Assemble (Micro-pixels converge smoothly from scatter into letter shapes)
-      // 0.20 -> 0.75: Fully Formed (Micro-twinkle jitter and slow lateral drift)
-      // 0.75 -> 0.95: Dissolve / Scatter (Particles drift apart into the digital ether)
-      // 0.95 -> 1.00: Switch to next word
-      let wordAlpha = 0
-      let convergence = 0
-      let isDispersing = false
-
-      if (cycleProgress < 0.2) {
-        // Assemble phase
-        const p = cycleProgress / 0.2
-        wordAlpha = p
-        convergence = p
-      } else if (cycleProgress < 0.75) {
-        // Formed & holding
-        wordAlpha = 1.0
-        convergence = 1.0
-      } else if (cycleProgress < 0.95) {
-        // Disperse / dissolve phase
-        const p = (cycleProgress - 0.75) / 0.2
-        wordAlpha = 1.0 - p
-        convergence = 1.0
-        isDispersing = true
-      } else {
-        // Transition to next word
-        if (ws.timer % ws.cycleDuration === ws.cycleDuration - 1) {
-          ws.currentIndex = (ws.currentIndex + 1) % ws.words.length
-          ws.dots = sampleWordPixels(ws.words[ws.currentIndex])
-        }
-      }
-
-      if (wordAlpha > 0.02 && ws.dots.length > 0) {
-        ctx.globalAlpha = Math.min(0.85, wordAlpha * 0.85)
-        for (let i = 0; i < ws.dots.length; i++) {
-          const d = ws.dots[i]
-
-          if (isDispersing) {
-            d.x += d.scatterVx * 1.6
-            d.y += d.scatterVy * 1.6
-          } else {
-            // Smooth lerp to target position
-            d.x += (d.targetX - d.x) * (0.08 * convergence + 0.02)
-            d.y += (d.targetY - d.y) * (0.08 * convergence + 0.02)
-          }
-
-          // Gentle ambient float jitter
-          const jitterX = Math.sin(time * 2 + d.seed) * 0.8
-          const jitterY = Math.cos(time * 2.2 + d.seed) * 0.8
-
-          const snapX = Math.floor((d.x + jitterX) / 2) * 2
-          const snapY = Math.floor((d.y + jitterY) / 2) * 2
-
-          ctx.fillStyle = d.color
-          ctx.fillRect(snapX, snapY, d.size, d.size)
-        }
-      }
-      ctx.globalAlpha = 1.0
-
-      // 5. Render & Update Cursor Dust / Dither Wake Particles
+      // 4. Render & Update Cursor Dust / Dither Wake Particles
       const pList = particles.current
       for (let i = pList.length - 1; i >= 0; i--) {
         const p = pList[i]
