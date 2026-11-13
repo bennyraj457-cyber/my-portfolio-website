@@ -98,29 +98,20 @@ export default function PixelAssembledHeading({
 
           const charData = offCtx.getImageData(0, 0, width, height).data
 
-          // Letter appearance timing: overlapping soft cadence (75ms between letter starts)
-          const letterBaseDelay = 180 + globalCharIndex * 75
-
           for (let y = boxY1; y < boxY2; y += step) {
             for (let x = boxX1; x < boxX2; x += step) {
               const idx = (y * width + x) * 4
               const alpha = charData[idx + 3]
 
               if (alpha > 120) {
-                // Gentle organic scatter within letter
-                const pixelJitter = Math.random() * 120
                 newParticles.push({
                   originX: x,
                   originY: y,
                   x,
-                  y: y + (Math.random() - 0.5) * 6, // subtle soft vertical settling (floating in by a few pixels)
+                  y,
                   vx: 0,
                   vy: 0,
                   size: step - 0.35,
-                  alpha: 0,
-                  delay: letterBaseDelay + pixelJitter,
-                  startTime: performance.now(),
-                  fadeInDuration: 420 + Math.random() * 180, // Extended smooth fade-in duration
                 })
               }
             }
@@ -146,17 +137,6 @@ export default function PixelAssembledHeading({
 
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i]
-        const elapsed = now - p.startTime
-
-        // Pixel has not appeared yet in sequence
-        if (elapsed < p.delay) {
-          continue
-        }
-
-        // Smooth cubic easeOut easing curve for individual pixel fade
-        const rawProgress = Math.min(1, (elapsed - p.delay) / p.fadeInDuration)
-        const appearProgress = 1 - Math.pow(1 - rawProgress, 3)
-        p.alpha = appearProgress
 
         // Spring physics towards target origin
         const spring = 0.05
@@ -187,25 +167,9 @@ export default function PixelAssembledHeading({
         p.x += p.vx
         p.y += p.vy
 
-        // Continuous smooth color interpolation:
-        // Starts soft brand gold (255, 215, 0), transitions smoothly to crisp black (0, 0, 0)
-        ctx.globalAlpha = p.alpha
-        if (appearProgress < 0.6) {
-          const t = appearProgress / 0.6
-          const r = Math.round(255 * (1 - t * 0.75))
-          const g = Math.round(215 * (1 - t * 0.75))
-          const b = 0
-          ctx.fillStyle = `rgb(${r},${g},${b})`
-        } else {
-          const t = (appearProgress - 0.6) / 0.4
-          const shade = Math.round(64 * (1 - t))
-          ctx.fillStyle = `rgb(${shade},${shade},${shade})`
-        }
-
+        ctx.fillStyle = '#000000'
         ctx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size)
       }
-
-      ctx.globalAlpha = 1.0
 
       rafId.current = requestAnimationFrame(render)
     }
