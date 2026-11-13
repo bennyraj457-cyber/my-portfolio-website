@@ -21,8 +21,8 @@ export default function PixelCloudBackground({
   driftSpeed = 0.45,
 }) {
   const canvasRef = useRef(null)
-  const introAlpha = useRef(0)
-  const isIntroComplete = useRef(false)
+  const introAlpha = useRef(window.__preloaderFinished ? 1 : 0)
+  const isIntroComplete = useRef(Boolean(window.__preloaderFinished))
   const mousePos = useRef({ x: -1000, y: -1000 })
   const prevMousePos = useRef({ x: -1000, y: -1000 })
   const contentObstacles = useRef([])
@@ -289,15 +289,20 @@ export default function PixelCloudBackground({
 
       ctx.clearRect(0, 0, width, height)
 
-      // Smooth GSAP / RAF fade-in on initial page load
-      if (!isIntroComplete.current) {
-        introAlpha.current += 0.02
-        if (introAlpha.current >= 1) {
-          introAlpha.current = 1
-          isIntroComplete.current = true
+      // Hold at 0 opacity until preloader finishes, then smoothly reveal
+      if (!window.__preloaderFinished) {
+        introAlpha.current = 0
+        ctx.globalAlpha = 0
+      } else {
+        if (!isIntroComplete.current) {
+          introAlpha.current += 0.025
+          if (introAlpha.current >= 1) {
+            introAlpha.current = 1
+            isIntroComplete.current = true
+          }
         }
+        ctx.globalAlpha = introAlpha.current
       }
-      ctx.globalAlpha = introAlpha.current
 
       const cx = width / 2
       const cy = height * 0.48

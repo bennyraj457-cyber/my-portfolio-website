@@ -78,34 +78,38 @@ export default function Preloader({ onComplete }) {
       tl.to([brandRef.current, statusRef.current, counterRef.current, barRef.current?.parentElement], {
         y: -40,
         opacity: 0,
-        duration: 0.6,
-        stagger: 0.08,
+        duration: 0.5,
+        stagger: 0.06,
         ease: 'power3.in',
       })
       .to(
         curtainLeftRef.current,
         {
           yPercent: -100,
-          duration: 0.85,
+          duration: 0.9,
           ease: 'power4.inOut',
         },
-        '-=0.2'
+        '-=0.15'
       )
       .to(
         curtainRightRef.current,
         {
           yPercent: 100,
-          duration: 0.85,
+          duration: 0.9,
           ease: 'power4.inOut',
         },
-        '<0.05'
+        '<0.04'
       )
       .to(
         containerRef.current,
         {
           opacity: 0,
-          display: 'none',
-          duration: 0.1,
+          duration: 0.15,
+          onComplete: () => {
+            if (containerRef.current) {
+              containerRef.current.style.display = 'none'
+            }
+          },
         }
       )
     }, containerRef)
@@ -177,3 +181,4 @@ export default function Preloader({ onComplete }) {
     </div>
   )
 }
+

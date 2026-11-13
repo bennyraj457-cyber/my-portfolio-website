@@ -26,29 +26,34 @@ export default function HeroSection() {
       const ctx = gsap.context(() => {
         const tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
 
+        // Initial invisible starting state to ensure no flash before animation
+        gsap.set([line1Ref.current, line2Ref.current, bioRef.current, marqueeWrapperRef.current], {
+          opacity: 0,
+        })
+
         tl.fromTo(
           [line1Ref.current, line2Ref.current],
-          { y: 60, opacity: 0, rotateX: 20 },
+          { y: 70, opacity: 0, rotateX: 25 },
           {
             y: 0,
             opacity: 1,
             rotateX: 0,
-            duration: 1.2,
-            stagger: 0.15,
+            duration: 1.1,
+            stagger: 0.14,
             clearProps: 'transform',
           }
         )
         .fromTo(
           bioRef.current,
-          { y: 30, opacity: 0 },
-          { y: 0, opacity: 1, duration: 1, clearProps: 'transform' },
-          '-=0.7'
+          { y: 35, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.9, clearProps: 'transform' },
+          '-=0.6'
         )
         .fromTo(
           marqueeWrapperRef.current,
-          { y: 30, opacity: 0 },
-          { y: 0, opacity: 1, duration: 1, clearProps: 'transform' },
-          '-=0.6'
+          { y: 35, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.9, clearProps: 'transform' },
+          '-=0.5'
         )
       }, sectionRef)
 
@@ -58,7 +63,15 @@ export default function HeroSection() {
     if (window.__preloaderFinished) {
       animateIn()
     } else {
-      const handler = () => animateIn()
+      // Hide initially while preloader is active
+      gsap.set([line1Ref.current, line2Ref.current, bioRef.current, marqueeWrapperRef.current], {
+        opacity: 0,
+      })
+
+      const handler = () => {
+        // Small 80ms delay after preloader curtains open to let viewport shine through
+        setTimeout(animateIn, 80)
+      }
       window.addEventListener('preloader:done', handler, { once: true })
       return () => window.removeEventListener('preloader:done', handler)
     }
