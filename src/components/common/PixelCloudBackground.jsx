@@ -327,23 +327,13 @@ export default function PixelCloudBackground({
           const dy = (midY - cy) / ry
           const dist = Math.sqrt(dx * dx + dy * dy)
 
-          let mouseRepel = 0
-          if (interactive) {
-            const mx = midX - mousePos.current.x
-            const my = midY - mousePos.current.y
-            const mDist = Math.sqrt(mx * mx + my * my)
-            if (mDist < 180) {
-              mouseRepel = (1 - mDist / 180) * 0.28
-            }
-          }
-
           const bgDriftX = midX + bgDrift
           const bgWave =
             Math.sin(bgDriftX * 0.0028 + time * 0.3) * 0.35 +
             Math.cos(midY * 0.003 - time * 0.25) * 0.35 +
             Math.sin((bgDriftX + midY) * 0.0018 + time * 0.15) * 0.2
 
-          const bgVal = dist - bgWave + mouseRepel - contentRepulsion
+          const bgVal = dist - bgWave - contentRepulsion
 
           const fgDriftX = midX + fgDrift
           const fgWave =
@@ -351,7 +341,7 @@ export default function PixelCloudBackground({
             Math.cos(midY * 0.0038 - time * 0.35) * 0.35 +
             Math.sin((fgDriftX + midY) * 0.0022 + time * 0.25) * 0.2
 
-          const fgVal = dist - fgWave + mouseRepel - contentRepulsion
+          const fgVal = dist - fgWave - contentRepulsion
 
           if (bgVal > 1.70) {
             ctx.fillStyle = tones.primary
