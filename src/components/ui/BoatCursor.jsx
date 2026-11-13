@@ -26,7 +26,8 @@ export default function BoatCursor({
   const mousePos = useRef({ x: -200, y: -200 })
   const currentPos = useRef({ x: -200, y: -200 })
   const velocity = useRef({ x: 0, y: 0 })
-  const currentAngle = useRef(0)
+  const smoothAngle = useRef(0)
+  const smoothRoll = useRef(0)
   const wakeParticles = useRef([])
   const rafId = useRef(null)
 
@@ -52,37 +53,8 @@ export default function BoatCursor({
     updateCanvasSize()
 
     const handleMouseMove = (e) => {
-      let targetX = e.clientX
-      let targetY = e.clientY
-
-      // Mouse collision clamp against text obstacles:
-      // The cursor target coordinate itself cannot enter inside the text pixel boundaries
-      const colliders = typeof window !== 'undefined' ? window.__TEXT_PIXEL_COLLIDERS__ : null
-      if (colliders && colliders.length > 0) {
-        const cursorRadius = 14
-        const now = performance.now()
-        for (let pass = 0; pass < 2; pass++) {
-          for (let i = 0; i < colliders.length; i++) {
-            const c = colliders[i]
-            if (c.revealTime && now < c.revealTime) continue
-
-            const dx = targetX - c.x
-            const dy = targetY - c.y
-            const distSq = dx * dx + dy * dy
-            const minDist = cursorRadius + c.r
-
-            if (distSq < minDist * minDist && distSq > 0.001) {
-              const dist = Math.sqrt(distSq)
-              const push = minDist - dist
-              targetX += (dx / dist) * push
-              targetY += (dy / dist) * push
-            }
-          }
-        }
-      }
-
-      mousePos.current.x = targetX
-      mousePos.current.y = targetY
+      mousePos.current.x = e.clientX
+      mousePos.current.y = e.clientY
 
       if (!isVisible) setIsVisible(true)
 
@@ -101,112 +73,71 @@ export default function BoatCursor({
     }
 
     const animate = () => {
-      const ease = 0.16
+      // 1. High-precision spring lerp for silky smooth boat movement
+      const posLerp = 0.12
       const dx = mousePos.current.x - currentPos.current.x
       const dy = mousePos.current.y - currentPos.current.y
 
-      velocity.current.x = dx * ease
-      velocity.current.y = dy * ease
+      velocity.current.x += (dx * posLerp - velocity.current.x) * 0.4
+      velocity.current.y += (dy * posLerp - velocity.current.y) * 0.4
 
-      // Compute tentative new position
-      let nextX = currentPos.current.x + velocity.current.x
-      let nextY = currentPos.current.y + velocity.current.y
+      currentPos.current.x += velocity.current.x
+      currentPos.current.y += velocity.current.y
 
-      // Collision Detection with Text Pixels
-      // The boat is solid wood and cannot penetrate revealed text pixels
-      const colliders = typeof window !== 'undefined' ? window.__TEXT_PIXEL_COLLIDERS__ : null
-      if (colliders && colliders.length > 0) {
-        const boatRadius = 18 // Boat collision hull radius
-        const now = performance.now()
+      const speedSq = velocity.current.x * velocity.current.x + velocity.current.y * velocity.current.y
+      const speed = Math.sqrt(speedSq)
 
-        // 2-pass iterative solid impulse resolution for smooth sliding along text edges
-        for (let pass = 0; pass < 2; pass++) {
-          for (let i = 0; i < colliders.length; i++) {
-            const c = colliders[i]
-            // Only collide with pixels that have started revealing their text
-            if (c.revealTime && now < c.revealTime) continue
-
-            const distX = nextX - c.x
-            const distY = nextY - c.y
-            const distSq = distX * distX + distY * distY
-            const minDist = boatRadius + c.r
-
-            if (distSq < minDist * minDist && distSq > 0.001) {
-              const dist = Math.sqrt(distSq)
-              const overlap = minDist - dist
-              const normalX = distX / dist
-              const normalY = distY / dist
-
-              // Push the boat back outside the text pixel
-              nextX += normalX * overlap
-              nextY += normalY * overlap
-
-              // Dampen / deflect velocity along collision normal (sliding collision)
-              const dot = velocity.current.x * normalX + velocity.current.y * normalY
-              if (dot < 0) {
-                velocity.current.x -= dot * normalX * 1.2
-                velocity.current.y -= dot * normalY * 1.2
-              }
-            }
-          }
-        }
-      }
-
-      currentPos.current.x = nextX
-      currentPos.current.y = nextY
-
-      const speed = Math.sqrt(velocity.current.x * velocity.current.x + velocity.current.y * velocity.current.y)
-
-      // Calculate boat heading / steering direction
-      // When boat SVG points UP (Y-axis negative is 0 deg):
-      // atan2(velocity.y, velocity.x) gives angle relative to +X (pointing right).
-      // Adding 90 deg aligns 0 deg heading with UP (bow pointing towards motion direction).
-      if (speed > 0.4) {
+      // 2. Smooth heading direction tracking:
+      // Only steer when there is real motion (speed > 0.35) to avoid jitter when idling
+      if (speed > 0.35) {
+        // Boat SVG bow points UP (negative Y), so atan2(vy, vx) + 90 deg gives exact bow direction
         const targetAngle = Math.atan2(velocity.current.y, velocity.current.x) * (180 / Math.PI) + 90
         
-        // Smooth continuous angle interpolation without 360 wrap glitch
-        let angleDiff = targetAngle - currentAngle.current
+        let angleDiff = targetAngle - smoothAngle.current
         while (angleDiff < -180) angleDiff += 360
         while (angleDiff > 180) angleDiff -= 360
-        currentAngle.current += angleDiff * 0.22
 
-        // Spawn gentle wake ripples behind the boat stern (opposite to travel direction)
-        if (Math.random() > 0.4 && speed > 1.5) {
-          const sternDistance = 16
-          // Radian direction of the stern: bow is (currentAngle - 90), stern is opposite (+ 90)
-          const sternRad = (currentAngle.current + 90) * (Math.PI / 180)
+        // Adaptive rotational smoothing: faster response when moving fast, velvety when cruising
+        const rotLerp = Math.min(0.24, 0.08 + speed * 0.015)
+        smoothAngle.current += angleDiff * rotLerp
+
+        // Dynamic 3D banking roll into turns (smoothly filtered)
+        const targetRoll = Math.max(-14, Math.min(14, (angleDiff * 0.4) + (velocity.current.x * 0.3)))
+        smoothRoll.current += (targetRoll - smoothRoll.current) * 0.1
+
+        // Spawn trailing water wake particles behind the stern
+        if (Math.random() > 0.45 && speed > 1.2) {
+          const sternDistance = 22
+          // Stern is opposite to bow
+          const sternRad = (smoothAngle.current + 90) * (Math.PI / 180)
           wakeParticles.current.push({
             x: currentPos.current.x + Math.cos(sternRad) * sternDistance,
             y: currentPos.current.y + Math.sin(sternRad) * sternDistance,
             size: 2,
-            maxSize: 12 + Math.random() * 6,
-            alpha: 0.6,
-            decay: 0.022,
-            vx: -velocity.current.x * 0.12 + (Math.random() - 0.5) * 0.3,
-            vy: -velocity.current.y * 0.12 + (Math.random() - 0.5) * 0.3,
+            maxSize: 10 + Math.random() * 5,
+            alpha: 0.5,
+            decay: 0.02,
+            vx: -velocity.current.x * 0.08 + (Math.random() - 0.5) * 0.25,
+            vy: -velocity.current.y * 0.08 + (Math.random() - 0.5) * 0.25,
           })
         }
+      } else {
+        // Gently return roll to flat when stopped
+        smoothRoll.current += (0 - smoothRoll.current) * 0.08
       }
 
-      // Update Boat Container transform
+      // 3. Update Boat Container position with sub-pixel float precision
       if (containerRef.current) {
-        const x = Math.round(currentPos.current.x)
-        const y = Math.round(currentPos.current.y)
-        containerRef.current.style.transform = `translate3d(${x}px, ${y}px, 0)`
+        containerRef.current.style.transform = `translate3d(${currentPos.current.x.toFixed(2)}px, ${currentPos.current.y.toFixed(2)}px, 0)`
       }
 
-      // Update 3D Top-Angle Boat Perspective:
-      // - rotateZ: points the bow directly into the movement direction
-      // - rotateX: top-down isometric tilt angle (slanted 20-30 deg from top for natural top-angle view)
-      // - dynamic banking roll (rotateY) into sharp turns
+      // 4. Update 3D Top-Angle Boat Perspective:
+      // Direct JS matrix transform without conflicting CSS transition lag
       if (boatRef.current) {
-        // Dynamic lateral banking roll when turning
-        const turnRoll = Math.max(-15, Math.min(15, (velocity.current.x * Math.cos(currentAngle.current * Math.PI / 180) + velocity.current.y * Math.sin(currentAngle.current * Math.PI / 180)) * 1.2))
-        
-        boatRef.current.style.transform = `perspective(800px) rotate(${currentAngle.current}deg) rotateX(15deg) rotateY(${turnRoll}deg)`
+        boatRef.current.style.transform = `perspective(800px) rotate(${smoothAngle.current.toFixed(2)}deg) rotateX(15deg) rotateY(${smoothRoll.current.toFixed(2)}deg)`
       }
 
-      // Render Trailing Water Wake on Canvas
+      // 5. Render Trailing Water Wake on Canvas
       if (ctx && canvas) {
         ctx.clearRect(0, 0, canvas.width, canvas.height)
         const wp = wakeParticles.current
@@ -215,7 +146,7 @@ export default function BoatCursor({
           const p = wp[i]
           p.x += p.vx
           p.y += p.vy
-          p.size += 0.35
+          p.size += 0.3
           p.alpha -= p.decay
 
           if (p.alpha <= 0) {
@@ -225,7 +156,7 @@ export default function BoatCursor({
 
           ctx.strokeStyle = '#ffd700'
           ctx.lineWidth = 1
-          ctx.globalAlpha = p.alpha * 0.65
+          ctx.globalAlpha = p.alpha * 0.6
           ctx.beginPath()
           ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
           ctx.stroke()
@@ -279,10 +210,14 @@ export default function BoatCursor({
       >
         <div
           ref={boatRef}
-          className={`relative -left-6 -top-10 transition-transform duration-75 ease-out select-none ${
+          className={`relative -left-6 -top-10 select-none ${
             isHovered ? 'scale-115' : 'scale-100'
           }`}
-          style={{ transformStyle: 'preserve-3d', transformOrigin: '24px 38px' }}
+          style={{
+            transformStyle: 'preserve-3d',
+            transformOrigin: '24px 38px',
+            transition: 'scale 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+          }}
         >
           {/* Top-Angle 3D Stylized Wooden Rowboat with Oar & Blanket based on reference illustration */}
           <svg
