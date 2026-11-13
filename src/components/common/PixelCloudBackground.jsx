@@ -35,6 +35,7 @@ export default function PixelCloudBackground({
   const islandSpawnTimer = useRef(0)
   const entranceStartTimeRef = useRef(null)
   const cellDelaysRef = useRef(new Map())
+  const glyphsRef = useRef([])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -51,6 +52,79 @@ export default function PixelCloudBackground({
       initSparkles()
       initDriftingIslands()
       initCellDelays()
+      initGlyphs()
+    }
+
+    // 5x5 Micro-Pixel Glyphs: Cursor Arrow (↖), Code Brackets ({}), Crosshair (✛), Star (✦)
+    const GLYPH_PATTERNS = [
+      // Cursor ↖
+      {
+        name: 'cursor',
+        size: 5,
+        matrix: [
+          [1, 1, 1, 1, 0],
+          [1, 1, 0, 0, 0],
+          [1, 0, 1, 0, 0],
+          [1, 0, 0, 1, 0],
+          [0, 0, 0, 0, 1],
+        ],
+      },
+      // Code Brackets { }
+      {
+        name: 'code',
+        size: 5,
+        matrix: [
+          [0, 1, 0, 1, 0],
+          [1, 0, 0, 0, 1],
+          [0, 1, 0, 1, 0],
+          [1, 0, 0, 0, 1],
+          [0, 1, 0, 1, 0],
+        ],
+      },
+      // Crosshair ✛
+      {
+        name: 'crosshair',
+        size: 5,
+        matrix: [
+          [0, 0, 1, 0, 0],
+          [0, 0, 1, 0, 0],
+          [1, 1, 1, 1, 1],
+          [0, 0, 1, 0, 0],
+          [0, 0, 1, 0, 0],
+        ],
+      },
+      // Star ✦
+      {
+        name: 'star',
+        size: 5,
+        matrix: [
+          [0, 0, 1, 0, 0],
+          [0, 1, 1, 1, 0],
+          [1, 1, 1, 1, 1],
+          [0, 1, 1, 1, 0],
+          [0, 0, 1, 0, 0],
+        ],
+      },
+    ]
+
+    const initGlyphs = () => {
+      const list = []
+      const glyphCount = 8 // 8 organic glyph artifacts across the canvas
+      for (let i = 0; i < glyphCount; i++) {
+        const pattern = GLYPH_PATTERNS[i % GLYPH_PATTERNS.length]
+        // Anchor relative angle and radius around the perimeter cloud ring
+        const relAngle = (i / glyphCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.4
+        const relDist = 0.72 + Math.random() * 0.35 // Placed within dense cloud zone
+        list.push({
+          pattern,
+          relAngle,
+          relDist,
+          dotSize: 3, // Crisp 3px micro-pixels
+          phase: Math.random() * Math.PI * 2,
+          speed: 0.02 + Math.random() * 0.015,
+        })
+      }
+      glyphsRef.current = list
     }
 
     const initCellDelays = () => {
@@ -419,32 +493,31 @@ export default function PixelCloudBackground({
 
           const fgVal = dist - fgWave - contentRepulsion
 
-          // Adjusted thresholds to create a lighter, more airy, and less dense cloud presence
-          if (bgVal > 1.95) {
+          if (bgVal > 1.70) {
             ctx.fillStyle = tones.primary
             ctx.fillRect(px, py, macroSize, macroSize)
-          } else if (bgVal > 1.75) {
+          } else if (bgVal > 1.48) {
             ctx.fillStyle = patternPrimary_Light1
             ctx.fillRect(px, py, macroSize, macroSize)
-          } else if (bgVal > 1.55) {
+          } else if (bgVal > 1.32) {
             const checker = (c + r) % 2 === 0
             ctx.fillStyle = checker ? tones.light1 : patternPrimary_Light1
             ctx.fillRect(px, py, macroSize, macroSize)
           }
 
-          if (fgVal > 1.35 && fgVal <= 1.55) {
+          if (fgVal > 1.10 && fgVal <= 1.32) {
             ctx.fillStyle = patternLight1_Light2
             ctx.fillRect(px, py, macroSize, macroSize)
-          } else if (fgVal > 1.20 && fgVal <= 1.35) {
+          } else if (fgVal > 0.98 && fgVal <= 1.10) {
             ctx.fillStyle = tones.light2
             ctx.fillRect(px, py, macroSize, macroSize)
-          } else if (fgVal > 1.05 && fgVal <= 1.20) {
+          } else if (fgVal > 0.82 && fgVal <= 0.98) {
             ctx.fillStyle = patternLight2_Light3
             ctx.fillRect(px, py, macroSize, macroSize)
-          } else if (fgVal > 0.90 && fgVal <= 1.05) {
+          } else if (fgVal > 0.68 && fgVal <= 0.82) {
             ctx.fillStyle = patternLight3_White
             ctx.fillRect(px, py, macroSize, macroSize)
-          } else if (fgVal > 0.78 && fgVal <= 0.90) {
+          } else if (fgVal > 0.58 && fgVal <= 0.68) {
             const sprinkle = (c * 7 + r * 13) % 4 === 0
             if (sprinkle) {
               ctx.fillStyle = patternSparseWhite
@@ -452,8 +525,8 @@ export default function PixelCloudBackground({
             }
           }
 
-          const isTranslucentPatch = (c * 11 + r * 7) % 31 === 0
-          if (isTranslucentPatch && fgVal > 0.95 && fgVal < 1.6) {
+          const isTranslucentPatch = (c * 11 + r * 7) % 23 === 0
+          if (isTranslucentPatch && fgVal > 0.72 && fgVal < 1.45) {
             ctx.fillStyle = 'rgba(255, 238, 120, 0.4)'
             ctx.fillRect(px, py, macroSize, macroSize)
           }
@@ -549,7 +622,50 @@ export default function PixelCloudBackground({
       }
       ctx.globalAlpha = 1.0
 
-      // 4. Render & Update Cursor Dust / Dither Wake Particles
+      // 4. Render Embedded Micro-Pixel Glyphs & Icons (↖, {}, ✛, ✦)
+      if (globalAuroraAlpha > 0.25) {
+        const glyphs = glyphsRef.current
+        for (let i = 0; i < glyphs.length; i++) {
+          const g = glyphs[i]
+          g.phase += g.speed
+
+          // Gentle luminosity breathe (between 0.35 and 0.85)
+          const breathe = 0.55 + Math.sin(g.phase) * 0.3
+
+          // Parallax position anchored into cloud drift
+          const gx = cx + Math.cos(g.relAngle) * (rx * g.relDist) - (fgDrift % width) * 0.4
+          const gy = cy + Math.sin(g.relAngle) * (ry * g.relDist)
+
+          let insideText = false
+          for (let j = 0; j < obstacles.length; j++) {
+            const obs = obstacles[j]
+            if (gx >= obs.left && gx <= obs.right && gy >= obs.top && gy <= obs.bottom) {
+              insideText = true
+              break
+            }
+          }
+
+          if (!insideText && gx >= -20 && gx <= width + 20 && gy >= -20 && gy <= height + 20) {
+            ctx.globalAlpha = breathe * globalAuroraAlpha
+            const matrix = g.pattern.matrix
+            const dotSize = g.dotSize
+
+            for (let row = 0; row < matrix.length; row++) {
+              for (let col = 0; col < matrix[row].length; col++) {
+                if (matrix[row][col] === 1) {
+                  const px = Math.floor(gx + (col - 2) * dotSize)
+                  const py = Math.floor(gy + (row - 2) * dotSize)
+                  ctx.fillStyle = breathe > 0.65 ? '#ffffff' : '#ffd700'
+                  ctx.fillRect(px, py, dotSize, dotSize)
+                }
+              }
+            }
+          }
+        }
+      }
+      ctx.globalAlpha = 1.0
+
+      // 5. Render & Update Cursor Dust / Dither Wake Particles
       const pList = particles.current
       for (let i = pList.length - 1; i >= 0; i--) {
         const p = pList[i]
