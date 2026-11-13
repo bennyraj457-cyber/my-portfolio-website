@@ -73,13 +73,14 @@ export default function BoatCursor({
     }
 
     const animate = () => {
-      // 1. High-precision spring lerp for silky smooth boat movement
-      const posLerp = 0.12
+      // 1. Gentle, slow-floating water physics:
+      // A softer ease (0.055) gives the boat a relaxed, gentle drift through water
+      const posLerp = 0.055
       const dx = mousePos.current.x - currentPos.current.x
       const dy = mousePos.current.y - currentPos.current.y
 
-      velocity.current.x += (dx * posLerp - velocity.current.x) * 0.4
-      velocity.current.y += (dy * posLerp - velocity.current.y) * 0.4
+      velocity.current.x += (dx * posLerp - velocity.current.x) * 0.22
+      velocity.current.y += (dy * posLerp - velocity.current.y) * 0.22
 
       currentPos.current.x += velocity.current.x
       currentPos.current.y += velocity.current.y
@@ -87,9 +88,8 @@ export default function BoatCursor({
       const speedSq = velocity.current.x * velocity.current.x + velocity.current.y * velocity.current.y
       const speed = Math.sqrt(speedSq)
 
-      // 2. Smooth heading direction tracking:
-      // Only steer when there is real motion (speed > 0.35) to avoid jitter when idling
-      if (speed > 0.35) {
+      // 2. Smooth, graceful heading direction tracking:
+      if (speed > 0.2) {
         // Boat SVG bow points UP (negative Y), so atan2(vy, vx) + 90 deg gives exact bow direction
         const targetAngle = Math.atan2(velocity.current.y, velocity.current.x) * (180 / Math.PI) + 90
         
@@ -97,16 +97,16 @@ export default function BoatCursor({
         while (angleDiff < -180) angleDiff += 360
         while (angleDiff > 180) angleDiff -= 360
 
-        // Adaptive rotational smoothing: faster response when moving fast, velvety when cruising
-        const rotLerp = Math.min(0.24, 0.08 + speed * 0.015)
+        // Graceful, calm rotational steering (0.075 to 0.12)
+        const rotLerp = Math.min(0.12, 0.05 + speed * 0.015)
         smoothAngle.current += angleDiff * rotLerp
 
-        // Dynamic 3D banking roll into turns (smoothly filtered)
-        const targetRoll = Math.max(-14, Math.min(14, (angleDiff * 0.4) + (velocity.current.x * 0.3)))
-        smoothRoll.current += (targetRoll - smoothRoll.current) * 0.1
+        // Soft, subtle 3D banking roll into gentle turns
+        const targetRoll = Math.max(-10, Math.min(10, (angleDiff * 0.3) + (velocity.current.x * 0.2)))
+        smoothRoll.current += (targetRoll - smoothRoll.current) * 0.06
 
-        // Spawn trailing water wake particles behind the stern
-        if (Math.random() > 0.45 && speed > 1.2) {
+        // Spawn trailing water wake ripples behind the stern
+        if (Math.random() > 0.45 && speed > 0.8) {
           const sternDistance = 22
           // Stern is opposite to bow
           const sternRad = (smoothAngle.current + 90) * (Math.PI / 180)
@@ -115,15 +115,15 @@ export default function BoatCursor({
             y: currentPos.current.y + Math.sin(sternRad) * sternDistance,
             size: 2,
             maxSize: 10 + Math.random() * 5,
-            alpha: 0.5,
-            decay: 0.02,
-            vx: -velocity.current.x * 0.08 + (Math.random() - 0.5) * 0.25,
-            vy: -velocity.current.y * 0.08 + (Math.random() - 0.5) * 0.25,
+            alpha: 0.45,
+            decay: 0.015,
+            vx: -velocity.current.x * 0.06 + (Math.random() - 0.5) * 0.2,
+            vy: -velocity.current.y * 0.06 + (Math.random() - 0.5) * 0.2,
           })
         }
       } else {
         // Gently return roll to flat when stopped
-        smoothRoll.current += (0 - smoothRoll.current) * 0.08
+        smoothRoll.current += (0 - smoothRoll.current) * 0.05
       }
 
       // 3. Update Boat Container position with sub-pixel float precision
