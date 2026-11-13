@@ -66,6 +66,14 @@ export default function AboutPixelArtBackground({
         drawY = (rows - drawH) / 2
 
         offCtx.drawImage(img, drawX, drawY, drawW, drawH)
+
+        // Clear out the top-left printed text ("THOUGHTS ARE NOT REAL") from the offscreen canvas
+        // The text occupies the top-left quadrant (roughly 0% to 56% horizontally and 0% to 42% vertically of the image)
+        const textRegionW = drawW * 0.58
+        const textRegionH = drawH * 0.40
+        offCtx.fillStyle = '#ffffff'
+        offCtx.fillRect(drawX, drawY, textRegionW, textRegionH)
+
         const bgImgData = offCtx.getImageData(0, 0, cols, rows).data
 
         // High-contrast ink & graphite palette
