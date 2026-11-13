@@ -11,7 +11,7 @@ import { PixelArtBackground, WhitePixelBackground } from '../common'
  * - Both columns react seamlessly to cursor and mobile boat steering
  */
 export default function HeroSection() {
-  const { headlineLine1, headlineLine2 } = personalInfo
+  const { headlineLine1, headlineLine2, bio } = personalInfo
 
   return (
     <section
