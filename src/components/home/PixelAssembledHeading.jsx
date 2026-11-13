@@ -14,7 +14,6 @@ export default function PixelAssembledHeading({
   line1 = 'Designer who',
   line2 = 'ships with vision',
   pixelSize = 3,
-  align = 'center',
   className = '',
 }) {
   const canvasRef = useRef(null)
@@ -26,14 +25,9 @@ export default function PixelAssembledHeading({
 
   useEffect(() => {
     const updateCanvasDimensions = () => {
-      const containerWidth = align === 'left' 
-        ? Math.min(window.innerWidth - 32, 640)
-        : Math.min(window.innerWidth - 32, 920)
-
-      const fontSize = align === 'left'
-        ? Math.max(34, Math.min(window.innerWidth * 0.055, 68))
-        : Math.max(36, Math.min(window.innerWidth * 0.072, 82))
-
+      const containerWidth = Math.min(window.innerWidth - 32, 920)
+      // Estimate height based on fluid scaling
+      const fontSize = Math.max(36, Math.min(window.innerWidth * 0.072, 82))
       const estimatedHeight = fontSize * 2.3
       setDimensions({ width: containerWidth, height: estimatedHeight, fontSize })
     }
@@ -41,7 +35,7 @@ export default function PixelAssembledHeading({
     updateCanvasDimensions()
     window.addEventListener('resize', updateCanvasDimensions)
     return () => window.removeEventListener('resize', updateCanvasDimensions)
-  }, [align])
+  }, [])
 
   useEffect(() => {
     if (!dimensions.width || !dimensions.height) return
@@ -84,7 +78,7 @@ export default function PixelAssembledHeading({
     lines.forEach((lineObj) => {
       const fullText = lineObj.text
       const fullWidth = offCtx.measureText(fullText).width
-      let currentX = align === 'left' ? 0 : (width - fullWidth) / 2
+      let currentX = (width - fullWidth) / 2
 
       for (let c = 0; c < fullText.length; c++) {
         const char = fullText[c]
@@ -239,13 +233,13 @@ export default function PixelAssembledHeading({
 
   return (
     <div
-      className={`relative inline-block ${align === 'left' ? 'w-full text-left' : 'mx-auto'} cursor-default ${className}`}
+      className={`relative inline-block mx-auto cursor-default ${className}`}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
       <canvas
         ref={canvasRef}
-        className={`block ${align === 'left' ? '' : 'mx-auto'} pointer-events-auto`}
+        className="block mx-auto pointer-events-auto"
         aria-label={`${line1} ${line2}`}
       />
       {/* Hidden accessible heading for screen readers & SEO */}

@@ -46,7 +46,7 @@ export default function PixelArtBackground({
         width = canvas.width = parent.clientWidth || window.innerWidth
         height = canvas.height = parent.clientHeight || window.innerHeight
 
-        const blockSize = Math.max(4, pixelSize)
+        const blockSize = Math.max(5, pixelSize)
         const cols = Math.ceil(width / blockSize)
         const rows = Math.ceil(height / blockSize)
 
@@ -84,24 +84,22 @@ export default function PixelArtBackground({
         const textCtx = textCanvas.getContext('2d')
 
         // Responsive font sizing based on grid columns & portrait/landscape mode
-        // Make font robust and bold so pixel font glyphs are distinct and readable
         const isPortrait = height > width
-        const baseRatio = isPortrait ? cols * 0.11 : cols * 0.065
-        const textFontSize = Math.max(22, Math.min(baseRatio, 50))
+        const baseRatio = isPortrait ? cols * 0.08 : cols * 0.045
+        const textFontSize = Math.max(16, Math.min(baseRatio, 36))
 
         const textCenterX = cols * 0.5
         const textCenterY = isPortrait
-          ? Math.max(textFontSize * 2.2, rows * 0.22)
-          : Math.max(textFontSize * 1.8, rows * 0.25)
+          ? Math.max(textFontSize * 2.5, rows * 0.22)
+          : Math.max(textFontSize * 2.0, rows * 0.26)
 
-        // Use standard clear sans-serif/serif fallback stack with 900 bold weight
-        const fontStr = `900 ${textFontSize}px "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`
+        const fontStr = `italic 700 ${textFontSize}px "TRJN DaVinci", "TRJN DaVinci Text", serif`
         textCtx.font = fontStr
         textCtx.textBaseline = 'middle'
 
         const lines = [
-          { text: headlineLine1 || 'Designer who', y: textCenterY - textFontSize * 0.7 },
-          { text: headlineLine2 || 'ships with Code', y: textCenterY + textFontSize * 0.7 },
+          { text: headlineLine1 || 'Designer who', y: textCenterY - textFontSize * 0.65 },
+          { text: headlineLine2 || 'ships with Code', y: textCenterY + textFontSize * 0.65 },
         ]
 
         // Map pixel key -> letter reveal delay
@@ -121,30 +119,30 @@ export default function PixelArtBackground({
             if (char.trim() !== '') {
               // Draw single character to offscreen canvas
               textCtx.clearRect(0, 0, cols, rows)
-              textCtx.fillStyle = '#000000'
               textCtx.fillText(char, curX, lineObj.y)
 
-              const x1 = Math.max(0, Math.floor(curX - 1))
-              const x2 = Math.min(cols, Math.ceil(curX + charWidth + 1))
-              const y1 = Math.max(0, Math.floor(lineObj.y - textFontSize * 0.8))
-              const y2 = Math.min(rows, Math.ceil(lineObj.y + textFontSize * 0.8))
+              const x1 = Math.max(0, Math.floor(curX - 2))
+              const x2 = Math.min(cols, Math.ceil(curX + charWidth + 2))
+              const y1 = Math.max(0, Math.floor(lineObj.y - textFontSize * 0.7))
+              const y2 = Math.min(rows, Math.ceil(lineObj.y + textFontSize * 0.7))
 
               const cData = textCtx.getImageData(0, 0, cols, rows).data
-              // Letter reveal cadence: 80ms between letter starts
-              const letterDelay = baseStartDelay + globalLetterIdx * 80
+              // Letter reveal cadence: 85ms between letter starts
+              const letterDelay = baseStartDelay + globalLetterIdx * 85
 
               for (let y = y1; y < y2; y++) {
                 for (let x = x1; x < x2; x++) {
                   const idx = (y * cols + x) * 4
-                  // Increased threshold so pixel edges are crisp and not fuzzy
-                  if (cData[idx + 3] > 60) {
-                    textPixelTimings.set(`${y},${x}`, letterDelay)
+                  if (cData[idx + 3] > 30) {
+                    // Small micro jitter within character so pixels in the letter don't look artificial
+                    const jitter = Math.random() * 60
+                    textPixelTimings.set(`${y},${x}`, letterDelay + jitter)
                   }
                 }
               }
               globalLetterIdx++
             } else {
-              globalLetterIdx += 0.35 // Space pause
+              globalLetterIdx += 0.4 // Small space pause
             }
 
             curX += charWidth
@@ -199,8 +197,8 @@ export default function PixelArtBackground({
             // Skip pure white pixels
             if (bgDefault.hex === '#ffffff' && !isTextPixel) continue
 
-            // Target text color: solid pitch-black ink (#000000) for maximum punchy contrast against bright sky
-            const targetColor = isTextPixel ? { r: 0, g: 0, b: 0, hex: '#000000' } : bgDefault
+            // Target text color: deep dark ink (#0a0a0a)
+            const targetColor = isTextPixel ? palette[0] : bgDefault
 
             const originX = c * blockSize
             const originY = r * blockSize
