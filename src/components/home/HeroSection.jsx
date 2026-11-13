@@ -28,12 +28,17 @@ export default function HeroSection() {
           opacity={1.0}
         />
 
-        {/* Foreground Title in pure italic black */}
-        <div className="relative z-10 max-w-lg select-text text-center md:text-left">
+        {/* Foreground Title in pure italic black & Bio Para */}
+        <div className="relative z-10 max-w-lg select-text text-center md:text-left space-y-4 sm:space-y-6">
           <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-heading italic tracking-tight text-black leading-[1.12]">
             {headlineLine1 || 'Designer who'} <br />
             {headlineLine2 || 'ships with Code'}
           </h1>
+
+          {/* Bio Paragraph */}
+          <p className="text-sm sm:text-base md:text-lg text-black/75 font-sans leading-relaxed max-w-md font-normal">
+            {bio}
+          </p>
         </div>
       </div>
 
