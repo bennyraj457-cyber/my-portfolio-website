@@ -15,16 +15,12 @@ import React, { useEffect, useRef } from 'react'
  */
 export default function PixelCloudBackground({
   className = '',
-  macroSize = 14,
+  macroSize = 28,
   interactive = true,
   contentRepelDistance = 90,
   driftSpeed = 0.45,
-  initialIntro = true,
-  textMask = null,
 }) {
   const canvasRef = useRef(null)
-  const textCanvasRef = useRef(null)
-  const textMaskDataRef = useRef(null)
   const mousePos = useRef({ x: -1000, y: -1000 })
   const prevMousePos = useRef({ x: -1000, y: -1000 })
   const contentObstacles = useRef([])
@@ -38,10 +34,6 @@ export default function PixelCloudBackground({
   const timeRef = useRef(0)
   const islandSpawnTimer = useRef(0)
 
-  // Initial Full Yellow Reveal Animation State
-  const introStartTimeRef = useRef(null)
-  const introGridRef = useRef([])
-
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -54,135 +46,8 @@ export default function PixelCloudBackground({
       const parent = canvas.parentElement || document.body
       width = canvas.width = parent.clientWidth || window.innerWidth
       height = canvas.height = parent.clientHeight || window.innerHeight
-      generateTextMask()
       initSparkles()
       initDriftingIslands()
-      initIntroGrid()
-    }
-
-    const generateTextMask = () => {
-      if (!textMask) {
-        textMaskDataRef.current = null
-        return
-      }
-
-      // Check if fonts are loaded; if not, retry once fonts are ready
-      if (document.fonts) {
-        document.fonts.ready.then(() => {
-          renderTextMaskToBuffer()
-        })
-      }
-      renderTextMaskToBuffer()
-    }
-
-    const renderTextMaskToBuffer = () => {
-      if (!textMask || width <= 0 || height <= 0) return
-
-      const tCanvas = document.createElement('canvas')
-      tCanvas.width = width
-      tCanvas.height = height
-      const tCtx = tCanvas.getContext('2d')
-      if (!tCtx) return
-
-      tCtx.clearRect(0, 0, width, height)
-
-      // Fluid typography scale
-      const fontSizeHeadline = Math.max(38, Math.min(width * 0.088, 96))
-      const fontSizeBio = Math.max(14, Math.min(width * 0.022, 19))
-      const centerY = height * 0.42
-
-      tCtx.textAlign = 'center'
-      tCtx.textBaseline = 'middle'
-      tCtx.fillStyle = '#000000'
-
-      // Render Headline in TRJN DaVinci italic serif
-      tCtx.font = `italic 400 ${fontSizeHeadline}px 'TRJN DaVinci', serif`
-      const line1Y = centerY - fontSizeHeadline * 0.62
-      const line2Y = centerY + fontSizeHeadline * 0.48
-      tCtx.fillText(textMask.line1 || 'Designer who', width / 2, line1Y)
-      tCtx.fillText(textMask.line2 || 'ships with Code', width / 2, line2Y)
-
-      // Render Bio lines in Geist
-      tCtx.font = `400 ${fontSizeBio}px 'Geist', sans-serif`
-      const bioY = line2Y + fontSizeHeadline * 0.96
-      const bioText = textMask.bio || ''
-
-      const maxBioWidth = Math.min(width * 0.72, 580)
-      const words = bioText.split(' ')
-      let currentLine = ''
-      let lineCount = 0
-      const lineHeight = fontSizeBio * 1.55
-
-      for (let n = 0; n < words.length; n++) {
-        const testLine = currentLine + words[n] + ' '
-        const metrics = tCtx.measureText(testLine)
-        if (metrics.width > maxBioWidth && n > 0) {
-          tCtx.fillText(currentLine.trim(), width / 2, bioY + lineCount * lineHeight)
-          currentLine = words[n] + ' '
-          lineCount++
-        } else {
-          currentLine = testLine
-        }
-      }
-      if (currentLine.trim()) {
-        tCtx.fillText(currentLine.trim(), width / 2, bioY + lineCount * lineHeight)
-      }
-
-      try {
-        const imgData = tCtx.getImageData(0, 0, width, height)
-        textMaskDataRef.current = {
-          data: imgData.data,
-          w: width,
-          h: height,
-          bounds: {
-            top: line1Y - fontSizeHeadline * 0.8,
-            bottom: bioY + (lineCount + 1.2) * lineHeight,
-            left: width / 2 - maxBioWidth / 2 - 40,
-            right: width / 2 + maxBioWidth / 2 + 40,
-          },
-        }
-      } catch (err) {
-        textMaskDataRef.current = null
-      }
-    }
-
-    const initIntroGrid = () => {
-      if (!initialIntro) return
-      const cols = Math.ceil(width / macroSize)
-      const rows = Math.ceil(height / macroSize)
-      const cx = width / 2
-      const cy = height * 0.48
-      const rx = Math.min(width * 0.55, 680)
-      const ry = Math.min(height * 0.38, 320)
-
-      const grid = []
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const midX = c * macroSize + macroSize / 2
-          const midY = r * macroSize + macroSize / 2
-
-          // Normalized elliptical distance from center hero clearing
-          const dx = (midX - cx) / rx
-          const dy = (midY - cy) / ry
-          const dist = Math.sqrt(dx * dx + dy * dy)
-
-          // Center pixels dissolve first, perimeter cloud pixels remain or blend
-          const isRevealArea = dist < 1.35
-          const randomJitter = Math.random() * 0.35
-
-          grid.push({
-            r,
-            c,
-            isRevealArea,
-            // Whole screen starts 100% solid yellow.
-            // Center reveal pixels start fading after 450ms. Outer perimeter pixels hold solid or blend into clouds.
-            delay: isRevealArea ? 450 + dist * 950 + randomJitter * 400 : 999999,
-            duration: 600 + Math.random() * 300,
-          })
-        }
-      }
-      introGridRef.current = grid
-      introStartTimeRef.current = performance.now()
     }
 
     const initSparkles = () => {
@@ -431,16 +296,14 @@ export default function PixelCloudBackground({
       const cols = Math.ceil(width / macroSize)
       const rows = Math.ceil(height / macroSize)
       const obstacles = contentObstacles.current
-      const maskObj = textMaskDataRef.current
-      const maskData = maskObj ? maskObj.data : null
 
       // 1. Render Layered Parallax Cloud Grid
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           const px = c * macroSize
           const py = r * macroSize
-          const midX = Math.floor(px + macroSize / 2)
-          const midY = Math.floor(py + macroSize / 2)
+          const midX = px + macroSize / 2
+          const midY = py + macroSize / 2
 
           let contentRepulsion = 0
           for (let i = 0; i < obstacles.length; i++) {
@@ -519,49 +382,6 @@ export default function PixelCloudBackground({
           if (isTranslucentPatch && fgVal > 0.72 && fgVal < 1.45) {
             ctx.fillStyle = 'rgba(255, 238, 120, 0.4)'
             ctx.fillRect(px, py, macroSize, macroSize)
-          }
-
-          // If textMask is active, surround letters with rich yellow pixel field so the white letters emerge distinctly
-          if (textMask) {
-            // Check proximity to letters
-            if (maskData && midX >= 0 && midX < width && midY >= 0 && midY < height) {
-              const bounds = maskObj.bounds
-              if (
-                bounds &&
-                midX >= bounds.left &&
-                midX <= bounds.right &&
-                midY >= bounds.top &&
-                midY <= bounds.bottom
-              ) {
-                // If this coordinate falls inside the solid cloud or nearby letters, fill with pixel background
-                const checker = (c + r) % 2 === 0
-                ctx.fillStyle = checker ? tones.primary : patternPrimary_Light1
-                ctx.fillRect(px, py, macroSize, macroSize)
-              }
-            }
-          }
-        }
-      }
-
-      // 1B. High-Precision Micro-Dither Text Negative Space Carving:
-      // Carve out crisp, legible negative space using 2px micro-pixels so letter edges and curves are sharp!
-      if (textMask && maskData) {
-        const bounds = maskObj.bounds
-        const startX = Math.max(0, Math.floor(bounds.left))
-        const endX = Math.min(width, Math.ceil(bounds.right))
-        const startY = Math.max(0, Math.floor(bounds.top))
-        const endY = Math.min(height, Math.ceil(bounds.bottom))
-
-        ctx.fillStyle = '#ffffff'
-        const step = 2 // 2px crisp micro-dots
-
-        for (let y = startY; y < endY; y += step) {
-          for (let x = startX; x < endX; x += step) {
-            const idx = (y * width + x) * 4
-            const alpha = maskData[idx + 3]
-            if (alpha > 45) {
-              ctx.fillRect(x, y, step, step)
-            }
           }
         }
       }
@@ -671,78 +491,6 @@ export default function PixelCloudBackground({
         ctx.fillRect(snapX, snapY, p.size, p.size)
       }
       ctx.globalAlpha = 1.0
-
-      // 5. Initial Full Solid Yellow Screen Reveal (Full Screen Solid Yellow -> Smooth Center Dissolve)
-      if (initialIntro && introStartTimeRef.current) {
-        const elapsed = performance.now() - introStartTimeRef.current
-        const grid = introGridRef.current
-        let hasRemainingIntroPixels = false
-        let revealTotal = 0
-        let revealDissolved = 0
-
-        for (let i = 0; i < grid.length; i++) {
-          const item = grid[i]
-          const px = item.c * macroSize
-          const py = item.r * macroSize
-
-          if (item.isRevealArea) {
-            revealTotal++
-            if (elapsed < item.delay) {
-              // Still solid yellow in reveal zone
-              ctx.fillStyle = tones.primary
-              ctx.fillRect(px, py, macroSize, macroSize)
-              hasRemainingIntroPixels = true
-            } else if (elapsed < item.delay + item.duration) {
-              // Dissolving pixel transition with halftone dither patterns
-              const progress = (elapsed - item.delay) / item.duration
-              hasRemainingIntroPixels = true
-
-              if (progress < 0.22) {
-                ctx.fillStyle = tones.primary
-              } else if (progress < 0.45) {
-                ctx.fillStyle = patternPrimary_Light1
-              } else if (progress < 0.68) {
-                ctx.fillStyle = patternLight1_Light2
-              } else if (progress < 0.88) {
-                ctx.fillStyle = patternLight2_Light3
-              } else {
-                ctx.fillStyle = patternLight3_White
-              }
-              ctx.fillRect(px, py, macroSize, macroSize)
-            } else {
-              revealDissolved++
-            }
-          } else {
-            // Non-reveal outer perimeter pixels start 100% solid yellow, then smoothly blend into the underlying ambient clouds
-            if (elapsed < 600) {
-              ctx.fillStyle = tones.primary
-              ctx.fillRect(px, py, macroSize, macroSize)
-              hasRemainingIntroPixels = true
-            } else if (elapsed < 1400) {
-              const alphaBlend = 1.0 - (elapsed - 600) / 800
-              ctx.fillStyle = tones.primary
-              ctx.globalAlpha = alphaBlend
-              ctx.fillRect(px, py, macroSize, macroSize)
-              ctx.globalAlpha = 1.0
-              hasRemainingIntroPixels = true
-            }
-          }
-        }
-
-        // Notify window ONLY after center pixels have completed dissolving (>85%)
-        // so hero text content appears cleanly afterward
-        const dissolveRatio = revealTotal > 0 ? revealDissolved / revealTotal : 1
-        if (dissolveRatio > 0.85 && !window.__introHeroRevealed) {
-          window.__introHeroRevealed = true
-          window.dispatchEvent(new CustomEvent('introHeroRevealed'))
-        }
-
-        // Clean up intro state when clearing is complete
-        if (!hasRemainingIntroPixels && elapsed > 2800) {
-          introStartTimeRef.current = null
-          introGridRef.current = []
-        }
-      }
 
       rafId.current = requestAnimationFrame(render)
     }

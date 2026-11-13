@@ -15,21 +15,6 @@ import PixelAssembledHeading from './PixelAssembledHeading'
  */
 export default function HeroSection() {
   const { headlineLine1, headlineLine2, bio } = personalInfo
-  const [isRevealed, setIsRevealed] = useState(false)
-
-  useEffect(() => {
-    // Listen for pixel dissolve trigger from canvas (fires only after center pixels clear)
-    const handleReveal = () => setIsRevealed(true)
-    window.addEventListener('introHeroRevealed', handleReveal)
-
-    // Fallback timer ensure hero is visible after 2200ms
-    const timer = setTimeout(() => setIsRevealed(true), 2200)
-
-    return () => {
-      window.removeEventListener('introHeroRevealed', handleReveal)
-      clearTimeout(timer)
-    }
-  }, [])
 
   return (
     <section
@@ -37,21 +22,16 @@ export default function HeroSection() {
       aria-label="Introduction"
       className="relative w-full min-h-[90svh] md:min-h-screen flex flex-col items-center justify-center text-center px-4 sm:px-6 md:px-12 py-20 sm:py-24 md:py-32 select-none overflow-hidden"
     >
-      {/* Edge-to-edge pixel cloud effect with initial solid yellow pixel-by-pixel load */}
+      {/* Edge-to-edge ambient pixel cloud effect */}
       <PixelCloudBackground
         className="w-full h-full"
         macroSize={28}
         interactive={true}
         contentRepelDistance={80}
-        initialIntro={true}
       />
 
       {/* Hero content sitting cleanly in z-10 above canvas */}
-      <div
-        className={`relative z-10 w-full max-w-4xl mx-auto flex flex-col items-center space-y-6 sm:space-y-8 transition-all duration-1000 ease-out ${
-          isRevealed ? 'opacity-100 translate-y-0 filter-none' : 'opacity-0 translate-y-4 pointer-events-none'
-        }`}
-      >
+      <div className="relative z-10 w-full max-w-4xl mx-auto flex flex-col items-center space-y-6 sm:space-y-8">
         {/* Main Headline assembled from discrete micro-pixels */}
         <PixelAssembledHeading
           line1={headlineLine1}
