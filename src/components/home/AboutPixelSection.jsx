@@ -28,7 +28,7 @@ export default function AboutSection() {
       {/* Foreground Content Card - Paragraph only */}
       <div className="relative z-10 max-w-2xl mx-auto select-text text-center flex flex-col items-center">
         <p className="text-base sm:text-xl md:text-2xl text-black/85 font-sans leading-relaxed text-center font-normal">
-          I believe software should feel tactile, fast, and unforgettable. Working at the intersection of design systems and frontend architecture, I take ideas from blank canvas to production code that scales.
+          I believe websites should feel tactile, fast, and unforgettable. Working at the intersection of design systems and creative web engineering, I take ideas from a blank canvas to living digital experiences that inspire and scale.
         </p>
       </div>
     </section>
