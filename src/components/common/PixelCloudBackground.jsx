@@ -15,7 +15,7 @@ import React, { useEffect, useRef } from 'react'
  */
 export default function PixelCloudBackground({
   className = '',
-  macroSize = 4,
+  macroSize = 14,
   interactive = true,
   contentRepelDistance = 90,
   driftSpeed = 0.45,
@@ -66,6 +66,18 @@ export default function PixelCloudBackground({
         return
       }
 
+      // Check if fonts are loaded; if not, retry once fonts are ready
+      if (document.fonts) {
+        document.fonts.ready.then(() => {
+          renderTextMaskToBuffer()
+        })
+      }
+      renderTextMaskToBuffer()
+    }
+
+    const renderTextMaskToBuffer = () => {
+      if (!textMask || width <= 0 || height <= 0) return
+
       const tCanvas = document.createElement('canvas')
       tCanvas.width = width
       tCanvas.height = height
@@ -74,29 +86,28 @@ export default function PixelCloudBackground({
 
       tCtx.clearRect(0, 0, width, height)
 
-      // Calculate fluid typography scale - bold and prominent
-      const fontSizeHeadline = Math.max(48, Math.min(width * 0.088, 110))
-      const fontSizeBio = Math.max(16, Math.min(width * 0.024, 22))
-      const centerY = height * 0.40
+      // Fluid typography scale
+      const fontSizeHeadline = Math.max(38, Math.min(width * 0.088, 96))
+      const fontSizeBio = Math.max(14, Math.min(width * 0.022, 19))
+      const centerY = height * 0.42
 
       tCtx.textAlign = 'center'
       tCtx.textBaseline = 'middle'
       tCtx.fillStyle = '#000000'
 
-      // Render Headline Line 1 & Line 2 in TRJN DaVinci italic serif with bold stroke for maximum clarity
-      tCtx.font = `italic 700 ${fontSizeHeadline}px 'TRJN DaVinci', serif`
-      const line1Y = centerY - fontSizeHeadline * 0.65
-      const line2Y = centerY + fontSizeHeadline * 0.45
+      // Render Headline in TRJN DaVinci italic serif
+      tCtx.font = `italic 400 ${fontSizeHeadline}px 'TRJN DaVinci', serif`
+      const line1Y = centerY - fontSizeHeadline * 0.62
+      const line2Y = centerY + fontSizeHeadline * 0.48
       tCtx.fillText(textMask.line1 || 'Designer who', width / 2, line1Y)
       tCtx.fillText(textMask.line2 || 'ships with Code', width / 2, line2Y)
 
-      // Render Bio lines in Geist Medium
-      tCtx.font = `500 ${fontSizeBio}px 'Geist', sans-serif`
-      const bioY = line2Y + fontSizeHeadline * 0.92
+      // Render Bio lines in Geist
+      tCtx.font = `400 ${fontSizeBio}px 'Geist', sans-serif`
+      const bioY = line2Y + fontSizeHeadline * 0.96
       const bioText = textMask.bio || ''
-      
-      // Multi-line word wrap for bio
-      const maxBioWidth = Math.min(width * 0.75, 620)
+
+      const maxBioWidth = Math.min(width * 0.72, 580)
       const words = bioText.split(' ')
       let currentLine = ''
       let lineCount = 0
@@ -119,7 +130,17 @@ export default function PixelCloudBackground({
 
       try {
         const imgData = tCtx.getImageData(0, 0, width, height)
-        textMaskDataRef.current = imgData.data
+        textMaskDataRef.current = {
+          data: imgData.data,
+          w: width,
+          h: height,
+          bounds: {
+            top: line1Y - fontSizeHeadline * 0.8,
+            bottom: bioY + (lineCount + 1.2) * lineHeight,
+            left: width / 2 - maxBioWidth / 2 - 40,
+            right: width / 2 + maxBioWidth / 2 + 40,
+          },
+        }
       } catch (err) {
         textMaskDataRef.current = null
       }
@@ -410,7 +431,8 @@ export default function PixelCloudBackground({
       const cols = Math.ceil(width / macroSize)
       const rows = Math.ceil(height / macroSize)
       const obstacles = contentObstacles.current
-      const maskData = textMaskDataRef.current
+      const maskObj = textMaskDataRef.current
+      const maskData = maskObj ? maskObj.data : null
 
       // 1. Render Layered Parallax Cloud Grid
       for (let r = 0; r < rows; r++) {
@@ -419,16 +441,6 @@ export default function PixelCloudBackground({
           const py = r * macroSize
           const midX = Math.floor(px + macroSize / 2)
           const midY = Math.floor(py + macroSize / 2)
-
-          // Negative space letter punch-out: if center of pixel falls inside a letter glyph, keep it pure blank white
-          if (maskData && midX >= 0 && midX < width && midY >= 0 && midY < height) {
-            const pixelIndex = (midY * width + midX) * 4
-            const alpha = maskData[pixelIndex + 3]
-            if (alpha > 40) {
-              // Letter shape area: blank white, created by background
-              continue
-            }
-          }
 
           let contentRepulsion = 0
           for (let i = 0; i < obstacles.length; i++) {
@@ -513,32 +525,42 @@ export default function PixelCloudBackground({
           if (textMask) {
             // Check proximity to letters
             if (maskData && midX >= 0 && midX < width && midY >= 0 && midY < height) {
-              // Check if pixel lies within letter bounding box or halo zone (radius 24px)
-              const radius = 24
-              let nearLetter = false
-
-              // Fast stepped radius sampling
-              for (let dy = -radius; dy <= radius; dy += 6) {
-                for (let dx = -radius; dx <= radius; dx += 6) {
-                  const checkX = midX + dx
-                  const checkY = midY + dy
-                  if (checkX >= 0 && checkX < width && checkY >= 0 && checkY < height) {
-                    const idx = (checkY * width + checkX) * 4
-                    if (maskData[idx + 3] > 40) {
-                      nearLetter = true
-                      break
-                    }
-                  }
-                }
-                if (nearLetter) break
-              }
-
-              if (nearLetter) {
-                // Dense solid brand gold surrounding the letter edges with micro dither falloff
+              const bounds = maskObj.bounds
+              if (
+                bounds &&
+                midX >= bounds.left &&
+                midX <= bounds.right &&
+                midY >= bounds.top &&
+                midY <= bounds.bottom
+              ) {
+                // If this coordinate falls inside the solid cloud or nearby letters, fill with pixel background
                 const checker = (c + r) % 2 === 0
                 ctx.fillStyle = checker ? tones.primary : patternPrimary_Light1
                 ctx.fillRect(px, py, macroSize, macroSize)
               }
+            }
+          }
+        }
+      }
+
+      // 1B. High-Precision Micro-Dither Text Negative Space Carving:
+      // Carve out crisp, legible negative space using 2px micro-pixels so letter edges and curves are sharp!
+      if (textMask && maskData) {
+        const bounds = maskObj.bounds
+        const startX = Math.max(0, Math.floor(bounds.left))
+        const endX = Math.min(width, Math.ceil(bounds.right))
+        const startY = Math.max(0, Math.floor(bounds.top))
+        const endY = Math.min(height, Math.ceil(bounds.bottom))
+
+        ctx.fillStyle = '#ffffff'
+        const step = 2 // 2px crisp micro-dots
+
+        for (let y = startY; y < endY; y += step) {
+          for (let x = startX; x < endX; x += step) {
+            const idx = (y * width + x) * 4
+            const alpha = maskData[idx + 3]
+            if (alpha > 45) {
+              ctx.fillRect(x, y, step, step)
             }
           }
         }
