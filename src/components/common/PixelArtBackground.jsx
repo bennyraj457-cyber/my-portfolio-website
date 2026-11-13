@@ -111,26 +111,15 @@ export default function PixelArtBackground({
             const originX = c * blockSize
             const originY = r * blockSize
 
-            const dx = (c - cx) / (cols / 2)
-            const dy = (r - cy) / (rows / 2)
-            const dist = Math.sqrt(dx * dx + dy * dy)
-            const initialDelay = 100 + dist * 600 + Math.random() * 180
-
             newParticles.push({
               originX,
               originY,
               x: originX,
-              y: originY + (Math.random() - 0.5) * 6,
+              y: originY,
               vx: 0,
               vy: 0,
               size: blockSize + 0.1,
               hex: bgDefault.hex,
-              r: bgDefault.r,
-              g: bgDefault.g,
-              b: bgDefault.b,
-              initialDelay,
-              startTime: now,
-              fadeInDuration: 280 + Math.random() * 120,
             })
           }
         }
@@ -141,7 +130,6 @@ export default function PixelArtBackground({
       setupParticles()
 
       const render = () => {
-        const now = performance.now()
         const particles = particlesRef.current
         const mouse = mouseRef.current
         const mouseActive = mouse.x > -500
@@ -153,12 +141,6 @@ export default function PixelArtBackground({
 
         for (let i = 0; i < particles.length; i++) {
           const p = particles[i]
-          const elapsed = now - p.startTime
-
-          if (elapsed < p.initialDelay) continue
-
-          const rawAppear = Math.min(1, (elapsed - p.initialDelay) / p.fadeInDuration)
-          const appearProgress = 1 - Math.pow(1 - rawAppear, 3)
 
           if (mouseActive) {
             const dxM = p.x - mouse.x
@@ -188,16 +170,7 @@ export default function PixelArtBackground({
             p.y = p.originY
           }
 
-          if (appearProgress < 0.6) {
-            const t = appearProgress / 0.6
-            const r = Math.round(255 + (p.r - 255) * t)
-            const g = Math.round(215 + (p.g - 215) * t)
-            const b = Math.round(0 + (p.b - 0) * t)
-            ctx.fillStyle = `rgb(${r},${g},${b})`
-          } else {
-            ctx.fillStyle = p.hex
-          }
-
+          ctx.fillStyle = p.hex
           ctx.fillRect(Math.floor(p.x), Math.floor(p.y), Math.ceil(p.size), Math.ceil(p.size))
         }
 

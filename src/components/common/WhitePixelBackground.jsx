@@ -46,23 +46,15 @@ export default function WhitePixelBackground({
           const originY = r * blockSize
           const color = '#ffffff' // Pure solid white pixel only
 
-          const dx = (c - cx) / (cols / 2)
-          const dy = (r - cy) / (rows / 2)
-          const dist = Math.sqrt(dx * dx + dy * dy)
-          const delay = 60 + dist * 350 + Math.random() * 120
-
           particles.push({
             originX,
             originY,
             x: originX,
-            y: originY + (Math.random() - 0.5) * 4,
+            y: originY,
             vx: 0,
             vy: 0,
             size: blockSize + 0.1,
             color,
-            delay,
-            startTime: now,
-            fadeInDuration: 250 + Math.random() * 100,
           })
         }
       }
@@ -73,7 +65,6 @@ export default function WhitePixelBackground({
     setup()
 
     const render = () => {
-      const now = performance.now()
       const particles = particlesRef.current
       const mouse = mouseRef.current
       const mouseActive = mouse.x > -500
@@ -84,8 +75,6 @@ export default function WhitePixelBackground({
 
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i]
-        const elapsed = now - p.startTime
-        if (elapsed < p.delay) continue
 
         if (mouseActive) {
           const dxM = p.x - mouse.x
