@@ -25,6 +25,7 @@ export default function BoatCursor({
 
   const currentPos = useRef({ x: -200, y: -200 })
   const velocity = useRef({ x: 0, y: 0 })
+  const scrollVelocity = useRef(0)
   const smoothAngle = useRef(0)
   const smoothRoll = useRef(0)
   const wakeParticles = useRef([])
@@ -146,13 +147,22 @@ export default function BoatCursor({
         })
       )
 
-      // Downward navigation sails boat & scrolls page down
-      if (ctrl.down || velocity.current.y > 0.5) {
-        const scrollStep = Math.max(1.2, velocity.current.y * 1.8)
-        window.scrollBy({ top: scrollStep, behavior: 'instant' })
-      } else if (ctrl.up || velocity.current.y < -0.5) {
-        const scrollStep = Math.min(-1.2, velocity.current.y * 1.8)
-        window.scrollBy({ top: scrollStep, behavior: 'instant' })
+      // Smooth inertia-dampened page scrolling:
+      // Translates boat vertical momentum into silky smooth camera gliding
+      let targetScrollSpeed = 0
+      if (ctrl.down) {
+        targetScrollSpeed = 5.2
+      } else if (ctrl.up) {
+        targetScrollSpeed = -5.2
+      } else if (Math.abs(velocity.current.y) > 0.4) {
+        targetScrollSpeed = velocity.current.y * 1.3
+      }
+
+      // Smooth lerp scroll velocity
+      scrollVelocity.current += (targetScrollSpeed - scrollVelocity.current) * 0.12
+
+      if (Math.abs(scrollVelocity.current) > 0.05) {
+        window.scrollBy(0, scrollVelocity.current)
       }
 
       const speedSq = velocity.current.x * velocity.current.x + velocity.current.y * velocity.current.y
