@@ -101,8 +101,24 @@ export default function PixelArtBackground({
           const isDeepDark = lum < 55
           const isMonitor = c > cols * 0.55 && c < cols * 0.85 && r > rows * 0.45 && r < rows * 0.75 && blue > 140
 
+          // Left-side pixel dither fade:
+          // Pixels on the left edge smoothly dissolve into white space using dither patterns
+          const leftFadeWidth = Math.min(cols * 0.38, 28) // Fade span over ~28 columns or 38% width
+          let leftFadeFactor = 1.0
+          if (c < leftFadeWidth) {
+            const progress = c / leftFadeWidth // 0 at left-most edge to 1.0
+            // Halftone dither threshold check: random noise + matrix checkerboard
+            const ditherHash = (Math.sin(c * 17.13 + r * 31.41) * 43758.54) % 1
+            const normalizedDither = Math.abs(ditherHash)
+            if (normalizedDither > progress) {
+              // Pixel dissolves away into white background
+              continue
+            }
+            leftFadeFactor = Math.pow(progress, 1.2)
+          }
+
           // Center headline buffer (only if used as full background, disabled when standAlone right column)
-          let textAvoidFactor = 1.0
+          let textAvoidFactor = leftFadeFactor
           if (!standAlone) {
             const dx = (c - cx) / (cols * 0.42)
             const dy = (r - cy) / (rows * 0.35)
