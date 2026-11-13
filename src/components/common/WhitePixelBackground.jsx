@@ -35,14 +35,6 @@ export default function WhitePixelBackground({
       const cols = Math.ceil(width / blockSize)
       const rows = Math.ceil(height / blockSize)
 
-      const whitePalette = [
-        '#ffffff',
-        '#fcfcfd',
-        '#f9fafb',
-        '#f4f5f7',
-        '#fffdf5',
-      ]
-
       const particles = []
       const now = performance.now()
       const cx = cols / 2
@@ -52,7 +44,7 @@ export default function WhitePixelBackground({
         for (let c = 0; c < cols; c++) {
           const originX = c * blockSize
           const originY = r * blockSize
-          const color = whitePalette[(c * 3 + r * 7) % whitePalette.length]
+          const color = '#ffffff' // Pure solid white pixel only
 
           const dx = (c - cx) / (cols / 2)
           const dy = (r - cy) / (rows / 2)
@@ -175,3 +167,4 @@ export default function WhitePixelBackground({
     />
   )
 }
+
