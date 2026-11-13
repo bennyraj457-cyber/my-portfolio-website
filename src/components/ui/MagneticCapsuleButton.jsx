@@ -27,6 +27,7 @@ export default function MagneticCapsuleButton({
   const [cursorState, setCursorState] = useState('default')
   const [isClicking, setIsClicking] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
+  const [isPreloaderDone, setIsPreloaderDone] = useState(Boolean(window.__preloaderFinished))
 
   // Coordinate and velocity physics (run at 60/120Hz with zero React re-renders)
   const mousePos = useRef({ x: -200, y: -200 })
@@ -48,7 +49,21 @@ export default function MagneticCapsuleButton({
   }, [])
 
   useEffect(() => {
-    if (!enabled || !isEligibleDevice()) return
+    if (window.__preloaderFinished) {
+      setIsPreloaderDone(true)
+      return
+    }
+
+    const handlePreloaderDone = () => {
+      setIsPreloaderDone(true)
+    }
+
+    window.addEventListener('preloader:done', handlePreloaderDone, { once: true })
+    return () => window.removeEventListener('preloader:done', handlePreloaderDone)
+  }, [])
+
+  useEffect(() => {
+    if (!enabled || !isEligibleDevice() || !isPreloaderDone) return
 
     document.body.classList.add('has-magnetic-cursor')
 
@@ -235,9 +250,9 @@ export default function MagneticCapsuleButton({
       document.removeEventListener('mouseenter', handleMouseEnterWindow)
       if (rafId.current) cancelAnimationFrame(rafId.current)
     }
-  }, [enabled, isVisible, isEligibleDevice, backgroundColor, proximityRadius])
+  }, [enabled, isVisible, isEligibleDevice, backgroundColor, proximityRadius, isPreloaderDone])
 
-  if (!enabled) return null
+  if (!enabled || !isPreloaderDone) return null
 
   const sizeClasses = {
     sm: 'text-[10px] py-1 px-3',
