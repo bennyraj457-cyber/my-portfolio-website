@@ -79,8 +79,52 @@ export default function BoatCursor({
       velocity.current.x = dx * ease
       velocity.current.y = dy * ease
 
-      currentPos.current.x += velocity.current.x
-      currentPos.current.y += velocity.current.y
+      // Compute tentative new position
+      let nextX = currentPos.current.x + velocity.current.x
+      let nextY = currentPos.current.y + velocity.current.y
+
+      // Collision Detection with Text Pixels
+      // The boat is solid wood and cannot penetrate revealed text pixels
+      const colliders = typeof window !== 'undefined' ? window.__TEXT_PIXEL_COLLIDERS__ : null
+      if (colliders && colliders.length > 0) {
+        const boatRadius = 18 // Boat collision hull radius
+        const now = performance.now()
+
+        // 2-pass iterative solid impulse resolution for smooth sliding along text edges
+        for (let pass = 0; pass < 2; pass++) {
+          for (let i = 0; i < colliders.length; i++) {
+            const c = colliders[i]
+            // Only collide with pixels that have started revealing their text
+            if (c.revealTime && now < c.revealTime) continue
+
+            const distX = nextX - c.x
+            const distY = nextY - c.y
+            const distSq = distX * distX + distY * distY
+            const minDist = boatRadius + c.r
+
+            if (distSq < minDist * minDist && distSq > 0.001) {
+              const dist = Math.sqrt(distSq)
+              const overlap = minDist - dist
+              const normalX = distX / dist
+              const normalY = distY / dist
+
+              // Push the boat back outside the text pixel
+              nextX += normalX * overlap
+              nextY += normalY * overlap
+
+              // Dampen / deflect velocity along collision normal (sliding collision)
+              const dot = velocity.current.x * normalX + velocity.current.y * normalY
+              if (dot < 0) {
+                velocity.current.x -= dot * normalX * 1.2
+                velocity.current.y -= dot * normalY * 1.2
+              }
+            }
+          }
+        }
+      }
+
+      currentPos.current.x = nextX
+      currentPos.current.y = nextY
 
       const speed = Math.sqrt(velocity.current.x * velocity.current.x + velocity.current.y * velocity.current.y)
 

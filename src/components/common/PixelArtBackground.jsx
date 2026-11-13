@@ -176,6 +176,7 @@ export default function PixelArtBackground({
         const now = performance.now()
         const cx = cols / 2
         const cy = rows * 0.5
+        const textColliders = []
 
         for (let r = 0; r < rows; r++) {
           for (let c = 0; c < cols; c++) {
@@ -202,6 +203,16 @@ export default function PixelArtBackground({
 
             const originX = c * blockSize
             const originY = r * blockSize
+
+            // If it's a text pixel, record it for boat cursor obstacle collision
+            if (isTextPixel) {
+              textColliders.push({
+                x: originX + blockSize * 0.5,
+                y: originY + blockSize * 0.5,
+                r: blockSize * 0.55,
+                revealTime: now + (letterTiming || 0),
+              })
+            }
 
             // Image pixel arrival delay (waves in first: 100ms - 900ms)
             const dx = (c - cx) / (cols / 2)
@@ -241,6 +252,11 @@ export default function PixelArtBackground({
         }
 
         particlesRef.current = newParticles
+
+        // Expose text collision obstacles to the global window for BoatCursor collision physics
+        if (typeof window !== 'undefined') {
+          window.__TEXT_PIXEL_COLLIDERS__ = textColliders
+        }
       }
 
       setupParticles()
@@ -359,6 +375,9 @@ export default function PixelArtBackground({
 
       return () => {
         window.removeEventListener('resize', handleResize)
+        if (typeof window !== 'undefined') {
+          delete window.__TEXT_PIXEL_COLLIDERS__
+        }
         if (rafId.current) cancelAnimationFrame(rafId.current)
       }
     }
