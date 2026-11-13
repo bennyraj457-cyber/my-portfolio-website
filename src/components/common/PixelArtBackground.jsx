@@ -77,7 +77,7 @@ export default function PixelArtBackground({
         offCtx.drawImage(img, drawX, drawY, drawW, drawH)
         const bgImgData = offCtx.getImageData(0, 0, cols, rows).data
 
-        // 2. Now render the text onto a separate text canvas to detect text pixels
+        // 2. Measure & draw characters letter-by-letter to get precise letter timings
         const textCanvas = document.createElement('canvas')
         textCanvas.width = cols
         textCanvas.height = rows
@@ -87,23 +87,67 @@ export default function PixelArtBackground({
         const isPortrait = height > width
         const baseRatio = isPortrait ? cols * 0.08 : cols * 0.045
         const textFontSize = Math.max(16, Math.min(baseRatio, 36))
-        const bioFontSize = Math.max(8, Math.min(textFontSize * 0.38, 14))
 
         const textCenterX = cols * 0.5
         const textCenterY = isPortrait
           ? Math.max(textFontSize * 2.5, rows * 0.22)
           : Math.max(textFontSize * 2.0, rows * 0.26)
 
-        textCtx.textAlign = 'center'
+        const fontStr = `italic 700 ${textFontSize}px "TRJN DaVinci", "TRJN DaVinci Text", serif`
+        textCtx.font = fontStr
         textCtx.textBaseline = 'middle'
 
-        // Render Headline Line 1 & Line 2 (Only headline, bio removed)
-        textCtx.font = `italic 700 ${textFontSize}px "TRJN DaVinci", "TRJN DaVinci Text", serif`
-        textCtx.fillStyle = '#0a0a0a'
-        textCtx.fillText(headlineLine1 || 'Designer who', textCenterX, textCenterY - textFontSize * 0.65)
-        textCtx.fillText(headlineLine2 || 'ships with Code', textCenterX, textCenterY + textFontSize * 0.65)
+        const lines = [
+          { text: headlineLine1 || 'Designer who', y: textCenterY - textFontSize * 0.65 },
+          { text: headlineLine2 || 'ships with Code', y: textCenterY + textFontSize * 0.65 },
+        ]
 
-        const textData = textCtx.getImageData(0, 0, cols, rows).data
+        // Map pixel key -> letter reveal delay
+        const textPixelTimings = new Map()
+        let globalLetterIdx = 0
+        const baseStartDelay = 1100 // Starts smoothly after background image settles
+
+        lines.forEach((lineObj) => {
+          const fullLine = lineObj.text
+          const fullWidth = textCtx.measureText(fullLine).width
+          let curX = textCenterX - fullWidth / 2
+
+          for (let ch = 0; ch < fullLine.length; ch++) {
+            const char = fullLine[ch]
+            const charWidth = textCtx.measureText(char).width
+
+            if (char.trim() !== '') {
+              // Draw single character to offscreen canvas
+              textCtx.clearRect(0, 0, cols, rows)
+              textCtx.fillText(char, curX, lineObj.y)
+
+              const x1 = Math.max(0, Math.floor(curX - 2))
+              const x2 = Math.min(cols, Math.ceil(curX + charWidth + 2))
+              const y1 = Math.max(0, Math.floor(lineObj.y - textFontSize * 0.7))
+              const y2 = Math.min(rows, Math.ceil(lineObj.y + textFontSize * 0.7))
+
+              const cData = textCtx.getImageData(0, 0, cols, rows).data
+              // Letter reveal cadence: 85ms between letter starts
+              const letterDelay = baseStartDelay + globalLetterIdx * 85
+
+              for (let y = y1; y < y2; y++) {
+                for (let x = x1; x < x2; x++) {
+                  const idx = (y * cols + x) * 4
+                  if (cData[idx + 3] > 30) {
+                    // Small micro jitter within character so pixels in the letter don't look artificial
+                    const jitter = Math.random() * 60
+                    textPixelTimings.set(`${y},${x}`, letterDelay + jitter)
+                  }
+                }
+              }
+              globalLetterIdx++
+            } else {
+              globalLetterIdx += 0.4 // Small space pause
+            }
+
+            curX += charWidth
+          }
+        })
 
         // Palette mapping:
         // 0: Deep Ink / Text (#0a0a0a)
@@ -141,9 +185,9 @@ export default function PixelArtBackground({
             const bVal = bgImgData[idx + 2]
             const aVal = bgImgData[idx + 3]
 
-            // Check if this pixel has embedded text on it
-            const textAlpha = textData[idx + 3]
-            const isTextPixel = textAlpha > 30
+            // Check if this pixel has embedded text on it from our letter-by-letter timing map
+            const letterTiming = textPixelTimings.get(`${r},${c}`)
+            const isTextPixel = letterTiming !== undefined
 
             // If it's outside the artwork and has no text, skip
             if (aVal < 20 && !isTextPixel) continue
@@ -153,7 +197,7 @@ export default function PixelArtBackground({
             // Skip pure white pixels
             if (bgDefault.hex === '#ffffff' && !isTextPixel) continue
 
-            // Target text color: deep dark ink (#0a0a0a) or primary gold accent
+            // Target text color: deep dark ink (#0a0a0a)
             const targetColor = isTextPixel ? palette[0] : bgDefault
 
             const originX = c * blockSize
@@ -165,11 +209,8 @@ export default function PixelArtBackground({
             const dist = Math.sqrt(dx * dx + dy * dy)
             const initialDelay = 100 + dist * 600 + Math.random() * 180
 
-            // Text reveal delay: after image arrives (starts at ~1200ms - 2200ms)
-            // Text color shifts smoothly letter by letter across x axis
-            const textRevealDelay = isTextPixel
-              ? 1100 + (c / cols) * 900 + Math.random() * 120
-              : 0
+            // Text reveal delay: letter by letter
+            const textRevealDelay = isTextPixel ? letterTiming : 0
 
             newParticles.push({
               originX,
@@ -194,7 +235,7 @@ export default function PixelArtBackground({
               textRevealDelay,
               startTime: now,
               fadeInDuration: 280 + Math.random() * 120,
-              textShiftDuration: 350 + Math.random() * 150,
+              textShiftDuration: 320 + Math.random() * 100, // Smooth individual color shift
             })
           }
         }
