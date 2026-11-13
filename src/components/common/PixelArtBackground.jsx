@@ -46,7 +46,11 @@ export default function PixelArtBackground({
         width = canvas.width = parent.clientWidth || window.innerWidth
         height = canvas.height = parent.clientHeight || window.innerHeight
 
-        const blockSize = Math.max(5, pixelSize)
+        // Responsive block size: on mobile screens (width < 640px), use smaller 3.5px - 4px blocks
+        // so the pixel grid has ample resolution (e.g. 90-110 columns) to render words cleanly
+        const isMobileScreen = width < 640
+        const isPortrait = height > width
+        const blockSize = isMobileScreen ? 3.5 : Math.max(5, pixelSize)
         const cols = Math.ceil(width / blockSize)
         const rows = Math.ceil(height / blockSize)
 
@@ -84,37 +88,41 @@ export default function PixelArtBackground({
         const textCtx = textCanvas.getContext('2d')
 
         // Responsive font sizing based on grid columns & portrait/landscape mode
-        const isPortrait = height > width
-        
-        // Measure text size dynamically so the longest line fits within 88% of screen grid width
-        const l1 = headlineLine1 || 'Designer who'
-        const l2 = headlineLine2 || 'ships with Code'
-        
-        textCtx.font = 'italic 700 20px "TRJN DaVinci", "TRJN DaVinci Text", serif'
-        const w1 = textCtx.measureText(l1).width
-        const w2 = textCtx.measureText(l2).width
-        const maxLineWidthAt20 = Math.max(w1, w2)
-        
-        // Target width available for text: 86% of total grid columns
-        const availableCols = cols * 0.86
-        // Exact font size that fits cleanly inside availableCols
-        const calculatedFontSize = Math.floor((availableCols / maxLineWidthAt20) * 20)
-        // Bound font size: max 36px on 4K/desktop, but down to 8-12px on narrow mobile screens
-        const textFontSize = Math.max(8, Math.min(calculatedFontSize, isPortrait ? 18 : 36))
+        // For mobile portrait screens: ensure font is sized so lines fit comfortably within grid columns
+        let textFontSize
+        let lines = []
+
+        if (isMobileScreen) {
+          // Mobile layout: split into 3 short lines to fit comfortably within narrow viewport width
+          // Line 1: "Designer"
+          // Line 2: "who ships"
+          // Line 3: "with Code"
+          textFontSize = Math.max(10, Math.min(cols * 0.088, 14))
+          const textCenterY = Math.max(textFontSize * 3, rows * 0.20)
+          const lineGap = textFontSize * 1.35
+          lines = [
+            { text: 'Designer', y: textCenterY - lineGap },
+            { text: 'who ships', y: textCenterY },
+            { text: 'with Code', y: textCenterY + lineGap },
+          ]
+        } else {
+          // Desktop / Tablet layout: 2 elegant lines
+          const baseRatio = isPortrait ? cols * 0.07 : cols * 0.045
+          textFontSize = Math.max(16, Math.min(baseRatio, 36))
+          const textCenterY = isPortrait
+            ? Math.max(textFontSize * 2.5, rows * 0.22)
+            : Math.max(textFontSize * 2.0, rows * 0.26)
+          lines = [
+            { text: headlineLine1 || 'Designer who', y: textCenterY - textFontSize * 0.65 },
+            { text: headlineLine2 || 'ships with Code', y: textCenterY + textFontSize * 0.65 },
+          ]
+        }
 
         const textCenterX = cols * 0.5
-        const textCenterY = isPortrait
-          ? Math.max(textFontSize * 2.2, rows * 0.20)
-          : Math.max(textFontSize * 2.0, rows * 0.26)
 
         const fontStr = `italic 700 ${textFontSize}px "TRJN DaVinci", "TRJN DaVinci Text", serif`
         textCtx.font = fontStr
         textCtx.textBaseline = 'middle'
-
-        const lines = [
-          { text: l1, y: textCenterY - textFontSize * 0.65 },
-          { text: l2, y: textCenterY + textFontSize * 0.65 },
-        ]
 
         // Map pixel key -> letter reveal delay
         const textPixelTimings = new Map()
