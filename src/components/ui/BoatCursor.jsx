@@ -147,25 +147,22 @@ export default function BoatCursor({
         })
       )
 
-      // Reliable page scrolling bound to Downward / Upward sailing:
-      // When Down button/key is held OR boat is sailing downward in bottom zone of screen, scroll smoothly
-      const isSailingDown = ctrl.down || velocity.current.y > 0.6
-      const isSailingUp = ctrl.up || velocity.current.y < -0.6
-
-      let scrollDelta = 0
-      if (isSailingDown) {
-        scrollDelta = Math.max(2.5, velocity.current.y * 1.5)
-      } else if (isSailingUp) {
-        scrollDelta = Math.min(-2.5, velocity.current.y * 1.5)
+      // Reliable high-frequency scroll synchronization:
+      // When Down button/key is held or boat has downward velocity, move page smoothly
+      let targetScrollDelta = 0
+      if (ctrl.down) {
+        targetScrollDelta = 5.0
+      } else if (ctrl.up) {
+        targetScrollDelta = -5.0
+      } else if (Math.abs(velocity.current.y) > 0.5) {
+        targetScrollDelta = velocity.current.y * 1.2
       }
 
-      if (scrollDelta !== 0) {
-        // Direct reliable scroll dispatch across all browser engines
-        const targetScroll = window.scrollY + scrollDelta
-        window.scrollTo({
-          top: targetScroll,
-          behavior: 'instant',
-        })
+      // Smooth momentum filtering:
+      scrollVelocity.current += (targetScrollDelta - scrollVelocity.current) * 0.18
+
+      if (Math.abs(scrollVelocity.current) > 0.1) {
+        window.scrollBy(0, Math.round(scrollVelocity.current * 10) / 10)
       }
 
       const speedSq = velocity.current.x * velocity.current.x + velocity.current.y * velocity.current.y
