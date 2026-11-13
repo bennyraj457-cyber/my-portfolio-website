@@ -1,6 +1,7 @@
 import React from 'react'
 import { personalInfo } from '../../data/personalInfo'
 import { PixelArtBackground } from '../common'
+import SailingWaypoints from './SailingWaypoints'
 
 /**
  * HeroSection
@@ -8,6 +9,7 @@ import { PixelArtBackground } from '../common'
  * Full-screen responsive viewport hero section:
  * - Full-width background dither canvas with retro coder illustration
  * - Embedded headline and bio directly woven into the pixel matrix
+ * - Interactive nautical sailing waypoints / floating islands
  */
 export default function HeroSection() {
   const { headlineLine1, headlineLine2, bio } = personalInfo
@@ -24,6 +26,9 @@ export default function HeroSection() {
         pixelSize={6}
         opacity={0.92}
       />
+
+      {/* Floating Interactive Sailing Waypoints / Nautical Buoys */}
+      <SailingWaypoints />
 
       {/* Screen-reader accessible semantic heading */}
       <h1 className="sr-only">
