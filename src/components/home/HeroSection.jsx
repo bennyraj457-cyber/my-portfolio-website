@@ -17,12 +17,12 @@ export default function HeroSection() {
   const [isRevealed, setIsRevealed] = useState(false)
 
   useEffect(() => {
-    // Listen for pixel dissolve trigger from canvas
+    // Listen for pixel dissolve trigger from canvas (fires only after center pixels clear)
     const handleReveal = () => setIsRevealed(true)
     window.addEventListener('introHeroRevealed', handleReveal)
 
-    // Fallback ensure hero is visible after 800ms
-    const timer = setTimeout(() => setIsRevealed(true), 800)
+    // Fallback timer ensure hero is visible after 2200ms
+    const timer = setTimeout(() => setIsRevealed(true), 2200)
 
     return () => {
       window.removeEventListener('introHeroRevealed', handleReveal)
