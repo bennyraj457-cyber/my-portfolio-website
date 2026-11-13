@@ -313,10 +313,10 @@ export function WorkspaceCanvas({ onBackToHome, onSceneReady }: WorkspaceCanvasP
               <div
                 ref={scrollTrackRef}
                 id="studio-workspace"
-                className="relative w-full h-[1000vh] bg-[#f0eee8]"
+                className="relative z-30 w-full h-[1000vh] bg-[#f0eee8]"
               >
                 {/* Sticky 100vh 3D Viewport that stays pinned while scrolling through all 10 stations */}
-                <div className="sticky top-0 left-0 w-full h-screen overflow-hidden bg-[#f0eee8]">
+                <div className="sticky top-0 left-0 z-30 w-full h-screen overflow-hidden bg-[#f0eee8]">
                   <Canvas
                     shadows
                     frameloop={isCanvasInView ? 'always' : 'never'}

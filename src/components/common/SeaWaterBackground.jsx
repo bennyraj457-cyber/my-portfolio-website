@@ -37,6 +37,19 @@ export default function SeaWaterBackground({ className = '' }) {
     const rows = 18
 
     const render = () => {
+      // Check if user is currently inside the 3D studio section
+      // If the 3D studio is in view, pause water canvas rendering to avoid showing water underneath or wasting GPU
+      const studioEl = document.getElementById('studio-workspace')
+      if (studioEl) {
+        const rect = studioEl.getBoundingClientRect()
+        // If the 3D studio covers the viewport, skip rendering water
+        if (rect.top <= 0 && rect.bottom >= window.innerHeight) {
+          ctx.clearRect(0, 0, width, height)
+          rafId.current = requestAnimationFrame(render)
+          return
+        }
+      }
+
       time += 0.018
 
       // 1. Deep Ocean Base Gradient
@@ -199,3 +212,4 @@ export default function SeaWaterBackground({ className = '' }) {
     />
   )
 }
+
