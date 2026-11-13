@@ -85,12 +85,26 @@ export default function PixelArtBackground({
 
         // Responsive font sizing based on grid columns & portrait/landscape mode
         const isPortrait = height > width
-        const baseRatio = isPortrait ? cols * 0.08 : cols * 0.045
-        const textFontSize = Math.max(16, Math.min(baseRatio, 36))
+        
+        // Measure text size dynamically so the longest line fits within 88% of screen grid width
+        const l1 = headlineLine1 || 'Designer who'
+        const l2 = headlineLine2 || 'ships with Code'
+        
+        textCtx.font = 'italic 700 20px "TRJN DaVinci", "TRJN DaVinci Text", serif'
+        const w1 = textCtx.measureText(l1).width
+        const w2 = textCtx.measureText(l2).width
+        const maxLineWidthAt20 = Math.max(w1, w2)
+        
+        // Target width available for text: 86% of total grid columns
+        const availableCols = cols * 0.86
+        // Exact font size that fits cleanly inside availableCols
+        const calculatedFontSize = Math.floor((availableCols / maxLineWidthAt20) * 20)
+        // Bound font size: max 36px on 4K/desktop, but down to 8-12px on narrow mobile screens
+        const textFontSize = Math.max(8, Math.min(calculatedFontSize, isPortrait ? 18 : 36))
 
         const textCenterX = cols * 0.5
         const textCenterY = isPortrait
-          ? Math.max(textFontSize * 2.5, rows * 0.22)
+          ? Math.max(textFontSize * 2.2, rows * 0.20)
           : Math.max(textFontSize * 2.0, rows * 0.26)
 
         const fontStr = `italic 700 ${textFontSize}px "TRJN DaVinci", "TRJN DaVinci Text", serif`
@@ -98,8 +112,8 @@ export default function PixelArtBackground({
         textCtx.textBaseline = 'middle'
 
         const lines = [
-          { text: headlineLine1 || 'Designer who', y: textCenterY - textFontSize * 0.65 },
-          { text: headlineLine2 || 'ships with Code', y: textCenterY + textFontSize * 0.65 },
+          { text: l1, y: textCenterY - textFontSize * 0.65 },
+          { text: l2, y: textCenterY + textFontSize * 0.65 },
         ]
 
         // Map pixel key -> letter reveal delay
