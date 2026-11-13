@@ -19,6 +19,7 @@ export default function PixelCloudBackground({
   interactive = true,
   contentRepelDistance = 90,
   driftSpeed = 0.45,
+  initialIntro = true,
 }) {
   const canvasRef = useRef(null)
   const mousePos = useRef({ x: -1000, y: -1000 })
@@ -34,6 +35,10 @@ export default function PixelCloudBackground({
   const timeRef = useRef(0)
   const islandSpawnTimer = useRef(0)
 
+  // Full solid yellow hero cover grid
+  const introGridRef = useRef([])
+  const introStartTimeRef = useRef(null)
+
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -48,6 +53,37 @@ export default function PixelCloudBackground({
       height = canvas.height = parent.clientHeight || window.innerHeight
       initSparkles()
       initDriftingIslands()
+      initIntroGrid()
+    }
+
+    const initIntroGrid = () => {
+      if (!initialIntro) return
+      const cols = Math.ceil(width / macroSize)
+      const rows = Math.ceil(height / macroSize)
+      const cx = cols / 2
+      const cy = rows / 2
+
+      const grid = []
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          // Distance from center determines order of pixel dissolve (radial wave with noise)
+          const dx = (c - cx) / (cols / 2)
+          const dy = (r - cy) / (rows / 2)
+          const dist = Math.sqrt(dx * dx + dy * dy)
+          const randomJitter = Math.random() * 0.45
+
+          grid.push({
+            r,
+            c,
+            // Whole hero begins 100% covered in solid yellow
+            // Center pixels start fading after 250ms, expanding outward like a digital iris
+            delay: 250 + dist * 950 + randomJitter * 400,
+            duration: 480 + Math.random() * 260,
+          })
+        }
+      }
+      introGridRef.current = grid
+      introStartTimeRef.current = performance.now()
     }
 
     const initSparkles = () => {
@@ -491,6 +527,59 @@ export default function PixelCloudBackground({
         ctx.fillRect(snapX, snapY, p.size, p.size)
       }
       ctx.globalAlpha = 1.0
+
+      // 5. Initial Full Cover Solid Yellow Pixels -> Pixel-by-Pixel Dissolve
+      if (initialIntro && introStartTimeRef.current) {
+        const elapsed = performance.now() - introStartTimeRef.current
+        const grid = introGridRef.current
+        let hasRemainingIntroPixels = false
+        let dissolvedCount = 0
+
+        for (let i = 0; i < grid.length; i++) {
+          const item = grid[i]
+          const px = item.c * macroSize
+          const py = item.r * macroSize
+
+          if (elapsed < item.delay) {
+            // Still 100% solid yellow pixel covering hero section
+            ctx.fillStyle = tones.primary
+            ctx.fillRect(px, py, macroSize, macroSize)
+            hasRemainingIntroPixels = true
+          } else if (elapsed < item.delay + item.duration) {
+            // Smooth multi-stage halftone dither dissolve
+            const progress = (elapsed - item.delay) / item.duration
+            hasRemainingIntroPixels = true
+
+            if (progress < 0.25) {
+              ctx.fillStyle = tones.primary
+            } else if (progress < 0.5) {
+              ctx.fillStyle = patternPrimary_Light1
+            } else if (progress < 0.72) {
+              ctx.fillStyle = patternLight1_Light2
+            } else if (progress < 0.9) {
+              ctx.fillStyle = patternLight2_Light3
+            } else {
+              ctx.fillStyle = patternLight3_White
+            }
+            ctx.fillRect(px, py, macroSize, macroSize)
+          } else {
+            dissolvedCount++
+          }
+        }
+
+        // Notify hero section when center pixels have cleared so hero content smoothly appears
+        const dissolveRatio = grid.length > 0 ? dissolvedCount / grid.length : 1
+        if (dissolveRatio > 0.65 && !window.__introHeroRevealed) {
+          window.__introHeroRevealed = true
+          window.dispatchEvent(new CustomEvent('introHeroRevealed'))
+        }
+
+        // Clean up intro state when clearing is complete
+        if (!hasRemainingIntroPixels && elapsed > 2800) {
+          introStartTimeRef.current = null
+          introGridRef.current = []
+        }
+      }
 
       rafId.current = requestAnimationFrame(render)
     }
