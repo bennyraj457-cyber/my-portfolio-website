@@ -133,8 +133,48 @@ export default function PixelArtBackground({
       // Transition start timing: 3000ms after load
       const transitionBaseStart = 3000
 
+      // Measure obstacle boundaries for hero text and content so pixels never render behind them
+      const canvasRect = canvas.getBoundingClientRect()
+      const textElements = document.querySelectorAll(
+        '#hero h1, #hero p, #hero .tools-marquee-track'
+      )
+      const clearBoxes = []
+      const textPadding = 24 // Padding around text to keep it completely crisp & clean
+
+      textElements.forEach((el) => {
+        const r = el.getBoundingClientRect()
+        if (r.width > 0 && r.height > 0) {
+          clearBoxes.push({
+            left: r.left - canvasRect.left - textPadding,
+            top: r.top - canvasRect.top - textPadding,
+            right: r.right - canvasRect.left + textPadding,
+            bottom: r.bottom - canvasRect.top + textPadding,
+          })
+        }
+      })
+
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
+          const originX = c * blockSize
+          const originY = r * blockSize
+
+          // Check if this pixel falls behind the hero headline, paragraph, or marquee
+          let isBehindText = false
+          for (let b = 0; b < clearBoxes.length; b++) {
+            const box = clearBoxes[b]
+            if (
+              originX >= box.left &&
+              originX <= box.right &&
+              originY >= box.top &&
+              originY <= box.bottom
+            ) {
+              isBehindText = true
+              break
+            }
+          }
+
+          if (isBehindText) continue // Remove pixel completely from behind the text!
+
           const idx = (r * cols + c) * 4
 
           const a1 = data1[idx + 3]
@@ -145,9 +185,6 @@ export default function PixelArtBackground({
 
           // Skip if both images have white space at this pixel
           if (col1.hex === '#ffffff' && col2.hex === '#ffffff') continue
-
-          const originX = c * blockSize
-          const originY = r * blockSize
 
           // Initial reveal delay
           const dx = (c - cx) / (cols / 2)
