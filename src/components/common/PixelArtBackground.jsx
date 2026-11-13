@@ -46,11 +46,11 @@ export default function PixelArtBackground({
         width = canvas.width = parent.clientWidth || window.innerWidth
         height = canvas.height = parent.clientHeight || window.innerHeight
 
-        // Responsive block size: on mobile screens (width < 640px), use smaller 3.5px - 4px blocks
-        // so the pixel grid has ample resolution (e.g. 90-110 columns) to render words cleanly
+        // Responsive block size:
+        // On mobile screens (width < 640px), keep discrete blocks at 4px.
         const isMobileScreen = width < 640
         const isPortrait = height > width
-        const blockSize = isMobileScreen ? 3.5 : Math.max(5, pixelSize)
+        const blockSize = isMobileScreen ? 4 : Math.max(5, pixelSize)
         const cols = Math.ceil(width / blockSize)
         const rows = Math.ceil(height / blockSize)
 
@@ -91,22 +91,23 @@ export default function PixelArtBackground({
         // For mobile portrait screens: ensure font is sized so lines fit comfortably within grid columns
         let textFontSize
         let lines = []
+        let fontStr
 
         if (isMobileScreen) {
-          // Mobile layout: split into 3 short lines to fit comfortably within narrow viewport width
-          // Line 1: "Designer"
-          // Line 2: "who ships"
-          // Line 3: "with Code"
-          textFontSize = Math.max(10, Math.min(cols * 0.088, 14))
-          const textCenterY = Math.max(textFontSize * 3, rows * 0.20)
+          // Mobile layout: Crisp high-contrast sans-serif font ("Geist", 800 weight)
+          // at a robust font size (~16-18 grid units) so glyph stems and counters
+          // are thick and crystal-clear in low-resolution discrete pixel grids.
+          textFontSize = Math.max(15, Math.min(cols * 0.16, 18))
+          const textCenterY = Math.max(textFontSize * 2.8, rows * 0.18)
           const lineGap = textFontSize * 1.35
           lines = [
-            { text: 'Designer', y: textCenterY - lineGap },
-            { text: 'who ships', y: textCenterY },
-            { text: 'with Code', y: textCenterY + lineGap },
+            { text: 'DESIGNER', y: textCenterY - lineGap },
+            { text: 'WHO SHIPS', y: textCenterY },
+            { text: 'WITH CODE', y: textCenterY + lineGap },
           ]
+          fontStr = `900 ${textFontSize}px "Geist", system-ui, -apple-system, sans-serif`
         } else {
-          // Desktop / Tablet layout: 2 elegant lines
+          // Desktop / Tablet layout: Elegant serif display font
           const baseRatio = isPortrait ? cols * 0.07 : cols * 0.045
           textFontSize = Math.max(16, Math.min(baseRatio, 36))
           const textCenterY = isPortrait
@@ -116,11 +117,11 @@ export default function PixelArtBackground({
             { text: headlineLine1 || 'Designer who', y: textCenterY - textFontSize * 0.65 },
             { text: headlineLine2 || 'ships with Code', y: textCenterY + textFontSize * 0.65 },
           ]
+          fontStr = `italic 700 ${textFontSize}px "TRJN DaVinci", "TRJN DaVinci Text", serif`
         }
 
         const textCenterX = cols * 0.5
 
-        const fontStr = `italic 700 ${textFontSize}px "TRJN DaVinci", "TRJN DaVinci Text", serif`
         textCtx.font = fontStr
         textCtx.textBaseline = 'middle'
 
