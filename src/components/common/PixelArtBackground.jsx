@@ -72,28 +72,23 @@ export default function PixelArtBackground({
         offCtx.drawImage(img, drawX, drawY, drawW, drawH)
         const bgImgData = offCtx.getImageData(0, 0, cols, rows).data
 
-        // Brand palette mapping
-        const palette = [
-          { r: 10, g: 10, b: 10, hex: '#0a0a0a' },
-          { r: 255, g: 215, b: 0, hex: '#ffd700' },
-          { r: 255, g: 231, b: 102, hex: '#ffe766' },
-          { r: 255, g: 250, b: 220, hex: '#fffadc' },
-          { r: 255, g: 255, b: 255, hex: '#ffffff' },
-        ]
-
-        const getTargetColor = (r, g, b) => {
-          const lum = 0.299 * r + 0.587 * g + 0.114 * b
-          if (lum < 52) return palette[0]
-          if (lum < 118) return palette[1]
-          if (lum < 185) return palette[2]
-          if (lum < 240) return palette[3]
-          return palette[4]
+        // Calculate average luminance to adaptively threshold image features vs background
+        let totalLum = 0
+        let count = 0
+        for (let i = 0; i < bgImgData.length; i += 4) {
+          if (bgImgData[i + 3] > 20) {
+            totalLum += 0.299 * bgImgData[i] + 0.587 * bgImgData[i + 1] + 0.114 * bgImgData[i + 2]
+            count++
+          }
         }
+        const avgLum = count > 0 ? totalLum / count : 128
+        // Contrast threshold: below threshold = black pixel (subject/features), above = brand yellow (background)
+        const threshold = Math.min(145, Math.max(90, avgLum * 0.95))
+
+        const BRAND_YELLOW = '#ffd700'
+        const BLACK_PIXEL = '#000000'
 
         const newParticles = []
-        const now = performance.now()
-        const cx = cols / 2
-        const cy = rows * 0.5
 
         for (let r = 0; r < rows; r++) {
           for (let c = 0; c < cols; c++) {
@@ -103,10 +98,9 @@ export default function PixelArtBackground({
             const bVal = bgImgData[idx + 2]
             const aVal = bgImgData[idx + 3]
 
-            if (aVal < 20) continue
-
-            const bgDefault = getTargetColor(rVal, gVal, bVal)
-            if (bgDefault.hex === '#ffffff') continue
+            // If transparent, default to brand yellow
+            const lum = aVal > 20 ? 0.299 * rVal + 0.587 * gVal + 0.114 * bVal : 255
+            const pixelHex = lum < threshold ? BLACK_PIXEL : BRAND_YELLOW
 
             const originX = c * blockSize
             const originY = r * blockSize
@@ -118,8 +112,8 @@ export default function PixelArtBackground({
               y: originY,
               vx: 0,
               vy: 0,
-              size: blockSize + 0.1,
-              hex: bgDefault.hex,
+              size: blockSize + 0.2, // slight overlap to ensure solid, gap-free pixels
+              hex: pixelHex,
             })
           }
         }
@@ -175,22 +169,6 @@ export default function PixelArtBackground({
         }
 
         ctx.globalAlpha = 1.0
-
-        const gradient = ctx.createRadialGradient(
-          width / 2,
-          height * 0.5,
-          Math.min(width, height) * 0.35,
-          width / 2,
-          height * 0.5,
-          Math.max(width, height) * 0.72
-        )
-        gradient.addColorStop(0, 'rgba(255, 255, 255, 0)')
-        gradient.addColorStop(0.75, 'rgba(255, 255, 255, 0.25)')
-        gradient.addColorStop(1, 'rgba(255, 255, 255, 0.85)')
-
-        ctx.fillStyle = gradient
-        ctx.fillRect(0, 0, width, height)
-
         rafId.current = requestAnimationFrame(render)
       }
 
