@@ -2,183 +2,200 @@ import React, { useEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 
 /**
- * Preloader
+ * PixelDissolvePreloader
  *
- * High-end creative agency preloader:
- * - Dither pixel progress counter (00 -> 100)
- * - Brand reveal with split text/scale
- * - Custom pixel burst / grid shutter exit revealing the portfolio
+ * Requirements:
+ * - Full solid yellow (#ffd700) pixel screen initially covering the viewport
+ * - Center progress percentage (1% -> 100%) in bold brand typography
+ * - After 100%, the yellow screen dissolves block by block (like our background pixel dither grid)
+ *   expanding outward from the center into the edges
+ * - As the pixels dissolve one-by-one from the center, the hero text and paragraph are revealed
  */
 export default function Preloader({ onComplete }) {
   const containerRef = useRef(null)
-  const counterRef = useRef(null)
-  const brandRef = useRef(null)
-  const statusRef = useRef(null)
-  const barRef = useRef(null)
-  const curtainLeftRef = useRef(null)
-  const curtainRightRef = useRef(null)
-  const [progress, setProgress] = useState(0)
+  const canvasRef = useRef(null)
+  const contentRef = useRef(null)
+  const [progress, setProgress] = useState(1)
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      const obj = { val: 0 }
-      const tl = gsap.timeline({
-        onComplete: () => {
-          onComplete?.()
-        },
-      })
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
 
-      // 1. Initial State
-      gsap.set(brandRef.current, { y: 30, opacity: 0 })
-      gsap.set(statusRef.current, { opacity: 0 })
-      gsap.set(counterRef.current, { opacity: 0, scale: 0.9 })
+    let width = (canvas.width = window.innerWidth)
+    let height = (canvas.height = window.innerHeight)
 
-      // 2. Entrance
-      tl.to(brandRef.current, {
-        y: 0,
-        opacity: 1,
-        duration: 0.8,
-        ease: 'power3.out',
-      })
-      .to(
-        statusRef.current,
-        {
-          opacity: 1,
-          duration: 0.5,
-          ease: 'power2.out',
-        },
-        '-=0.4'
-      )
-      .to(
-        counterRef.current,
-        {
-          opacity: 1,
-          scale: 1,
-          duration: 0.5,
-          ease: 'power2.out',
-        },
-        '-=0.5'
-      )
+    const pixelBlockSize = 28 // Exact matching macroSize of our background pixels
+    let cols = Math.ceil(width / pixelBlockSize)
+    let rows = Math.ceil(height / pixelBlockSize)
+    const cx = width / 2
+    const cy = height / 2
+    const maxDist = Math.sqrt(cx * cx + cy * cy)
 
-      // 3. Number Counter & Progress Bar Animation
-      tl.to(obj, {
-        val: 100,
-        duration: 1.6,
-        ease: 'power2.inOut',
-        onUpdate: () => {
-          const current = Math.round(obj.val)
-          setProgress(current)
-          if (barRef.current) {
-            barRef.current.style.width = `${current}%`
-          }
-        },
-      }, '-=0.2')
+    // Build the grid of pixel blocks
+    // Each block has a normalized radial distance from center
+    const createBlocks = () => {
+      const list = []
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const x = c * pixelBlockSize
+          const y = r * pixelBlockSize
+          const midX = x + pixelBlockSize / 2
+          const midY = y + pixelBlockSize / 2
+          const dx = midX - cx
+          const dy = midY - cy
+          const dist = Math.sqrt(dx * dx + dy * dy)
+          const normDist = dist / maxDist // 0 at center, 1 at farthest corner
 
-      // 4. Dramatic Exit Reveal (Curtains slide out, elements lift away)
-      tl.to([brandRef.current, statusRef.current, counterRef.current, barRef.current?.parentElement], {
-        y: -40,
-        opacity: 0,
-        duration: 0.5,
-        stagger: 0.06,
-        ease: 'power3.in',
-      })
-      .to(
-        curtainLeftRef.current,
-        {
-          yPercent: -100,
-          duration: 0.9,
-          ease: 'power4.inOut',
-        },
-        '-=0.15'
-      )
-      .to(
-        curtainRightRef.current,
-        {
-          yPercent: 100,
-          duration: 0.9,
-          ease: 'power4.inOut',
-        },
-        '<0.04'
-      )
-      .to(
-        containerRef.current,
-        {
-          opacity: 0,
-          duration: 0.15,
-          onComplete: () => {
-            if (containerRef.current) {
-              containerRef.current.style.display = 'none'
-            }
-          },
+          // Small random noise to make the dissolve organic & dithered like our clouds
+          const noise = (((c * 17 + r * 31) % 19) / 19) * 0.18
+
+          list.push({
+            x,
+            y,
+            threshold: normDist + noise, // determines when this pixel dissolves
+            alpha: 1,
+          })
         }
-      )
-    }, containerRef)
+      }
+      return list
+    }
 
-    return () => ctx.revert()
+    let blocks = createBlocks()
+
+    const handleResize = () => {
+      width = canvas.width = window.innerWidth
+      height = canvas.height = window.innerHeight
+      cols = Math.ceil(width / pixelBlockSize)
+      rows = Math.ceil(height / pixelBlockSize)
+      blocks = createBlocks()
+    }
+    window.addEventListener('resize', handleResize)
+
+    // Dissolve parameter: 0 = full yellow coverage, 1.35 = all pixels dissolved
+    const dissolveAnim = { value: 0 }
+    let isDissolving = false
+    let rafId = null
+
+    // Draw loop
+    const draw = () => {
+      ctx.clearRect(0, 0, width, height)
+
+      if (!isDissolving) {
+        // Solid yellow screen while counting 1 -> 100
+        ctx.fillStyle = '#ffd700'
+        ctx.fillRect(0, 0, width, height)
+      } else {
+        const currentDissolve = dissolveAnim.value
+        // Draw each pixel block based on radial wave from center
+        for (let i = 0; i < blocks.length; i++) {
+          const b = blocks[i]
+          // If dissolve progress passed this block's threshold, it starts fading away
+          const diff = currentDissolve - b.threshold
+          if (diff < 0) {
+            // Still solid
+            ctx.fillStyle = '#ffd700'
+            ctx.fillRect(b.x, b.y, pixelBlockSize, pixelBlockSize)
+          } else if (diff < 0.2) {
+            // Dither dissolving phase: checkerboard or fading alpha
+            const alpha = 1 - diff / 0.2
+            ctx.fillStyle = `rgba(255, 215, 0, ${alpha.toFixed(3)})`
+            ctx.fillRect(b.x, b.y, pixelBlockSize, pixelBlockSize)
+          }
+          // diff >= 0.2 -> completely dissolved (transparent)
+        }
+      }
+
+      rafId = requestAnimationFrame(draw)
+    }
+
+    draw()
+
+    // GSAP Timeline Sequence
+    const progressObj = { val: 1 }
+    const tl = gsap.timeline()
+
+    // 1. Run progress count 1% to 100%
+    tl.to(progressObj, {
+      val: 100,
+      duration: 1.8,
+      ease: 'power2.inOut',
+      onUpdate: () => {
+        const rounded = Math.round(progressObj.val)
+        setProgress(rounded)
+      },
+    })
+
+    // 2. Center counter fades out gently right at 100%
+    tl.to(contentRef.current, {
+      opacity: 0,
+      scale: 1.08,
+      duration: 0.35,
+      ease: 'power2.in',
+      onComplete: () => {
+        isDissolving = true
+        // Trigger page reveal event early so text starts emerging through the center hole
+        onComplete?.()
+      },
+    })
+
+    // 3. Pixel dissolve wave expands outward from the center to edges
+    tl.to(dissolveAnim, {
+      value: 1.35,
+      duration: 1.5,
+      ease: 'power2.inOut',
+      onComplete: () => {
+        cancelAnimationFrame(rafId)
+        if (containerRef.current) {
+          containerRef.current.style.display = 'none'
+        }
+      },
+    })
+
+    return () => {
+      cancelAnimationFrame(rafId)
+      window.removeEventListener('resize', handleResize)
+      tl.kill()
+    }
   }, [onComplete])
 
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 z-[100] w-full h-[100dvh] flex items-center justify-center select-none overflow-hidden"
+      className="fixed inset-0 z-[100] w-full h-[100dvh] flex items-center justify-center select-none overflow-hidden pointer-events-none"
     >
-      {/* Background Split Curtains for cinematic wipe exit */}
-      <div
-        ref={curtainLeftRef}
-        className="absolute top-0 left-0 w-full h-1/2 bg-[#0d0d0d] z-0 will-change-transform border-b border-white/[0.06]"
-      />
-      <div
-        ref={curtainRightRef}
-        className="absolute bottom-0 left-0 w-full h-1/2 bg-[#0d0d0d] z-0 will-change-transform border-t border-white/[0.06]"
+      {/* Pixel Dissolve Canvas */}
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 w-full h-full pointer-events-auto"
       />
 
-      {/* Decorative Dither Grid Overlay */}
+      {/* Center Counter Content */}
       <div
-        className="absolute inset-0 z-[1] opacity-15 pointer-events-none"
-        style={{
-          backgroundImage:
-            'radial-gradient(circle at 1px 1px, #ffd700 1px, transparent 0)',
-          backgroundSize: '24px 24px',
-        }}
-      />
+        ref={contentRef}
+        className="relative z-10 flex flex-col items-center justify-center text-black pointer-events-none"
+      >
+        <span className="text-xs uppercase font-mono tracking-[0.35em] text-black/60 mb-2">
+          Loading Portfolio
+        </span>
 
-      {/* Content Center */}
-      <div className="relative z-10 flex flex-col items-center max-w-sm px-6 text-center">
-        {/* Top Monospace Label */}
-        <div
-          ref={statusRef}
-          className="flex items-center gap-2 mb-4 font-mono text-[10px] tracking-[0.3em] uppercase text-white/50"
-        >
-          <span className="w-1.5 h-1.5 rounded-full bg-[#ffd700] animate-pulse" />
-          <span>System Initializing</span>
+        {/* Large Percentage */}
+        <div className="flex items-baseline font-heading tracking-tight">
+          <span className="text-7xl sm:text-8xl md:text-9xl font-bold leading-none">
+            {progress}
+          </span>
+          <span className="text-3xl sm:text-4xl md:text-5xl font-mono text-black/70 ml-1">
+            %
+          </span>
         </div>
 
-        {/* Brand Wordmark */}
-        <h1
-          ref={brandRef}
-          className="text-4xl sm:text-5xl font-heading font-normal italic tracking-tight text-white mb-6"
-        >
-          Benny<span className="text-[#ffd700] not-italic">.</span>
-        </h1>
-
-        {/* Progress Bar Track */}
-        <div className="w-48 sm:w-56 h-[2px] bg-white/10 rounded-full overflow-hidden mb-3 relative">
-          <div
-            ref={barRef}
-            className="h-full bg-gradient-to-r from-[#ffd700] via-[#ffe566] to-[#ffd700] rounded-full transition-all duration-75"
-            style={{ width: '0%' }}
-          />
-        </div>
-
-        {/* Counter */}
-        <div
-          ref={counterRef}
-          className="font-mono text-xs sm:text-sm tracking-widest text-[#ffd700]/90 font-medium"
-        >
-          {String(progress).padStart(3, '0')}%
+        {/* Clean Micro Dot Accent */}
+        <div className="flex items-center gap-1.5 mt-4">
+          <span className="w-2 h-2 rounded-full bg-black/80 animate-pulse" />
+          <span className="w-1.5 h-1.5 rounded-full bg-black/40" />
+          <span className="w-1 h-1 rounded-full bg-black/20" />
         </div>
       </div>
     </div>
   )
 }
-
