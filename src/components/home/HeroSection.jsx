@@ -64,7 +64,7 @@ export default function HeroSection() {
       <div className="w-full lg:w-1/2 h-full relative overflow-hidden bg-white">
         <PixelArtBackground
           className="absolute inset-0 w-full h-full object-cover"
-          pixelSize={8}
+          pixelSize={4}
           interactive={true}
           standAlone={true}
         />

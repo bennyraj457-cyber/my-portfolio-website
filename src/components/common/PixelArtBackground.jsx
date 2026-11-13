@@ -95,81 +95,105 @@ export default function PixelArtBackground({
           // Perceived luminance (0 to 255)
           const lum = 0.299 * red + 0.587 * green + 0.114 * blue
 
-          // Color detection in original image:
-          const isSky = blue > red * 1.15 && blue > 100 && lum > 80
-          const isGrass = green > red && green > blue * 0.9 && lum > 60
-          const isDeepDark = lum < 55
-          const isMonitor = c > cols * 0.55 && c < cols * 0.85 && r > rows * 0.45 && r < rows * 0.75 && blue > 140
+          // Color detection & tonal categorization
+          const isSky = blue > red * 1.12 && blue > 85 && lum > 75
+          const isGrass = green > red * 0.95 && green > blue * 0.85 && lum > 45
+          const isDeepDark = lum < 40 // Sharp silhouettes: hair, suit, chair frame, keyboard shadow
+          const isSuitMid = lum >= 40 && lum < 70 && red < 80 && green < 80 && blue < 95
+          
+          // CRT Monitor Screen highlight & casing
+          const isMonitorScreen = c > cols * 0.58 && c < cols * 0.82 && r > rows * 0.44 && r < rows * 0.68 && blue > 130
+          const isDeskOrChair = red > blue && red > green && lum > 50 && lum < 150
 
-          // Left-side pixel dither fade:
-          // Pixels on the left edge smoothly dissolve into white space using dither patterns
-          const leftFadeWidth = Math.min(cols * 0.38, 28) // Fade span over ~28 columns or 38% width
-          let leftFadeFactor = 1.0
-          if (c < leftFadeWidth) {
-            const progress = c / leftFadeWidth // 0 at left-most edge to 1.0
-            // Halftone dither threshold check: random noise + matrix checkerboard
-            const ditherHash = (Math.sin(c * 17.13 + r * 31.41) * 43758.54) % 1
-            const normalizedDither = Math.abs(ditherHash)
-            if (normalizedDither > progress) {
-              // Pixel dissolves away into white background
-              continue
-            }
-            leftFadeFactor = Math.pow(progress, 1.2)
-          }
-
-          // Center headline buffer (only if used as full background, disabled when standAlone right column)
-          let textAvoidFactor = leftFadeFactor
-          if (!standAlone) {
-            const dx = (c - cx) / (cols * 0.42)
-            const dy = (r - cy) / (rows * 0.35)
-            const distCenter = Math.sqrt(dx * dx + dy * dy)
-            textAvoidFactor = distCenter < 1.0 ? distCenter * 0.4 : 1.0
-          }
-
-          // Map color to our design system
           let color = null
-          let dotAlpha = textAvoidFactor
+          let dotAlpha = 0.9
 
-          if (isMonitor) {
-            // CRT monitor glows in brand yellow
+          if (isMonitorScreen) {
+            // Glowing CRT Screen
             color = '#ffd700'
-            dotAlpha = 0.95
+            dotAlpha = 0.98
           } else if (isDeepDark) {
-            // Suit, desk shadow, chair structure
-            color = '#111111'
-            dotAlpha = standAlone ? 0.95 : Math.min(0.85, 0.2 + textAvoidFactor * 0.65)
-          } else if (isSky) {
-            // Sky represented by white negative space with soft dither
-            const dither = (c * 11 + r * 17) % (standAlone ? 9 : 19) === 0
-            if (dither && lum > 140) {
-              color = '#ffe766'
-              dotAlpha = standAlone ? 0.4 : 0.25 * textAvoidFactor
+            // Pitch black silhouettes & line ink
+            color = '#050505'
+            dotAlpha = 1.0
+          } else if (isSuitMid) {
+            // Deep charcoal folds in the suit & shadows
+            color = '#1f1f1f'
+            dotAlpha = 0.95
+          } else if (isDeskOrChair) {
+            // Warm amber & wooden tones of desk and chair
+            if (lum < 90) {
+              color = '#8b6f00' // Dark timber
+            } else if (lum < 130) {
+              color = '#b89400' // Medium wood
             } else {
-              color = null // Clear white space
+              color = '#ffd700' // Wood highlights
+            }
+            dotAlpha = 0.9
+          } else if (isSky) {
+            // Sky: dynamic dithered gradient from light golden sky to pale white
+            const skyHeightRatio = r / (rows * 0.55) // 0 at top to 1 at horizon
+            const ditherLevel = (c * 7 + r * 13) % 17
+
+            if (skyHeightRatio < 0.35) {
+              // Upper sky - fine subtle dither
+              if (ditherLevel === 0) {
+                color = '#fff6b8'
+                dotAlpha = 0.35
+              } else {
+                color = null // Clean white
+              }
+            } else if (skyHeightRatio < 0.7) {
+              // Mid sky
+              if (ditherLevel < 3) {
+                color = '#ffe766'
+                dotAlpha = 0.45
+              } else {
+                color = null
+              }
+            } else {
+              // Horizon glow
+              if (ditherLevel < 6) {
+                color = '#ffd700'
+                dotAlpha = 0.55
+              } else {
+                color = '#fffadc'
+                dotAlpha = 0.4
+              }
             }
           } else if (isGrass) {
-            // Rolling hill & grass field mapped to rich brand yellows and halftone dither
-            if (lum < 95) {
-              color = '#caa700' // Darker field shading
-              dotAlpha = standAlone ? 0.85 : 0.65 * textAvoidFactor
-            } else if (lum < 140) {
-              color = '#ffd700' // Primary gold
-              dotAlpha = standAlone ? 0.8 : 0.55 * textAvoidFactor
+            // Multi-shade textured grass hill with dappled highlights
+            if (lum < 70) {
+              color = '#5a4900' // Deep grass shadow
+              dotAlpha = 0.92
+            } else if (lum < 95) {
+              color = '#876e00' // Mid-dark grass
+              dotAlpha = 0.88
+            } else if (lum < 125) {
+              color = '#caa700' // Olive-gold grass
+              dotAlpha = 0.85
+            } else if (lum < 155) {
+              color = '#ffd700' // Primary gold sunlit grass
+              dotAlpha = 0.82
+            } else if (lum < 185) {
+              color = '#ffe766' // Bright yellow blades
+              dotAlpha = 0.78
             } else {
-              color = (c + r) % 2 === 0 ? '#ffe766' : '#fff3b0' // Soft pale yellow
-              dotAlpha = standAlone ? 0.65 : 0.45 * textAvoidFactor
+              // White/cream flower sparkles in the meadow
+              color = '#ffffff'
+              dotAlpha = 0.95
             }
           } else {
-            // Intermediate tones / chair woodwork / CRT beige casing
-            if (lum < 110) {
-              color = '#222222'
-              dotAlpha = standAlone ? 0.9 : 0.7
-            } else if (lum < 170) {
-              color = '#ffd700'
-              dotAlpha = standAlone ? 0.85 : 0.6
+            // CRT monitor casing (beige / warm grey plastic)
+            if (lum < 100) {
+              color = '#333333'
+              dotAlpha = 0.85
+            } else if (lum < 160) {
+              color = '#d4af37'
+              dotAlpha = 0.85
             } else {
-              color = '#ffe766'
-              dotAlpha = standAlone ? 0.5 : 0.3
+              color = '#fffadc'
+              dotAlpha = 0.9
             }
           }
 
