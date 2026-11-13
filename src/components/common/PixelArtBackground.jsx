@@ -384,8 +384,36 @@ export default function PixelArtBackground({
 
     const handleMouseMove = (e) => {
       const rect = canvas.getBoundingClientRect()
-      mouseRef.current.x = e.clientX - rect.left
-      mouseRef.current.y = e.clientY - rect.top
+      let mouseX = e.clientX - rect.left
+      let mouseY = e.clientY - rect.top
+
+      // Clamp mouse coordinate from penetrating revealed text pixels
+      const colliders = window.__TEXT_PIXEL_COLLIDERS__
+      if (colliders && colliders.length > 0) {
+        const clampRadius = 14
+        const now = performance.now()
+        for (let pass = 0; pass < 2; pass++) {
+          for (let i = 0; i < colliders.length; i++) {
+            const c = colliders[i]
+            if (c.revealTime && now < c.revealTime) continue
+
+            const dx = mouseX - c.x
+            const dy = mouseY - c.y
+            const distSq = dx * dx + dy * dy
+            const minDist = clampRadius + c.r
+
+            if (distSq < minDist * minDist && distSq > 0.001) {
+              const dist = Math.sqrt(distSq)
+              const push = minDist - dist
+              mouseX += (dx / dist) * push
+              mouseY += (dy / dist) * push
+            }
+          }
+        }
+      }
+
+      mouseRef.current.x = mouseX
+      mouseRef.current.y = mouseY
     }
 
     const handleMouseLeave = () => {

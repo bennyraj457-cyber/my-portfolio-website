@@ -52,8 +52,37 @@ export default function BoatCursor({
     updateCanvasSize()
 
     const handleMouseMove = (e) => {
-      mousePos.current.x = e.clientX
-      mousePos.current.y = e.clientY
+      let targetX = e.clientX
+      let targetY = e.clientY
+
+      // Mouse collision clamp against text obstacles:
+      // The cursor target coordinate itself cannot enter inside the text pixel boundaries
+      const colliders = typeof window !== 'undefined' ? window.__TEXT_PIXEL_COLLIDERS__ : null
+      if (colliders && colliders.length > 0) {
+        const cursorRadius = 14
+        const now = performance.now()
+        for (let pass = 0; pass < 2; pass++) {
+          for (let i = 0; i < colliders.length; i++) {
+            const c = colliders[i]
+            if (c.revealTime && now < c.revealTime) continue
+
+            const dx = targetX - c.x
+            const dy = targetY - c.y
+            const distSq = dx * dx + dy * dy
+            const minDist = cursorRadius + c.r
+
+            if (distSq < minDist * minDist && distSq > 0.001) {
+              const dist = Math.sqrt(distSq)
+              const push = minDist - dist
+              targetX += (dx / dist) * push
+              targetY += (dy / dist) * push
+            }
+          }
+        }
+      }
+
+      mousePos.current.x = targetX
+      mousePos.current.y = targetY
 
       if (!isVisible) setIsVisible(true)
 
