@@ -4,25 +4,22 @@ import retroCoderImg from '../../assets/images/retro-coder.png'
 /**
  * PixelArtBackground
  *
- * Renders the uploaded artwork (coder sitting at a computer desk on a grassy hill)
- * mapped directly to our brand pixel palette:
- * - Brand Primary Gold: #ffd700
- * - Light Yellow: #ffe766
- * - Pastel Cream: #fffadc
- * - Deep Charcoal / Ink: #181818
- * - Clean White: #ffffff
- *
- * Features:
- * - Scaled pixelation (each macro pixel block is rendered with discrete pixel grid or dither)
- * - Crisp retro aesthetic matching the portfolio design system
- * - Soft edge fade to seamlessly blend into the hero background
+ * Renders the coder artwork with the exact physical pixel system of the hero text:
+ * - Uses discrete micro-pixels (pixelSize = 3 or 4)
+ * - Dynamic "In-Effect": on page load, pixels materialize sequentially with a wave of gold (#ffd700),
+ *   soft easing curves, and organic micro-settling before locking into position.
+ * - Interactive: Gentle micro-repulsion around cursor hover so the pixel artwork feels alive.
+ * - Brand Palette mapping: Deep Ink (#141414), Gold (#ffd700), Light Yellow (#ffe766), Soft Cream (#fffadc).
  */
 export default function PixelArtBackground({
   className = '',
-  pixelSize = 6, // Size of discrete retro pixels
-  opacity = 0.85,
+  pixelSize = 3, // Discrete micro-pixel size matching the hero text
+  opacity = 0.45,
 }) {
   const canvasRef = useRef(null)
+  const particlesRef = useRef([])
+  const rafId = useRef(null)
+  const mouseRef = useRef({ x: -1000, y: -1000, radius: 24 })
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -38,131 +35,236 @@ export default function PixelArtBackground({
     img.onload = () => {
       if (isCancelled) return
 
-      const render = () => {
+      let width = 0
+      let height = 0
+
+      const setupParticles = () => {
         const parent = canvas.parentElement || document.body
-        const width = (canvas.width = parent.clientWidth || window.innerWidth)
-        const height = (canvas.height = parent.clientHeight || window.innerHeight)
+        width = canvas.width = parent.clientWidth || window.innerWidth
+        height = canvas.height = parent.clientHeight || window.innerHeight
 
-        ctx.clearRect(0, 0, width, height)
+        const blockSize = Math.max(3, pixelSize)
+        const cols = Math.ceil(width / blockSize)
+        const rows = Math.ceil(height / blockSize)
 
-        // Palette mapping definition
-        // 0: Deep Ink/Charcoal #141414
-        // 1: Primary Gold #ffd700
-        // 2: Warm Light Yellow #ffe766
-        // 3: Soft Cream #fffadc
-        // 4: Pure White #ffffff
-        const palette = [
-          { r: 20, g: 20, b: 20, hex: '#141414' }, // Shadows, suit, chair legs, outline
-          { r: 255, g: 215, b: 0, hex: '#ffd700' }, // Hillside midtones, highlights
-          { r: 255, g: 231, b: 102, hex: '#ffe766' }, // Sky base & desk highlights
-          { r: 255, g: 250, b: 220, hex: '#fffadc' }, // Sky highlights / monitor glow
-          { r: 255, g: 255, b: 255, hex: '#ffffff' }, // Bright white space
-        ]
-
-        // Offscreen sampling canvas to downsample the image into discrete pixel grid
-        const blockSize = Math.max(4, pixelSize)
-        const sampleCols = Math.ceil(width / blockSize)
-        const sampleRows = Math.ceil(height / blockSize)
-
+        // Offscreen canvas to downsample the image
         const offCanvas = document.createElement('canvas')
-        offCanvas.width = sampleCols
-        offCanvas.height = sampleRows
+        offCanvas.width = cols
+        offCanvas.height = rows
         const offCtx = offCanvas.getContext('2d')
 
-        // Maintain cover / aspect ratio fit
+        // Aspect ratio cover calculation (centered, slightly biased toward right/center)
         const imgRatio = img.width / img.height
         const targetRatio = width / height
 
         let drawW, drawH, drawX, drawY
         if (targetRatio > imgRatio) {
-          drawW = sampleCols
-          drawH = sampleCols / imgRatio
+          drawW = cols
+          drawH = cols / imgRatio
           drawX = 0
-          drawY = (sampleRows - drawH) / 2
+          drawY = (rows - drawH) / 2
         } else {
-          drawH = sampleRows
-          drawW = sampleRows * imgRatio
-          drawX = (sampleCols - drawW) / 2
+          drawH = rows
+          drawW = rows * imgRatio
+          drawX = (cols - drawW) / 2
           drawY = 0
         }
 
         offCtx.drawImage(img, drawX, drawY, drawW, drawH)
+        const imgData = offCtx.getImageData(0, 0, cols, rows).data
 
-        const imgData = offCtx.getImageData(0, 0, sampleCols, sampleRows).data
+        // Palette mapping:
+        // 0: Deep Ink Outline / Suit (#121212)
+        // 1: Primary Gold (#ffd700)
+        // 2: Warm Light Yellow (#ffe766)
+        // 3: Soft Pale Cream (#fffadc)
+        // 4: White (#ffffff)
+        const palette = [
+          { r: 18, g: 18, b: 18, hex: '#121212' },
+          { r: 255, g: 215, b: 0, hex: '#ffd700' },
+          { r: 255, g: 231, b: 102, hex: '#ffe766' },
+          { r: 255, g: 250, b: 220, hex: '#fffadc' },
+          { r: 255, g: 255, b: 255, hex: '#ffffff' },
+        ]
 
-        // Nearest palette color finder with luminance weighting
-        const findNearestPaletteColor = (r, g, b) => {
-          // Calculate perceived luminance (0 - 255)
+        const getTargetColor = (r, g, b) => {
           const lum = 0.299 * r + 0.587 * g + 0.114 * b
-
-          // Ink outline & deep darks (suit, hair, dark grass shadows)
-          if (lum < 55) {
-            return palette[0].hex
-          }
-          // Mid-dark (clothing, dark grass, chair)
-          if (lum < 110) {
-            return palette[1].hex
-          }
-          // Mid-light (grassy hill, desk, computer body)
-          if (lum < 175) {
-            return palette[2].hex
-          }
-          // Highlights (sky, monitor screen)
-          if (lum < 235) {
-            return palette[3].hex
-          }
-          return palette[4].hex
+          if (lum < 58) return palette[0]
+          if (lum < 118) return palette[1]
+          if (lum < 185) return palette[2]
+          if (lum < 240) return palette[3]
+          return palette[4]
         }
 
-        ctx.globalAlpha = opacity
+        const newParticles = []
+        const now = performance.now()
+        const cx = cols / 2
+        const cy = rows * 0.55
 
-        // Draw each pixel square
-        for (let r = 0; r < sampleRows; r++) {
-          for (let c = 0; c < sampleCols; c++) {
-            const idx = (r * sampleCols + c) * 4
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            const idx = (r * cols + c) * 4
             const rVal = imgData[idx]
             const gVal = imgData[idx + 1]
             const bVal = imgData[idx + 2]
             const aVal = imgData[idx + 3]
 
-            if (aVal < 20) continue
+            if (aVal < 25) continue
 
-            const hex = findNearestPaletteColor(rVal, gVal, bVal)
+            const colorObj = getTargetColor(rVal, gVal, bVal)
+            // Skip pure white background pixels to keep negative space light & breathable
+            if (colorObj.hex === '#ffffff') continue
 
-            ctx.fillStyle = hex
-            ctx.fillRect(c * blockSize, r * blockSize, blockSize - 0.5, blockSize - 0.5)
+            const originX = c * blockSize
+            const originY = r * blockSize
+
+            // In-Effect: Radial wave from the coder figure outward
+            const dx = (c - cx) / (cols / 2)
+            const dy = (r - cy) / (rows / 2)
+            const distFromFigure = Math.sqrt(dx * dx + dy * dy)
+            const randomJitter = Math.random() * 280
+            // Sequential reveal wave: 200ms to 1800ms
+            const delay = 200 + distFromFigure * 1100 + randomJitter
+
+            newParticles.push({
+              originX,
+              originY,
+              x: originX,
+              y: originY + (Math.random() - 0.5) * 8, // subtle vertical landing
+              vx: 0,
+              vy: 0,
+              size: blockSize - 0.4,
+              targetHex: colorObj.hex,
+              targetR: colorObj.r,
+              targetG: colorObj.g,
+              targetB: colorObj.b,
+              delay,
+              startTime: now,
+              fadeInDuration: 380 + Math.random() * 200,
+            })
           }
+        }
+
+        particlesRef.current = newParticles
+      }
+
+      setupParticles()
+
+      // Physics and Animation Render Loop
+      const render = () => {
+        ctx.clearRect(0, 0, width, height)
+        const now = performance.now()
+        const particles = particlesRef.current
+        const mouse = mouseRef.current
+
+        ctx.globalAlpha = opacity
+
+        for (let i = 0; i < particles.length; i++) {
+          const p = particles[i]
+          const elapsed = now - p.startTime
+
+          if (elapsed < p.delay) {
+            continue // Pixel has not crystallized yet
+          }
+
+          // Smooth cubic easeOut entrance for each pixel
+          const rawProgress = Math.min(1, (elapsed - p.delay) / p.fadeInDuration)
+          const appearProgress = 1 - Math.pow(1 - rawProgress, 3)
+
+          // Soft mouse repulsion within micro 24px radius
+          const dxMouse = p.x - mouse.x
+          const dyMouse = p.y - mouse.y
+          const distMouse = Math.sqrt(dxMouse * dxMouse + dyMouse * dyMouse)
+
+          if (distMouse < mouse.radius) {
+            const force = (1 - distMouse / mouse.radius) * 3.0
+            p.vx += (dxMouse / distMouse) * force
+            p.vy += (dyMouse / distMouse) * force
+          }
+
+          // Spring dampening back to origin coordinate
+          const dx = p.originX - p.x
+          const dy = p.originY - p.y
+          const spring = 0.05
+          const friction = 0.86
+
+          p.vx += dx * spring
+          p.vy += dy * spring
+          p.vx *= friction
+          p.vy *= friction
+
+          p.x += p.vx
+          p.y += p.vy
+
+          // Color in-effect: Starts gleaming in warm gold (#ffd700),
+          // then smoothly settles into its final palette color (ink, gold, yellow, cream)
+          if (appearProgress < 0.6) {
+            const t = appearProgress / 0.6
+            const r = Math.round(255 + (p.targetR - 255) * t)
+            const g = Math.round(215 + (p.targetG - 215) * t)
+            const b = Math.round(0 + (p.targetB - 0) * t)
+            ctx.fillStyle = `rgb(${r},${g},${b})`
+          } else {
+            ctx.fillStyle = p.targetHex
+          }
+
+          ctx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size)
         }
 
         ctx.globalAlpha = 1.0
 
-        // Vignette fade / soft gradient mask around edges so it seamlessly blends into white
+        // Soft center vignette so hero typography stands out crisply
         const gradient = ctx.createRadialGradient(
           width / 2,
-          height / 2,
-          Math.min(width, height) * 0.35,
+          height * 0.48,
+          Math.min(width, height) * 0.25,
           width / 2,
-          height / 2,
-          Math.max(width, height) * 0.65
+          height * 0.48,
+          Math.max(width, height) * 0.7
         )
-        gradient.addColorStop(0, 'rgba(255, 255, 255, 0)')
-        gradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.4)')
-        gradient.addColorStop(1, 'rgba(255, 255, 255, 0.95)')
+        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)')
+        gradient.addColorStop(0.6, 'rgba(255, 255, 255, 0.15)')
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0.7)')
 
         ctx.fillStyle = gradient
         ctx.fillRect(0, 0, width, height)
+
+        rafId.current = requestAnimationFrame(render)
       }
 
       render()
-      window.addEventListener('resize', render)
+
+      const handleResize = () => {
+        setupParticles()
+      }
+      window.addEventListener('resize', handleResize)
 
       return () => {
-        window.removeEventListener('resize', render)
+        window.removeEventListener('resize', handleResize)
+        if (rafId.current) cancelAnimationFrame(rafId.current)
       }
     }
 
+    // Track mouse coordinates for interactive micro-repulsion
+    const handleMouseMove = (e) => {
+      const rect = canvas.getBoundingClientRect()
+      mouseRef.current.x = e.clientX - rect.left
+      mouseRef.current.y = e.clientY - rect.top
+    }
+
+    const handleMouseLeave = () => {
+      mouseRef.current.x = -1000
+      mouseRef.current.y = -1000
+    }
+
+    window.addEventListener('mousemove', handleMouseMove, { passive: true })
+    window.addEventListener('mouseleave', handleMouseLeave)
+
     return () => {
       isCancelled = true
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseleave', handleMouseLeave)
+      if (rafId.current) cancelAnimationFrame(rafId.current)
     }
   }, [pixelSize, opacity])
 
