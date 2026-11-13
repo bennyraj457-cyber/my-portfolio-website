@@ -90,87 +90,103 @@ export default function PixelArtBackground({
         // Responsive font sizing based on grid columns & portrait/landscape mode
         // For mobile portrait screens: ensure font is sized so lines fit comfortably within grid columns
         let textFontSize
-        let lines = []
         let fontStr
+        let textCenterY
+        let lineGap
 
         if (isMobileScreen) {
-          // Mobile layout: Crisp high-contrast sans-serif font ("Geist", 800 weight)
-          // at a robust font size (~16-18 grid units) so glyph stems and counters
-          // are thick and crystal-clear in low-resolution discrete pixel grids.
+          // Mobile layout: Crisp high-contrast sans-serif font ("Geist", 900 weight)
           textFontSize = Math.max(15, Math.min(cols * 0.16, 18))
-          const textCenterY = Math.max(textFontSize * 2.8, rows * 0.18)
-          const lineGap = textFontSize * 1.35
-          lines = [
-            { text: 'DESIGNER', y: textCenterY - lineGap },
-            { text: 'WHO SHIPS', y: textCenterY },
-            { text: 'WITH CODE', y: textCenterY + lineGap },
-          ]
+          textCenterY = Math.max(textFontSize * 2.8, rows * 0.18)
+          lineGap = textFontSize * 1.35
           fontStr = `900 ${textFontSize}px "Geist", system-ui, -apple-system, sans-serif`
         } else {
           // Desktop / Tablet layout: Elegant serif display font
           const baseRatio = isPortrait ? cols * 0.07 : cols * 0.045
           textFontSize = Math.max(16, Math.min(baseRatio, 36))
-          const textCenterY = isPortrait
+          textCenterY = isPortrait
             ? Math.max(textFontSize * 2.5, rows * 0.22)
             : Math.max(textFontSize * 2.0, rows * 0.26)
-          lines = [
-            { text: headlineLine1 || 'Designer who', y: textCenterY - textFontSize * 0.65 },
-            { text: headlineLine2 || 'ships with Code', y: textCenterY + textFontSize * 0.65 },
-          ]
+          lineGap = textFontSize * 1.3
           fontStr = `italic 700 ${textFontSize}px "TRJN DaVinci", "TRJN DaVinci Text", serif`
         }
 
         const textCenterX = cols * 0.5
-
         textCtx.font = fontStr
         textCtx.textBaseline = 'middle'
 
-        // Map pixel key -> letter reveal delay
-        const textPixelTimings = new Map()
-        let globalLetterIdx = 0
-        const baseStartDelay = 1100 // Starts smoothly after background image settles
+        // Define the two alternating phrase states:
+        // State 0: "Designer who ships with Code" (or mobile 3-line split)
+        // State 1: "Coder who ships with Designer"
+        const state0Lines = isMobileScreen
+          ? [
+              { text: 'DESIGNER', y: textCenterY - lineGap },
+              { text: 'WHO SHIPS', y: textCenterY },
+              { text: 'WITH CODE', y: textCenterY + lineGap },
+            ]
+          : [
+              { text: 'Designer who', y: textCenterY - lineGap * 0.5 },
+              { text: 'ships with Code', y: textCenterY + lineGap * 0.5 },
+            ]
 
-        lines.forEach((lineObj) => {
-          const fullLine = lineObj.text
-          const fullWidth = textCtx.measureText(fullLine).width
-          let curX = textCenterX - fullWidth / 2
+        const state1Lines = isMobileScreen
+          ? [
+              { text: 'CODER', y: textCenterY - lineGap },
+              { text: 'WHO SHIPS', y: textCenterY },
+              { text: 'WITH DESIGNER', y: textCenterY + lineGap },
+            ]
+          : [
+              { text: 'Coder who', y: textCenterY - lineGap * 0.5 },
+              { text: 'ships with Designer', y: textCenterY + lineGap * 0.5 },
+            ]
 
-          for (let ch = 0; ch < fullLine.length; ch++) {
-            const char = fullLine[ch]
-            const charWidth = textCtx.measureText(char).width
+        // Helper to rasterize lines and get a Map of pixel coordinate keys with letter index
+        const rasterizeLinesToMap = (lineSet) => {
+          const pixelMap = new Map()
+          let globalLetterIdx = 0
 
-            if (char.trim() !== '') {
-              // Draw single character to offscreen canvas
-              textCtx.clearRect(0, 0, cols, rows)
-              textCtx.fillText(char, curX, lineObj.y)
+          lineSet.forEach((lineObj) => {
+            const fullLine = lineObj.text
+            const fullWidth = textCtx.measureText(fullLine).width
+            let curX = textCenterX - fullWidth / 2
 
-              const x1 = Math.max(0, Math.floor(curX - 2))
-              const x2 = Math.min(cols, Math.ceil(curX + charWidth + 2))
-              const y1 = Math.max(0, Math.floor(lineObj.y - textFontSize * 0.7))
-              const y2 = Math.min(rows, Math.ceil(lineObj.y + textFontSize * 0.7))
+            for (let ch = 0; ch < fullLine.length; ch++) {
+              const char = fullLine[ch]
+              const charWidth = textCtx.measureText(char).width
 
-              const cData = textCtx.getImageData(0, 0, cols, rows).data
-              // Letter reveal cadence: 85ms between letter starts
-              const letterDelay = baseStartDelay + globalLetterIdx * 85
+              if (char.trim() !== '') {
+                textCtx.clearRect(0, 0, cols, rows)
+                textCtx.fillText(char, curX, lineObj.y)
 
-              for (let y = y1; y < y2; y++) {
-                for (let x = x1; x < x2; x++) {
-                  const idx = (y * cols + x) * 4
-                  if (cData[idx + 3] > 30) {
-                    // Small micro jitter within character so pixels in the letter don't look artificial
-                    const jitter = Math.random() * 60
-                    textPixelTimings.set(`${y},${x}`, letterDelay + jitter)
+                const x1 = Math.max(0, Math.floor(curX - 2))
+                const x2 = Math.min(cols, Math.ceil(curX + charWidth + 2))
+                const y1 = Math.max(0, Math.floor(lineObj.y - textFontSize * 0.7))
+                const y2 = Math.min(rows, Math.ceil(lineObj.y + textFontSize * 0.7))
+
+                const cData = textCtx.getImageData(0, 0, cols, rows).data
+
+                for (let y = y1; y < y2; y++) {
+                  for (let x = x1; x < x2; x++) {
+                    const idx = (y * cols + x) * 4
+                    if (cData[idx + 3] > 30) {
+                      pixelMap.set(`${y},${x}`, globalLetterIdx)
+                    }
                   }
                 }
+                globalLetterIdx++
+              } else {
+                globalLetterIdx += 0.35
               }
-              globalLetterIdx++
-            } else {
-              globalLetterIdx += 0.4 // Small space pause
-            }
 
-            curX += charWidth
-          }
-        })
+              curX += charWidth
+            }
+          })
+
+          return pixelMap
+        }
+
+        const mapState0 = rasterizeLinesToMap(state0Lines)
+        const mapState1 = rasterizeLinesToMap(state1Lines)
 
         // Palette mapping:
         // 0: Deep Ink / Text (#0a0a0a)
@@ -208,9 +224,13 @@ export default function PixelArtBackground({
             const bVal = bgImgData[idx + 2]
             const aVal = bgImgData[idx + 3]
 
-            // Check if this pixel has embedded text on it from our letter-by-letter timing map
-            const letterTiming = textPixelTimings.get(`${r},${c}`)
-            const isTextPixel = letterTiming !== undefined
+            // Check membership in State 0 and State 1
+            const coordKey = `${r},${c}`
+            const letterIdx0 = mapState0.get(coordKey)
+            const letterIdx1 = mapState1.get(coordKey)
+            const isState0 = letterIdx0 !== undefined
+            const isState1 = letterIdx1 !== undefined
+            const isTextPixel = isState0 || isState1
 
             // If it's outside the artwork and has no text, skip
             if (aVal < 20 && !isTextPixel) continue
@@ -220,8 +240,8 @@ export default function PixelArtBackground({
             // Skip pure white pixels
             if (bgDefault.hex === '#ffffff' && !isTextPixel) continue
 
-            // Target text color: deep dark ink (#0a0a0a)
-            const targetColor = isTextPixel ? palette[0] : bgDefault
+            // Ink text color
+            const inkColor = palette[0]
 
             const originX = c * blockSize
             const originY = r * blockSize
@@ -232,9 +252,6 @@ export default function PixelArtBackground({
             const dist = Math.sqrt(dx * dx + dy * dy)
             const initialDelay = 100 + dist * 600 + Math.random() * 180
 
-            // Text reveal delay: letter by letter
-            const textRevealDelay = isTextPixel ? letterTiming : 0
-
             newParticles.push({
               originX,
               originY,
@@ -243,22 +260,23 @@ export default function PixelArtBackground({
               vx: 0,
               vy: 0,
               size: blockSize - 0.4,
-              // Initial image colors
+              // Background image pixel colors
               initHex: bgDefault.hex,
               initR: bgDefault.r,
               initG: bgDefault.g,
               initB: bgDefault.b,
-              // Final target colors (switches to ink if text pixel)
-              targetHex: targetColor.hex,
-              targetR: targetColor.r,
-              targetG: targetColor.g,
-              targetB: targetColor.b,
+              // Text color (deep ink #0a0a0a)
+              inkR: inkColor.r,
+              inkG: inkColor.g,
+              inkB: inkColor.b,
+              isState0,
+              isState1,
+              letterIdx0: letterIdx0 ?? -1,
+              letterIdx1: letterIdx1 ?? -1,
               isTextPixel,
               initialDelay,
-              textRevealDelay,
               startTime: now,
               fadeInDuration: 280 + Math.random() * 120,
-              textShiftDuration: 320 + Math.random() * 100, // Smooth individual color shift
             })
           }
         }
@@ -322,21 +340,80 @@ export default function PixelArtBackground({
             p.y = p.originY
           }
 
-          // 2. Determine Color:
-          // Phase A: Pixel emerges as the image's original color (cream/yellow/ink)
+          // 2. Continuous Dynamic Phrase Morphing:
+          // The title smoothly alternates continuously between:
+          // Phase 0: "Designer who ships with Code"
+          // Phase 1: "Coder who ships with Designer"
+          // Timing:
+          // - Initial image settlement: 1100ms
+          // - Full phrase cycle: 6500ms
+          //   - 0ms -> 2200ms: Phrase 0 held / revealed
+          //   - 2200ms -> 3250ms: Smooth letter-by-letter dissolution of changed words & morphing into Phrase 1
+          //   - 3250ms -> 5450ms: Phrase 1 held
+          //   - 5450ms -> 6500ms: Smooth letter-by-letter morphing back to Phrase 0
           let currentR = p.initR
           let currentG = p.initG
           let currentB = p.initB
           let currentHex = p.initHex
 
-          // Phase B: If this pixel represents text, smoothly shift color to deep ink (#0a0a0a) to reveal the letters
-          if (p.isTextPixel && elapsed > p.textRevealDelay) {
-            const rawTextShift = Math.min(1, (elapsed - p.textRevealDelay) / p.textShiftDuration)
-            const textShiftProgress = 1 - Math.pow(1 - rawTextShift, 3) // smooth cubic easeOut
+          const initialIntroDone = elapsed > 1100
 
-            currentR = Math.round(p.initR + (p.targetR - p.initR) * textShiftProgress)
-            currentG = Math.round(p.initG + (p.targetG - p.initG) * textShiftProgress)
-            currentB = Math.round(p.initB + (p.targetB - p.initB) * textShiftProgress)
+          if (p.isTextPixel && initialIntroDone) {
+            const cycleDuration = 6500
+            const cycleTime = (elapsed - 1100) % cycleDuration
+            const halfCycle = cycleDuration / 2 // 3250ms
+            const transitionWindow = 1050 // duration of the smooth word morph
+
+            let targetTextWeight = 0 // 0 = fully background image color, 1 = fully text ink color
+
+            if (cycleTime < halfCycle) {
+              // First half of cycle (Phrase 0 is primary)
+              if (p.isState0) {
+                if (cycleTime < halfCycle - transitionWindow) {
+                  // Fully visible
+                  targetTextWeight = 1
+                } else {
+                  // Morphing out letter by letter
+                  const tOut = (cycleTime - (halfCycle - transitionWindow)) / transitionWindow
+                  const letterDelayFactor = Math.max(0, Math.min(1, tOut * 1.6 - (p.letterIdx0 * 0.04)))
+                  targetTextWeight = 1 - letterDelayFactor
+                }
+              }
+              if (p.isState1) {
+                if (cycleTime >= halfCycle - transitionWindow) {
+                  // Morphing in letter by letter
+                  const tIn = (cycleTime - (halfCycle - transitionWindow)) / transitionWindow
+                  const letterDelayFactor = Math.max(0, Math.min(1, tIn * 1.6 - (p.letterIdx1 * 0.04)))
+                  targetTextWeight = Math.max(targetTextWeight, letterDelayFactor)
+                }
+              }
+            } else {
+              // Second half of cycle (Phrase 1 is primary)
+              const secondTime = cycleTime - halfCycle
+              if (p.isState1) {
+                if (secondTime < halfCycle - transitionWindow) {
+                  targetTextWeight = 1
+                } else {
+                  const tOut = (secondTime - (halfCycle - transitionWindow)) / transitionWindow
+                  const letterDelayFactor = Math.max(0, Math.min(1, tOut * 1.6 - (p.letterIdx1 * 0.04)))
+                  targetTextWeight = 1 - letterDelayFactor
+                }
+              }
+              if (p.isState0) {
+                if (secondTime >= halfCycle - transitionWindow) {
+                  const tIn = (secondTime - (halfCycle - transitionWindow)) / transitionWindow
+                  const letterDelayFactor = Math.max(0, Math.min(1, tIn * 1.6 - (p.letterIdx0 * 0.04)))
+                  targetTextWeight = Math.max(targetTextWeight, letterDelayFactor)
+                }
+              }
+            }
+
+            // Smooth cubic ease for color blending
+            const easeWeight = targetTextWeight * targetTextWeight * (3 - 2 * targetTextWeight)
+
+            currentR = Math.round(p.initR + (p.inkR - p.initR) * easeWeight)
+            currentG = Math.round(p.initG + (p.inkG - p.initG) * easeWeight)
+            currentB = Math.round(p.initB + (p.inkB - p.initB) * easeWeight)
             currentHex = `rgb(${currentR},${currentG},${currentB})`
           }
 
