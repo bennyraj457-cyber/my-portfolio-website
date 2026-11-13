@@ -25,10 +25,11 @@ export default function PixelAssembledHeading({
 
   useEffect(() => {
     const updateCanvasDimensions = () => {
-      const containerWidth = Math.min(window.innerWidth - 32, 920)
-      // Estimate height based on fluid scaling
-      const fontSize = Math.max(36, Math.min(window.innerWidth * 0.072, 82))
-      const estimatedHeight = fontSize * 2.3
+      // Allow wide container width for large bold editorial display
+      const containerWidth = Math.min(window.innerWidth - 24, 1100)
+      // Large fluid font size matching the editorial showcase: clamp(48px, 9vw + 12px, 118px)
+      const fontSize = Math.max(48, Math.min(window.innerWidth * 0.088, 118))
+      const estimatedHeight = fontSize * 2.35
       setDimensions({ width: containerWidth, height: estimatedHeight, fontSize })
     }
 
