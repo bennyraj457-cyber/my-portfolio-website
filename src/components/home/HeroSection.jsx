@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { personalInfo } from '../../data/personalInfo'
 import { PixelCloudBackground } from '../common'
 import ToolsMarquee from './ToolsMarquee'
+import PixelAssembledHeading from './PixelAssembledHeading'
 
 /**
  * HeroSection
@@ -51,11 +52,13 @@ export default function HeroSection() {
           isRevealed ? 'opacity-100 translate-y-0 filter-none' : 'opacity-0 translate-y-4 pointer-events-none'
         }`}
       >
-        {/* Main Headline with responsive fluid sizing and tiny pixel dither structure */}
-        <h1 className="fluid-hero-headline font-heading italic font-normal tracking-tight">
-          <span className="block pixel-matrix-text">{headlineLine1}</span>
-          <span className="block mt-1 sm:mt-2 pixel-matrix-text">{headlineLine2}</span>
-        </h1>
+        {/* Main Headline assembled from discrete micro-pixels */}
+        <PixelAssembledHeading
+          line1={headlineLine1}
+          line2={headlineLine2}
+          pixelSize={3}
+          className="w-full"
+        />
 
         {/* Responsive Paragraph Bio */}
         <p className="max-w-xl mx-auto text-sm sm:text-base md:text-lg lg:text-xl font-normal leading-relaxed text-text-body px-2 sm:px-0">
