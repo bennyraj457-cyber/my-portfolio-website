@@ -19,7 +19,6 @@ export default function PixelCloudBackground({
   interactive = true,
   contentRepelDistance = 90,
   driftSpeed = 0.45,
-  initialIntro = true,
 }) {
   const canvasRef = useRef(null)
   const mousePos = useRef({ x: -1000, y: -1000 })
@@ -34,10 +33,7 @@ export default function PixelCloudBackground({
   const fgDriftOffsetRef = useRef(0)
   const timeRef = useRef(0)
   const islandSpawnTimer = useRef(0)
-
-  // Full solid yellow hero cover grid
-  const introGridRef = useRef([])
-  const introStartTimeRef = useRef(null)
+  const entranceStartTimeRef = useRef(null)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -53,37 +49,6 @@ export default function PixelCloudBackground({
       height = canvas.height = parent.clientHeight || window.innerHeight
       initSparkles()
       initDriftingIslands()
-      initIntroGrid()
-    }
-
-    const initIntroGrid = () => {
-      if (!initialIntro) return
-      const cols = Math.ceil(width / macroSize)
-      const rows = Math.ceil(height / macroSize)
-      const cx = cols / 2
-      const cy = rows / 2
-
-      const grid = []
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          // Distance from center determines order of pixel dissolve (radial wave with noise)
-          const dx = (c - cx) / (cols / 2)
-          const dy = (r - cy) / (rows / 2)
-          const dist = Math.sqrt(dx * dx + dy * dy)
-          const randomJitter = Math.random() * 0.45
-
-          grid.push({
-            r,
-            c,
-            // Whole hero begins 100% covered in solid yellow
-            // Center pixels start fading after 250ms, expanding outward like a digital iris
-            delay: 250 + dist * 950 + randomJitter * 400,
-            duration: 480 + Math.random() * 260,
-          })
-        }
-      }
-      introGridRef.current = grid
-      introStartTimeRef.current = performance.now()
     }
 
     const initSparkles = () => {
@@ -312,6 +277,14 @@ export default function PixelCloudBackground({
     const patternSparseWhite = createDitherPattern('rgba(255, 230, 80, 0.4)', '#ffffff')
 
     const render = () => {
+      if (!entranceStartTimeRef.current) {
+        entranceStartTimeRef.current = performance.now()
+      }
+      const elapsedEntrance = performance.now() - entranceStartTimeRef.current
+      // Soft Aurora Fade-In: over 1400ms with smooth cubic ease-out curve
+      const auroraProgress = Math.min(1, elapsedEntrance / 1400)
+      const globalAuroraAlpha = 1 - Math.pow(1 - auroraProgress, 3)
+
       // Smooth continuous right-to-left wind drift for natural clouds
       bgDriftOffsetRef.current -= driftSpeed * 0.45
       fgDriftOffsetRef.current -= driftSpeed * 0.85
@@ -333,7 +306,9 @@ export default function PixelCloudBackground({
       const rows = Math.ceil(height / macroSize)
       const obstacles = contentObstacles.current
 
-      // 1. Render Layered Parallax Cloud Grid
+      // 1. Render Layered Parallax Cloud Grid with Soft Aurora Shimmer Expansion
+      ctx.globalAlpha = globalAuroraAlpha
+
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           const px = c * macroSize
@@ -527,58 +502,6 @@ export default function PixelCloudBackground({
         ctx.fillRect(snapX, snapY, p.size, p.size)
       }
       ctx.globalAlpha = 1.0
-
-      // 5. Initial Full Cover Solid Yellow Pixels -> Pixel-by-Pixel Dissolve
-      if (initialIntro && introStartTimeRef.current) {
-        const elapsed = performance.now() - introStartTimeRef.current
-        const grid = introGridRef.current
-        let hasRemainingIntroPixels = false
-        let dissolvedCount = 0
-
-        for (let i = 0; i < grid.length; i++) {
-          const item = grid[i]
-          const px = item.c * macroSize
-          const py = item.r * macroSize
-
-          if (elapsed < item.delay) {
-            // Still 100% solid yellow pixel covering hero section
-            ctx.fillStyle = tones.primary
-            ctx.fillRect(px, py, macroSize, macroSize)
-            hasRemainingIntroPixels = true
-          } else if (elapsed < item.delay + item.duration) {
-            // Smooth multi-stage halftone dither dissolve
-            const progress = (elapsed - item.delay) / item.duration
-            hasRemainingIntroPixels = true
-
-            if (progress < 0.25) {
-              ctx.fillStyle = tones.primary
-            } else if (progress < 0.5) {
-              ctx.fillStyle = patternPrimary_Light1
-            } else if (progress < 0.72) {
-              ctx.fillStyle = patternLight1_Light2
-            } else if (progress < 0.9) {
-              ctx.fillStyle = patternLight2_Light3
-            } else {
-              ctx.fillStyle = patternLight3_White
-            }
-            ctx.fillRect(px, py, macroSize, macroSize)
-          } else {
-            dissolvedCount++
-          }
-        }
-
-        // Notify hero section ONLY AFTER all intro pixels have completely finished dissolving
-        if (!hasRemainingIntroPixels && !window.__introHeroRevealed) {
-          window.__introHeroRevealed = true
-          window.dispatchEvent(new CustomEvent('introHeroRevealed'))
-        }
-
-        // Clean up intro state when clearing is complete
-        if (!hasRemainingIntroPixels && elapsed > 2800) {
-          introStartTimeRef.current = null
-          introGridRef.current = []
-        }
-      }
 
       rafId.current = requestAnimationFrame(render)
     }
