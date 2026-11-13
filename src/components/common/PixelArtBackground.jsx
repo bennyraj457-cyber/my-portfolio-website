@@ -1,11 +1,10 @@
 import React, { useEffect, useRef } from 'react'
-import retroCoderImg from '../../assets/images/retro-coder.png'
+import meImg from '../../assets/me.jpeg_d9ce6ce2_2K.jpg'
 
 /**
  * PixelArtBackground
  *
- * Renders the coder artwork as a clean, high-performance pixel-art canvas:
- * - Pure pixel art background with zero embedded pixel text
+ * Renders the hero background artwork as a clean, high-performance pixel-art canvas:
  * - Solid flush pixels with zero gap
  * - Interactive spring displacement when hovered by mouse or steered with boat cursor
  */
@@ -13,6 +12,7 @@ export default function PixelArtBackground({
   className = '',
   pixelSize = 6,
   opacity = 0.95,
+  src,
 }) {
   const canvasRef = useRef(null)
   const particlesRef = useRef([])
@@ -26,7 +26,7 @@ export default function PixelArtBackground({
 
     const img = new Image()
     img.crossOrigin = 'anonymous'
-    img.src = retroCoderImg
+    img.src = src || meImg
 
     let isCancelled = false
 
