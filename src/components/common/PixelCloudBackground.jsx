@@ -281,9 +281,15 @@ export default function PixelCloudBackground({
         entranceStartTimeRef.current = performance.now()
       }
       const elapsedEntrance = performance.now() - entranceStartTimeRef.current
-      // Soft Aurora Fade-In: over 1400ms with smooth cubic ease-out curve
-      const auroraProgress = Math.min(1, elapsedEntrance / 1400)
-      const globalAuroraAlpha = 1 - Math.pow(1 - auroraProgress, 3)
+
+      // First start with clean blank white screen (400ms delay), then pixels slowly emerge over 1800ms
+      const delay = 400
+      let globalAuroraAlpha = 0
+      if (elapsedEntrance > delay) {
+        const progress = Math.min(1, (elapsedEntrance - delay) / 1800)
+        // Gentle ease-out sine-cubic curve for slow, luxurious reveal
+        globalAuroraAlpha = 1 - Math.pow(1 - progress, 2.5)
+      }
 
       // Smooth continuous right-to-left wind drift for natural clouds
       bgDriftOffsetRef.current -= driftSpeed * 0.45
@@ -398,86 +404,90 @@ export default function PixelCloudBackground({
       }
 
       // 2. Render Micro-Twinkle Digital Sparkles (Ambient Life)
-      const spList = sparkles.current
-      for (let i = 0; i < spList.length; i++) {
-        const sp = spList[i]
-        sp.phase += sp.speed
-        const brightness = (Math.sin(sp.phase) + 1) / 2
-        if (brightness > 0.05) {
-          const curAngle = sp.relAngle
-          const sx = cx + Math.cos(curAngle) * (rx * sp.relDist) - (fgDrift % width) * 0.3
-          const sy = cy + Math.sin(curAngle) * (ry * sp.relDist)
+      if (globalAuroraAlpha > 0.1) {
+        const spList = sparkles.current
+        for (let i = 0; i < spList.length; i++) {
+          const sp = spList[i]
+          sp.phase += sp.speed
+          const brightness = (Math.sin(sp.phase) + 1) / 2
+          if (brightness > 0.05) {
+            const curAngle = sp.relAngle
+            const sx = cx + Math.cos(curAngle) * (rx * sp.relDist) - (fgDrift % width) * 0.3
+            const sy = cy + Math.sin(curAngle) * (ry * sp.relDist)
 
-          let insideText = false
-          for (let j = 0; j < obstacles.length; j++) {
-            const obs = obstacles[j]
-            if (sx >= obs.left && sx <= obs.right && sy >= obs.top && sy <= obs.bottom) {
-              insideText = true
-              break
+            let insideText = false
+            for (let j = 0; j < obstacles.length; j++) {
+              const obs = obstacles[j]
+              if (sx >= obs.left && sx <= obs.right && sy >= obs.top && sy <= obs.bottom) {
+                insideText = true
+                break
+              }
             }
-          }
 
-          if (!insideText && sx >= 0 && sx <= width && sy >= 0 && sy <= height) {
-            const snapX = Math.floor(sx / 2) * 2
-            const snapY = Math.floor(sy / 2) * 2
-            ctx.fillStyle = brightness > 0.5 ? '#fffadc' : '#ffd700'
-            ctx.globalAlpha = brightness * 0.85
-            ctx.fillRect(snapX, snapY, sp.size, sp.size)
+            if (!insideText && sx >= 0 && sx <= width && sy >= 0 && sy <= height) {
+              const snapX = Math.floor(sx / 2) * 2
+              const snapY = Math.floor(sy / 2) * 2
+              ctx.fillStyle = brightness > 0.5 ? '#fffadc' : '#ffd700'
+              ctx.globalAlpha = brightness * 0.85 * globalAuroraAlpha
+              ctx.fillRect(snapX, snapY, sp.size, sp.size)
+            }
           }
         }
       }
       ctx.globalAlpha = 1.0
 
       // 3. Render Drifting Micro-Pixel "Islands" (Floating & Dissolving before Headline)
-      islandSpawnTimer.current++
-      if (islandSpawnTimer.current % 140 === 0 && driftingIslands.current.length < 16) {
-        driftingIslands.current.push(createIsland(true))
-      }
+      if (globalAuroraAlpha > 0.2) {
+        islandSpawnTimer.current++
+        if (islandSpawnTimer.current % 140 === 0 && driftingIslands.current.length < 16) {
+          driftingIslands.current.push(createIsland(true))
+        }
 
-      const islands = driftingIslands.current
-      for (let i = islands.length - 1; i >= 0; i--) {
-        const isl = islands[i]
-        isl.x += isl.vx
-        isl.y += isl.vy
+        const islands = driftingIslands.current
+        for (let i = islands.length - 1; i >= 0; i--) {
+          const isl = islands[i]
+          isl.x += isl.vx
+          isl.y += isl.vy
 
-        // Smooth fade-in on entry
-        if (isl.fadeIn) {
-          isl.alpha += 0.02
-          if (isl.alpha >= isl.opacity) {
-            isl.alpha = isl.opacity
-            isl.fadeIn = false
+          // Smooth fade-in on entry
+          if (isl.fadeIn) {
+            isl.alpha += 0.02
+            if (isl.alpha >= isl.opacity) {
+              isl.alpha = isl.opacity
+              isl.fadeIn = false
+            }
           }
-        }
 
-        // Proximity detection to headline text: dissolve before touching
-        let minObstacleDist = Infinity
-        for (let j = 0; j < obstacles.length; j++) {
-          const obs = obstacles[j]
-          const dx = Math.max(obs.rawLeft - isl.x, 0, isl.x - obs.rawRight)
-          const dy = Math.max(obs.rawTop - isl.y, 0, isl.y - obs.rawBottom)
-          const dist = Math.sqrt(dx * dx + dy * dy)
-          if (dist < minObstacleDist) minObstacleDist = dist
-        }
+          // Proximity detection to headline text: dissolve before touching
+          let minObstacleDist = Infinity
+          for (let j = 0; j < obstacles.length; j++) {
+            const obs = obstacles[j]
+            const dx = Math.max(obs.rawLeft - isl.x, 0, isl.x - obs.rawRight)
+            const dy = Math.max(obs.rawTop - isl.y, 0, isl.y - obs.rawBottom)
+            const dist = Math.sqrt(dx * dx + dy * dy)
+            if (dist < minObstacleDist) minObstacleDist = dist
+          }
 
-        // Dissolve smoothly if approaching within 70px of text
-        if (minObstacleDist < 70) {
-          isl.alpha -= 0.04
-        }
+          // Dissolve smoothly if approaching within 70px of text
+          if (minObstacleDist < 70) {
+            isl.alpha -= 0.04
+          }
 
-        // Remove if dissolved or scrolled off left side
-        if (isl.alpha <= 0 || isl.x < -40) {
-          islands.splice(i, 1)
-          continue
-        }
+          // Remove if dissolved or scrolled off left side
+          if (isl.alpha <= 0 || isl.x < -40) {
+            islands.splice(i, 1)
+            continue
+          }
 
-        // Render discrete pixel dots in the island cluster
-        ctx.globalAlpha = Math.max(0, isl.alpha)
-        for (let k = 0; k < isl.cluster.length; k++) {
-          const dot = isl.cluster[k]
-          ctx.fillStyle = dot.color
-          const snapX = Math.floor((isl.x + dot.dx) / 2) * 2
-          const snapY = Math.floor((isl.y + dot.dy) / 2) * 2
-          ctx.fillRect(snapX, snapY, isl.pixelSize, isl.pixelSize)
+          // Render discrete pixel dots in the island cluster
+          ctx.globalAlpha = Math.max(0, isl.alpha * globalAuroraAlpha)
+          for (let k = 0; k < isl.cluster.length; k++) {
+            const dot = isl.cluster[k]
+            ctx.fillStyle = dot.color
+            const snapX = Math.floor((isl.x + dot.dx) / 2) * 2
+            const snapY = Math.floor((isl.y + dot.dy) / 2) * 2
+            ctx.fillRect(snapX, snapY, isl.pixelSize, isl.pixelSize)
+          }
         }
       }
       ctx.globalAlpha = 1.0
