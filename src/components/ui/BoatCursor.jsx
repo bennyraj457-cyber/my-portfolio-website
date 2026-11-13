@@ -70,10 +70,30 @@ export default function BoatCursor({
       }
     }
 
+    // Disable mouse wheel scroll & touch-drag scroll across the page
+    // (Page scrolling is strictly controlled by steering the boat with arrows)
+    const preventWheelScroll = (e) => {
+      e.preventDefault()
+    }
+
+    const preventTouchScroll = (e) => {
+      if (e.target.closest('#boat-directional-controller, a, button, input, textarea')) return
+      e.preventDefault()
+    }
+
+    document.body.style.overscrollBehavior = 'none'
+    document.documentElement.style.overscrollBehavior = 'none'
+
+    window.addEventListener('wheel', preventWheelScroll, { passive: false })
+    window.addEventListener('touchmove', preventTouchScroll, { passive: false })
     window.addEventListener('keydown', handleKeyDown, { passive: false })
     window.addEventListener('keyup', handleKeyUp)
 
     return () => {
+      document.body.style.overscrollBehavior = 'auto'
+      document.documentElement.style.overscrollBehavior = 'auto'
+      window.removeEventListener('wheel', preventWheelScroll)
+      window.removeEventListener('touchmove', preventTouchScroll)
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
     }
