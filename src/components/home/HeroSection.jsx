@@ -1,6 +1,6 @@
 import React from 'react'
 import { personalInfo } from '../../data/personalInfo'
-import PixelPortraitBackground from './PixelPortraitBackground'
+import { PixelArtBackground } from '../common'
 import ToolsMarquee from './ToolsMarquee'
 import PixelAssembledHeading from './PixelAssembledHeading'
 
@@ -22,11 +22,11 @@ export default function HeroSection() {
       aria-label="Introduction"
       className="relative w-full min-h-[90svh] md:min-h-screen flex flex-col items-center justify-center text-center px-4 sm:px-6 md:px-12 py-20 sm:py-24 md:py-32 select-none overflow-hidden"
     >
-      {/* Benny's Portrait rendered in tiny discrete micro-pixels */}
-      <PixelPortraitBackground
+      {/* Edge-to-edge tiny pixel art illustration background */}
+      <PixelArtBackground
         className="w-full h-full"
-        pixelStep={4}
-        interactive={true}
+        pixelSize={4}
+        opacity={0.85}
       />
 
       {/* Hero content sitting cleanly in z-10 above canvas */}
