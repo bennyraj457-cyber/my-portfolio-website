@@ -53,6 +53,67 @@ export default function PixelCloudBackground({
     let width = 0
     let height = 0
 
+    const initSparkles = () => {
+      const list = []
+      const count = 35
+      for (let i = 0; i < count; i++) {
+        list.push({
+          relAngle: Math.random() * Math.PI * 2,
+          relDist: 0.65 + Math.random() * 0.45,
+          size: Math.random() > 0.5 ? 4 : 2,
+          phase: Math.random() * Math.PI * 2,
+          speed: 0.03 + Math.random() * 0.04,
+        })
+      }
+      sparkles.current = list
+    }
+
+    const createIsland = (spawnAtEdge = true) => {
+      const sizeType = Math.random() > 0.4 ? 3 : 2
+      const pixelSize = 3
+      const cluster = []
+
+      for (let ox = 0; ox < sizeType; ox++) {
+        for (let oy = 0; oy < sizeType; oy++) {
+          if (Math.random() > 0.25) {
+            cluster.push({
+              dx: ox * pixelSize,
+              dy: oy * pixelSize,
+              color: Math.random() > 0.5 ? '#ffd700' : '#ffe766',
+            })
+          }
+        }
+      }
+
+      const currentW = width || window.innerWidth || 1200
+      const currentH = height || window.innerHeight || 800
+      const spawnX = spawnAtEdge ? currentW + 20 : Math.random() * currentW
+      const spawnY = currentH * 0.15 + Math.random() * (currentH * 0.7)
+
+      return {
+        x: spawnX,
+        y: spawnY,
+        vx: -(0.5 + Math.random() * 0.4),
+        vy: (Math.random() - 0.5) * 0.15,
+        cluster,
+        pixelSize,
+        opacity: 0.85,
+        alpha: 0.0,
+        fadeIn: true,
+      }
+    }
+
+    const initDriftingIslands = () => {
+      const list = []
+      const count = 12
+      for (let i = 0; i < count; i++) {
+        const isl = createIsland(false)
+        isl.alpha = 0.4 + Math.random() * 0.4
+        list.push(isl)
+      }
+      driftingIslands.current = list
+    }
+
     const sampleWordPixels = (word) => {
       const safeWidth = Math.max(width || 0, window.innerWidth || 1200)
       const safeHeight = Math.max(height || 0, window.innerHeight || 800)
