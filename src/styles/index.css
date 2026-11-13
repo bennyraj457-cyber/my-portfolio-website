@@ -53,7 +53,7 @@
 
 /* Base HTML & Viewport Setup */
 html {
-  /* Note: avoid global CSS scroll-behavior: smooth when programmatically driving frame-by-frame rAF animations */
+  scroll-behavior: smooth;
   text-size-adjust: 100%;
   -webkit-text-size-adjust: 100%;
   overflow-x: hidden;

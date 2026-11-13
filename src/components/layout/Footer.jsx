@@ -8,7 +8,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto flex flex-col items-center text-center space-y-4">
         {/* Paragraph Notice */}
         <p className="text-sm sm:text-base text-white/90 font-sans max-w-xl leading-relaxed drop-shadow-sm">
-          I'm currently working on improve the website  the other sections of this portfolio. More projects, case studies, and interactive experiments are on the way.
+          I'm currently working on improve the website design and other sections of this portfolio. More projects, case studies, and interactive experiments are on the way.
         </p>
 
         {/* Copyright */}
