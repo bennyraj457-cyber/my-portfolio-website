@@ -251,7 +251,7 @@ export default function BoatCursor({
     }
   }, [enabled, isMobileDevice, isVisible])
 
-  if (!enabled || !isEligibleDevice()) return null
+  if (!enabled) return null
 
   return (
     <>
