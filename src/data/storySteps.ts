@@ -1,5 +1,4 @@
 export type StoryStepId =
-  | 'door'
   | 'room-overview'
   | 'bike-showroom'
   | 'notebook'
@@ -8,7 +7,6 @@ export type StoryStepId =
   | 'smartphone'
   | 'wall-art'
   | 'wall-note'
-  | 'door-exit'
 
 export interface StoryStep {
   id: StoryStepId
@@ -21,83 +19,67 @@ export interface StoryStep {
 
 export const STORY_STEPS: StoryStep[] = [
   {
-    id: 'door',
-    stepNumber: 1,
-    title: 'Studio Entrance',
-    subtitle: 'Private Lab & Workspace 01',
-    category: 'STUDIO ENTRANCE',
-    hint: 'Scroll down or click the door handle to enter the room',
-  },
-  {
     id: 'room-overview',
-    stepNumber: 2,
+    stepNumber: 1,
     title: 'Creative Studio',
     subtitle: '3D Workspace & Design Lab',
     category: 'OVERVIEW',
-    hint: 'Scroll down to tour each station or click any object',
+    hint: 'Click Next or any object to explore each station',
   },
   {
     id: 'bike-showroom',
-    stepNumber: 3,
+    stepNumber: 2,
     title: '1970 Honda CB750 & Glass Patio',
     subtitle: 'Classic Super Sport & Sunlight Terrace Door',
     category: 'GARAGE SHOWCASE',
-    hint: 'Scroll down to continue or click the glass door to slide open',
+    hint: 'Explore the vintage bike & garden terrace',
   },
   {
     id: 'notebook',
-    stepNumber: 4,
+    stepNumber: 3,
     title: 'About Me Notebook',
     subtitle: 'Creative Developer & UI/UX Designer',
     category: 'BIOGRAPHY & PHILOSOPHY',
-    hint: 'Scroll down to explore Skills & Tech Stack',
+    hint: 'Browse Benny’s philosophy & design journey',
   },
   {
     id: 'bookshelf',
-    stepNumber: 5,
+    stepNumber: 4,
     title: 'Skills & Tech Stack',
     subtitle: 'React • Three.js • TypeScript • UI/UX',
     category: 'KNOWLEDGE & CAPABILITIES',
-    hint: 'Click any book to read or scroll down to continue',
+    hint: 'Click any book to read or click Next to continue',
   },
   {
     id: 'music-player',
-    stepNumber: 6,
+    stepNumber: 5,
     title: 'Vintage Gramophone',
     subtitle: 'Soundtrack & Ambient Audio',
     category: 'AUDIO & AMBIENCE',
-    hint: 'Play vinyl tracks or scroll down to continue',
+    hint: 'Play vinyl tracks or click Next to continue',
   },
   {
     id: 'smartphone',
-    stepNumber: 7,
+    stepNumber: 6,
     title: "Let's Connect",
     subtitle: 'Direct Messaging & Social Links',
     category: 'COMMUNICATION',
-    hint: 'Tap a channel on the phone or scroll down to continue',
+    hint: 'Tap a channel on the phone or click Next to continue',
   },
   {
     id: 'wall-art',
-    stepNumber: 8,
+    stepNumber: 7,
     title: 'Framed Gallery Art',
     subtitle: 'Live Artwork from Supabase',
     category: 'EXHIBITION',
-    hint: 'Scroll down to view the Studio Notice Board',
+    hint: 'Click Next to view the Studio Notice Board',
   },
   {
     id: 'wall-note',
-    stepNumber: 9,
+    stepNumber: 8,
     title: 'Studio Notice',
     subtitle: 'Workspace Expansion & Updates',
     category: 'NOTICE BOARD',
-    hint: 'Scroll down to return to the studio door & exit',
-  },
-  {
-    id: 'door-exit',
-    stepNumber: 10,
-    title: 'Studio Exit',
-    subtitle: 'Returning to the Entrance Door',
-    category: 'DEPARTURE',
-    hint: 'Scroll down to exit the 3D studio to the footer',
+    hint: 'Click Footer to continue down the page',
   },
 ]

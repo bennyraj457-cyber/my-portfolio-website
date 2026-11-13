@@ -20,7 +20,7 @@ import { STORY_STEPS, type StoryStepId } from '@/data/storySteps'
  */
 export function StoryScrollBridge() {
   const { currentStep, currentStepIndex, goToStep } = useStoryScroll()
-  const { stage, handleDoorClick, exitToDoor } = useRoomEntrance()
+  const { stage } = useRoomEntrance()
   const {
     activeObject,
     openNotebook,
@@ -35,26 +35,13 @@ export function StoryScrollBridge() {
 
   const isProgrammaticStepRef = useRef(false)
 
-  // 1. When currentStep changes via page scroll or Next/Prev/Dot click, drive the 3D scene
+  // 1. When currentStep changes via Next/Prev/Dot click, drive the 3D camera
   useEffect(() => {
     const stepId = currentStep.id
     isProgrammaticStepRef.current = true
     const timer = setTimeout(() => {
       isProgrammaticStepRef.current = false
     }, 350)
-
-    if (stepId === 'door' || stepId === 'door-exit') {
-      returnToWorkspace()
-      if (stage !== 'ENTRANCE' && stage !== 'EXITING_ROOM') {
-        exitToDoor()
-      }
-      return () => clearTimeout(timer)
-    }
-
-    // For all interior steps: if currently at door entrance or exiting, open the door and enter
-    if (stage === 'ENTRANCE' || stage === 'EXITING_ROOM') {
-      handleDoorClick()
-    }
 
     if (stepId === 'room-overview') {
       returnToWorkspace()
@@ -78,20 +65,9 @@ export function StoryScrollBridge() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep.id])
 
-  // 2. When user manually clicks a 3D object or door directly inside the canvas, keep the step indicator synced
+  // 2. When user manually clicks a 3D object directly inside the canvas, keep the step indicator synced
   useEffect(() => {
     if (isProgrammaticStepRef.current) return
-
-    if (stage === 'DOOR_OPENING' && (currentStep.id === 'door' || currentStep.id === 'door-exit')) {
-      const overviewIdx = STORY_STEPS.findIndex((s) => s.id === 'room-overview')
-      if (overviewIdx !== -1) goToStep(overviewIdx)
-      return
-    }
-
-    if (stage === 'EXITING_ROOM' && currentStep.id !== 'door' && currentStep.id !== 'door-exit') {
-      goToStep(0)
-      return
-    }
 
     if (stage === 'WORKSPACE') {
       let targetStepId: StoryStepId = 'room-overview'

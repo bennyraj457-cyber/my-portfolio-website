@@ -83,15 +83,6 @@ export function WorkspaceFallback() {
 
 function BackToWorkspaceControl({ onBackToHome }: { onBackToHome?: () => void }) {
   const { isAnyObjectOpen, returnToWorkspace } = useWorkspaceFocus()
-  const { stage, exitToDoor } = useRoomEntrance()
-  const { goToStep } = useStoryScroll()
-
-  const handleExitClick = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    returnToWorkspace()
-    exitToDoor()
-    goToStep(STORY_STEPS.length - 1)
-  }
 
   const handleHomeClick = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -117,8 +108,8 @@ function BackToWorkspaceControl({ onBackToHome }: { onBackToHome?: () => void })
         </button>
       </div>
 
-      {/* Top Right Return to Overview / Exit Room Button */}
-      {isAnyObjectOpen ? (
+      {/* Top Right Return to Overview Button */}
+      {isAnyObjectOpen && (
         <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-30 animate-fade-in pt-[env(safe-area-inset-top,0px)] pr-[env(safe-area-inset-right,0px)]">
           <button
             type="button"
@@ -133,20 +124,6 @@ function BackToWorkspaceControl({ onBackToHome }: { onBackToHome?: () => void })
             <span className="font-semibold uppercase">OVERVIEW</span>
           </button>
         </div>
-      ) : (
-        stage === 'WORKSPACE' && (
-          <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-30 animate-fade-in pt-[env(safe-area-inset-top,0px)] pr-[env(safe-area-inset-right,0px)]">
-            <button
-              type="button"
-              onClick={handleExitClick}
-              className="group inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-black/10 bg-white/80 hover:bg-white px-3 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-mono tracking-wider text-[#181917] shadow-sm backdrop-blur-md transition-all duration-300 hover:border-[#f5d000] hover:scale-105 active:scale-95 touch-manipulation"
-              title="Exit Room back to the Door"
-            >
-              <span className="text-xs sm:text-sm transition-transform group-hover:translate-x-0.5">→</span>
-              <span className="font-semibold uppercase">EXIT ROOM</span>
-            </button>
-          </div>
-        )
       )}
     </>
   )

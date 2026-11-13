@@ -6,7 +6,6 @@ import { Floor } from './Floor'
 import { Desk } from './Desk'
 import { Chair } from './Chair'
 import { ComputerSetup } from './ComputerSetup'
-import { RoomDoor } from './RoomDoor'
 import { LeftGlassDoorAndBike } from './LeftGlassDoorAndBike'
 import { useStudioLighting } from '@/context/StudioLightingContext'
 
@@ -35,7 +34,6 @@ export function Room() {
       <Desk />
       <ComputerSetup />
       <Chair />
-      <RoomDoor />
     </group>
   )
 }

@@ -54,8 +54,8 @@ export function RoomEntranceProvider({ children }: { children: ReactNode }) {
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches
   }, [])
 
-  // ALWAYS start at 'ENTRANCE' so visitors always experience the 3D door on first load / refresh
-  const [stage, setStage] = useState<EntranceStage>('ENTRANCE')
+  // Direct WORKSPACE mode (front wall & door removed)
+  const [stage, setStage] = useState<EntranceStage>('WORKSPACE')
 
   // Door click opens door and enters workspace directly
   const handleDoorClick = useCallback(() => {
