@@ -43,7 +43,7 @@ function checkWebGLSupport(): boolean {
     const canvas = document.createElement('canvas')
     return Boolean(
       window.WebGLRenderingContext &&
-        (canvas.getContext('webgl2') || canvas.getContext('webgl')),
+      (canvas.getContext('webgl2') || canvas.getContext('webgl')),
     )
   } catch {
     return false
@@ -84,13 +84,13 @@ export function WorkspaceFallback() {
 function BackToWorkspaceControl({ onBackToHome }: { onBackToHome?: () => void }) {
   const { isAnyObjectOpen, returnToWorkspace } = useWorkspaceFocus()
   const { stage, exitToDoor } = useRoomEntrance()
-  const { scrollToStep } = useStoryScroll()
+  const { goToStep } = useStoryScroll()
 
   const handleExitClick = (e: React.MouseEvent) => {
     e.stopPropagation()
     returnToWorkspace()
     exitToDoor()
-    scrollToStep(STORY_STEPS.length - 1)
+    goToStep(STORY_STEPS.length - 1)
   }
 
   const handleHomeClick = (e: React.MouseEvent) => {
@@ -153,78 +153,6 @@ function BackToWorkspaceControl({ onBackToHome }: { onBackToHome?: () => void })
 }
 
 /**
- * Listens to native window scroll across the tall 3D Studio scroll container
- * and maps scroll progress (0..1) to the 10 story steps:
- * 0: Door -> 1: Room Overview -> 2: Bike & Patio -> 3: Notebook -> 4: Bookshelf ->
- * 5: Gramophone -> 6: Smartphone -> 7: Wall Art -> 8: Wall Note -> 9: Exit Door -> Footer
- */
-function WindowScrollStepTracker({
-  containerRef,
-}: {
-  containerRef: React.RefObject<HTMLDivElement | null>
-}) {
-  const { currentStepIndex, totalSteps, goToStep } = useStoryScroll()
-  const stepIndexRef = useRef(currentStepIndex)
-  stepIndexRef.current = currentStepIndex
-
-  useEffect(() => {
-    let rafId: number | null = null
-
-    const updateStepFromScroll = () => {
-      rafId = null
-      const el = containerRef.current
-      if (!el) return
-
-      const rect = el.getBoundingClientRect()
-      const viewportH = window.innerHeight
-      const scrollableDistance = Math.max(1, rect.height - viewportH)
-
-      // Before reaching the 3D section (user is in Hero section)
-      if (rect.top > viewportH * 0.25) {
-        if (stepIndexRef.current !== 0) {
-          goToStep(0)
-        }
-        return
-      }
-
-      // Past the 3D section (user scrolled into Footer)
-      if (rect.bottom < viewportH * 0.75) {
-        if (stepIndexRef.current !== totalSteps - 1) {
-          goToStep(totalSteps - 1)
-        }
-        return
-      }
-
-      // Inside the sticky 3D scroll track: map progress [0, 1] -> [0, totalSteps - 1]
-      const scrolled = -rect.top
-      const progress = Math.max(0, Math.min(0.9999, scrolled / scrollableDistance))
-      const targetIndex = Math.floor(progress * totalSteps)
-
-      if (targetIndex !== stepIndexRef.current) {
-        goToStep(targetIndex)
-      }
-    }
-
-    const handleScroll = () => {
-      if (rafId === null) {
-        rafId = window.requestAnimationFrame(updateStepFromScroll)
-      }
-    }
-
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    updateStepFromScroll()
-    return () => {
-      window.removeEventListener('scroll', handleScroll)
-      if (rafId !== null) {
-        window.cancelAnimationFrame(rafId)
-      }
-    }
-  }, [containerRef, goToStep, totalSteps])
-
-  return null
-}
-
-/**
  * Signals when the 3D scene has rendered its first frames on the GPU.
  */
 function SceneReadyNotifier({ onReady }: { onReady: () => void }) {
@@ -252,7 +180,7 @@ interface WorkspaceCanvasProps {
 export function WorkspaceCanvas({ onBackToHome, onSceneReady }: WorkspaceCanvasProps) {
   const [webglSupported, setWebglSupported] = useState<boolean>(true)
   const [isCanvasInView, setIsCanvasInView] = useState<boolean>(true)
-  const scrollTrackRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const supported = checkWebGLSupport()
@@ -262,10 +190,10 @@ export function WorkspaceCanvas({ onBackToHome, onSceneReady }: WorkspaceCanvasP
     }
   }, [onSceneReady])
 
-  // Pause WebGL frameloop when user is viewing the Hero section or Footer section outside the 3D viewport!
+  // Pause WebGL frameloop when user scrolls away from the 3D section
   useEffect(() => {
-    const trackEl = scrollTrackRef.current
-    if (!trackEl || typeof IntersectionObserver === 'undefined') return
+    const containerEl = containerRef.current
+    if (!containerEl || typeof IntersectionObserver === 'undefined') return
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -277,24 +205,8 @@ export function WorkspaceCanvas({ onBackToHome, onSceneReady }: WorkspaceCanvasP
       { rootMargin: '200px 0px' },
     )
 
-    observer.observe(trackEl)
+    observer.observe(containerEl)
     return () => observer.disconnect()
-  }, [])
-
-  // Smoothly scroll the window to a specific story step's vertical position
-  const handleScrollToStep = useCallback((stepIndex: number) => {
-    const el = scrollTrackRef.current
-    if (!el) return
-    const rect = el.getBoundingClientRect()
-    const containerTop = window.scrollY + rect.top
-    const viewportH = window.innerHeight
-    const scrollableDistance = Math.max(1, el.offsetHeight - viewportH)
-    const totalSteps = STORY_STEPS.length
-
-    // Aim for the middle of the step's scroll band
-    const stepFraction = (stepIndex + 0.35) / totalSteps
-    const targetY = containerTop + stepFraction * scrollableDistance
-    window.scrollTo({ top: targetY, behavior: 'smooth' })
   }, [])
 
   if (!webglSupported) {
@@ -306,44 +218,39 @@ export function WorkspaceCanvas({ onBackToHome, onSceneReady }: WorkspaceCanvasP
       <StudioLightingProvider>
         <RoomEntranceProvider>
           <WorkspaceFocusProvider>
-            <StoryScrollProvider onScrollToStep={handleScrollToStep}>
-              <WindowScrollStepTracker containerRef={scrollTrackRef} />
-
-              {/* Compact Scroll-Triggered Container (500vh = 50vh per interactive station for natural, responsive transitions) */}
+            <StoryScrollProvider>
+              {/* Button-controlled 100vh 3D Viewport with no scroll traps or extra space */}
               <div
-                ref={scrollTrackRef}
+                ref={containerRef}
                 id="studio-workspace"
-                className="relative z-30 w-full h-[500vh] bg-[#f0eee8]"
+                className="relative z-30 w-full h-screen min-h-screen overflow-hidden bg-[#f0eee8]"
               >
-                {/* Sticky 100vh 3D Viewport that stays pinned while scrolling through all 10 stations */}
-                <div className="sticky top-0 left-0 z-30 w-full h-screen overflow-hidden bg-[#f0eee8]">
-                  <Canvas
-                    shadows
-                    frameloop={isCanvasInView ? 'always' : 'never'}
-                    dpr={[1, Math.min(typeof window !== 'undefined' ? window.devicePixelRatio : 1, 1.25)]}
-                    performance={{ min: 0.5 }}
-                    gl={{
-                      antialias: true,
-                      powerPreference: 'high-performance',
-                      alpha: false,
-                      stencil: false,
-                      depth: true,
-                    }}
-                  >
-                    <color attach="background" args={['#f0eee8']} />
-                    <Camera />
-                    <Lighting />
-                    <Suspense fallback={null}>
-                      <Room />
-                    </Suspense>
-                    <SceneReadyNotifier onReady={() => onSceneReady?.()} />
-                  </Canvas>
+                <Canvas
+                  shadows
+                  frameloop={isCanvasInView ? 'always' : 'never'}
+                  dpr={[1, Math.min(typeof window !== 'undefined' ? window.devicePixelRatio : 1, 1.25)]}
+                  performance={{ min: 0.5 }}
+                  gl={{
+                    antialias: true,
+                    powerPreference: 'high-performance',
+                    alpha: false,
+                    stencil: false,
+                    depth: true,
+                  }}
+                >
+                  <color attach="background" args={['#f0eee8']} />
+                  <Camera />
+                  <Lighting />
+                  <Suspense fallback={null}>
+                    <Room />
+                  </Suspense>
+                  <SceneReadyNotifier onReady={() => onSceneReady?.()} />
+                </Canvas>
 
-                  <EntranceOverlay />
-                  <BackToWorkspaceControl onBackToHome={onBackToHome} />
-                  <StoryScrollHUD />
-                  <StoryScrollBridge />
-                </div>
+                <EntranceOverlay />
+                <BackToWorkspaceControl onBackToHome={onBackToHome} />
+                <StoryScrollHUD />
+                <StoryScrollBridge />
               </div>
             </StoryScrollProvider>
           </WorkspaceFocusProvider>
