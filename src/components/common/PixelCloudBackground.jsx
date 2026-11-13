@@ -53,96 +53,29 @@ export default function PixelCloudBackground({
     let width = 0
     let height = 0
 
-    const updateSize = () => {
-      const parent = canvas.parentElement || document.body
-      width = canvas.width = parent.clientWidth || window.innerWidth
-      height = canvas.height = parent.clientHeight || window.innerHeight
-      initSparkles()
-      initDriftingIslands()
-    }
-
-    const initSparkles = () => {
-      const list = []
-      const count = 35
-      for (let i = 0; i < count; i++) {
-        list.push({
-          relAngle: Math.random() * Math.PI * 2,
-          relDist: 0.65 + Math.random() * 0.45,
-          size: Math.random() > 0.5 ? 4 : 2,
-          phase: Math.random() * Math.PI * 2,
-          speed: 0.03 + Math.random() * 0.04,
-        })
-      }
-      sparkles.current = list
-    }
-
-    // Initialize initial drifting micro-pixel islands
-    const createIsland = (spawnAtEdge = true) => {
-      // 2x2 or 3x3 pixel grid structure for each cluster
-      const sizeType = Math.random() > 0.4 ? 3 : 2
-      const pixelSize = 3 // 3px discrete pixels per dot
-      const cluster = []
-
-      // Generate random organic mini island shape
-      for (let ox = 0; ox < sizeType; ox++) {
-        for (let oy = 0; oy < sizeType; oy++) {
-          if (Math.random() > 0.25) {
-            cluster.push({
-              dx: ox * pixelSize,
-              dy: oy * pixelSize,
-              color: Math.random() > 0.5 ? '#ffd700' : '#ffe766',
-            })
-          }
-        }
-      }
-
-      const spawnX = spawnAtEdge ? width + 20 : Math.random() * width
-      const spawnY = height * 0.15 + Math.random() * (height * 0.7)
-
-      return {
-        x: spawnX,
-        y: spawnY,
-        vx: -(0.5 + Math.random() * 0.4), // Drifts right to left
-        vy: (Math.random() - 0.5) * 0.15, // Subtle vertical float
-        cluster,
-        pixelSize,
-        opacity: 0.85,
-        alpha: 0.0, // Fades in smoothly
-        fadeIn: true,
-      }
-    }
-
-    const initDriftingIslands = () => {
-      const list = []
-      const count = 12 // Concurrent floating micro-islands
-      for (let i = 0; i < count; i++) {
-        const isl = createIsland(false)
-        isl.alpha = 0.4 + Math.random() * 0.4
-        list.push(isl)
-      }
-      driftingIslands.current = list
-    }
-
-    // Build pixel raster coordinates for the given word
     const sampleWordPixels = (word) => {
+      const safeWidth = Math.max(width || 0, window.innerWidth || 1200)
+      const safeHeight = Math.max(height || 0, window.innerHeight || 800)
+      if (safeWidth <= 0 || safeHeight <= 0) return []
+
       const offCanvas = document.createElement('canvas')
       const offCtx = offCanvas.getContext('2d')
-      const fontSize = Math.max(28, Math.min(width * 0.08, 64))
-      offCanvas.width = width
-      offCanvas.height = Math.round(fontSize * 2)
+      const fontSize = Math.max(28, Math.min(safeWidth * 0.08, 64))
+      offCanvas.width = safeWidth
+      offCanvas.height = Math.max(1, Math.round(fontSize * 2))
 
       offCtx.font = `bold ${fontSize}px "Geist", -apple-system, sans-serif`
       offCtx.fillStyle = '#ffffff'
       offCtx.textAlign = 'center'
       offCtx.textBaseline = 'middle'
-      offCtx.fillText(word, width / 2, offCanvas.height / 2)
+      offCtx.fillText(word, safeWidth / 2, offCanvas.height / 2)
 
       const imgData = offCtx.getImageData(0, 0, offCanvas.width, offCanvas.height).data
       const step = 6 // Discrete step distance between pixel points
       const points = []
 
       // Choose vertical positioning above or below hero text in open negative space
-      const anchorY = height > 650 ? height * 0.16 : height * 0.12
+      const anchorY = safeHeight > 650 ? safeHeight * 0.16 : safeHeight * 0.12
 
       for (let y = 0; y < offCanvas.height; y += step) {
         for (let x = 0; x < offCanvas.width; x += step) {
@@ -166,7 +99,16 @@ export default function PixelCloudBackground({
       return points
     }
 
-    wordState.current.dots = sampleWordPixels(wordState.current.words[0])
+    const updateSize = () => {
+      const parent = canvas.parentElement || document.body
+      width = canvas.width = parent.clientWidth || window.innerWidth || 1200
+      height = canvas.height = parent.clientHeight || window.innerHeight || 800
+      initSparkles()
+      initDriftingIslands()
+      wordState.current.dots = sampleWordPixels(wordState.current.words[wordState.current.currentIndex])
+    }
+
+    updateSize()
 
     const updateObstacles = () => {
       const canvasRect = canvas.getBoundingClientRect()
