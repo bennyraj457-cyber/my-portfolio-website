@@ -17,8 +17,9 @@ import heroPixelArtSrc from '../../assets/pixel-art-hero.jpg'
  */
 export default function PixelArtBackground({
   className = '',
-  pixelSize = 10, // Crisp retro pixel block size
+  pixelSize = 8, // Crisp retro pixel block size
   interactive = true,
+  standAlone = false,
 }) {
   const canvasRef = useRef(null)
   const imageRef = useRef(null)
@@ -65,8 +66,7 @@ export default function PixelArtBackground({
         drawW = cols
         drawH = cols / imgRatio
         drawX = 0
-        // Bias slightly towards bottom where creator sits
-        drawY = rows - drawH
+        drawY = (rows - drawH) / 2
       } else {
         drawH = rows
         drawW = rows * imgRatio
@@ -96,20 +96,19 @@ export default function PixelArtBackground({
           const lum = 0.299 * red + 0.587 * green + 0.114 * blue
 
           // Color detection in original image:
-          // Sky (blue-ish / high blue)
           const isSky = blue > red * 1.15 && blue > 100 && lum > 80
-          // Grass/Hill (green dominant)
           const isGrass = green > red && green > blue * 0.9 && lum > 60
-          // Suit / Deep Shadows (very dark)
           const isDeepDark = lum < 55
-          // CRT Monitor Screen (bright blueish highlight)
           const isMonitor = c > cols * 0.55 && c < cols * 0.85 && r > rows * 0.45 && r < rows * 0.75 && blue > 140
 
-          // Center headline buffer: fade pixels subtly near center so text remains ultra-legible
-          const dx = (c - cx) / (cols * 0.42)
-          const dy = (r - cy) / (rows * 0.35)
-          const distCenter = Math.sqrt(dx * dx + dy * dy)
-          const textAvoidFactor = distCenter < 1.0 ? distCenter * 0.4 : 1.0
+          // Center headline buffer (only if used as full background, disabled when standAlone right column)
+          let textAvoidFactor = 1.0
+          if (!standAlone) {
+            const dx = (c - cx) / (cols * 0.42)
+            const dy = (r - cy) / (rows * 0.35)
+            const distCenter = Math.sqrt(dx * dx + dy * dy)
+            textAvoidFactor = distCenter < 1.0 ? distCenter * 0.4 : 1.0
+          }
 
           // Map color to our design system
           let color = null
@@ -122,13 +121,13 @@ export default function PixelArtBackground({
           } else if (isDeepDark) {
             // Suit, desk shadow, chair structure
             color = '#111111'
-            dotAlpha = Math.min(0.85, 0.2 + textAvoidFactor * 0.65)
+            dotAlpha = standAlone ? 0.95 : Math.min(0.85, 0.2 + textAvoidFactor * 0.65)
           } else if (isSky) {
-            // Sky represented by white negative space with sparse dither
-            const dither = (c * 11 + r * 17) % 19 === 0
+            // Sky represented by white negative space with soft dither
+            const dither = (c * 11 + r * 17) % (standAlone ? 9 : 19) === 0
             if (dither && lum > 140) {
               color = '#ffe766'
-              dotAlpha = 0.25 * textAvoidFactor
+              dotAlpha = standAlone ? 0.4 : 0.25 * textAvoidFactor
             } else {
               color = null // Clear white space
             }
@@ -136,25 +135,25 @@ export default function PixelArtBackground({
             // Rolling hill & grass field mapped to rich brand yellows and halftone dither
             if (lum < 95) {
               color = '#caa700' // Darker field shading
-              dotAlpha = 0.65 * textAvoidFactor
+              dotAlpha = standAlone ? 0.85 : 0.65 * textAvoidFactor
             } else if (lum < 140) {
               color = '#ffd700' // Primary gold
-              dotAlpha = 0.55 * textAvoidFactor
+              dotAlpha = standAlone ? 0.8 : 0.55 * textAvoidFactor
             } else {
               color = (c + r) % 2 === 0 ? '#ffe766' : '#fff3b0' // Soft pale yellow
-              dotAlpha = 0.45 * textAvoidFactor
+              dotAlpha = standAlone ? 0.65 : 0.45 * textAvoidFactor
             }
           } else {
             // Intermediate tones / chair woodwork / CRT beige casing
             if (lum < 110) {
               color = '#222222'
-              dotAlpha = 0.7
+              dotAlpha = standAlone ? 0.9 : 0.7
             } else if (lum < 170) {
               color = '#ffd700'
-              dotAlpha = 0.6
+              dotAlpha = standAlone ? 0.85 : 0.6
             } else {
               color = '#ffe766'
-              dotAlpha = 0.3
+              dotAlpha = standAlone ? 0.5 : 0.3
             }
           }
 
@@ -249,13 +248,14 @@ export default function PixelArtBackground({
         window.removeEventListener('mouseleave', handleMouseLeave)
       }
     }
-  }, [pixelSize, interactive])
+  }, [pixelSize, interactive, standAlone])
 
   return (
     <canvas
       ref={canvasRef}
-      className={`absolute inset-0 pointer-events-none z-0 w-full h-full ${className}`}
+      className={`block w-full h-full pointer-events-auto ${className}`}
       aria-hidden="true"
     />
   )
 }
+

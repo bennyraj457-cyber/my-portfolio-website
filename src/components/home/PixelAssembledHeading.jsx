@@ -14,6 +14,7 @@ export default function PixelAssembledHeading({
   line1 = 'Designer who',
   line2 = 'ships with vision',
   pixelSize = 3,
+  align = 'center',
   className = '',
 }) {
   const canvasRef = useRef(null)
@@ -25,9 +26,14 @@ export default function PixelAssembledHeading({
 
   useEffect(() => {
     const updateCanvasDimensions = () => {
-      const containerWidth = Math.min(window.innerWidth - 32, 920)
-      // Estimate height based on fluid scaling
-      const fontSize = Math.max(36, Math.min(window.innerWidth * 0.072, 82))
+      const containerWidth = align === 'left' 
+        ? Math.min(window.innerWidth - 32, 640)
+        : Math.min(window.innerWidth - 32, 920)
+
+      const fontSize = align === 'left'
+        ? Math.max(34, Math.min(window.innerWidth * 0.055, 68))
+        : Math.max(36, Math.min(window.innerWidth * 0.072, 82))
+
       const estimatedHeight = fontSize * 2.3
       setDimensions({ width: containerWidth, height: estimatedHeight, fontSize })
     }
@@ -35,7 +41,7 @@ export default function PixelAssembledHeading({
     updateCanvasDimensions()
     window.addEventListener('resize', updateCanvasDimensions)
     return () => window.removeEventListener('resize', updateCanvasDimensions)
-  }, [])
+  }, [align])
 
   useEffect(() => {
     if (!dimensions.width || !dimensions.height) return
@@ -78,7 +84,7 @@ export default function PixelAssembledHeading({
     lines.forEach((lineObj) => {
       const fullText = lineObj.text
       const fullWidth = offCtx.measureText(fullText).width
-      let currentX = (width - fullWidth) / 2
+      let currentX = align === 'left' ? 0 : (width - fullWidth) / 2
 
       for (let c = 0; c < fullText.length; c++) {
         const char = fullText[c]
@@ -98,20 +104,29 @@ export default function PixelAssembledHeading({
 
           const charData = offCtx.getImageData(0, 0, width, height).data
 
+          // Letter appearance timing: overlapping soft cadence (75ms between letter starts)
+          const letterBaseDelay = 180 + globalCharIndex * 75
+
           for (let y = boxY1; y < boxY2; y += step) {
             for (let x = boxX1; x < boxX2; x += step) {
               const idx = (y * width + x) * 4
               const alpha = charData[idx + 3]
 
               if (alpha > 120) {
+                // Gentle organic scatter within letter
+                const pixelJitter = Math.random() * 120
                 newParticles.push({
                   originX: x,
                   originY: y,
                   x,
-                  y,
+                  y: y + (Math.random() - 0.5) * 6, // subtle soft vertical settling (floating in by a few pixels)
                   vx: 0,
                   vy: 0,
                   size: step - 0.35,
+                  alpha: 0,
+                  delay: letterBaseDelay + pixelJitter,
+                  startTime: performance.now(),
+                  fadeInDuration: 420 + Math.random() * 180, // Extended smooth fade-in duration
                 })
               }
             }
@@ -137,6 +152,17 @@ export default function PixelAssembledHeading({
 
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i]
+        const elapsed = now - p.startTime
+
+        // Pixel has not appeared yet in sequence
+        if (elapsed < p.delay) {
+          continue
+        }
+
+        // Smooth cubic easeOut easing curve for individual pixel fade
+        const rawProgress = Math.min(1, (elapsed - p.delay) / p.fadeInDuration)
+        const appearProgress = 1 - Math.pow(1 - rawProgress, 3)
+        p.alpha = appearProgress
 
         // Spring physics towards target origin
         const spring = 0.05
@@ -167,9 +193,25 @@ export default function PixelAssembledHeading({
         p.x += p.vx
         p.y += p.vy
 
-        ctx.fillStyle = '#000000'
+        // Continuous smooth color interpolation:
+        // Starts soft brand gold (255, 215, 0), transitions smoothly to crisp black (0, 0, 0)
+        ctx.globalAlpha = p.alpha
+        if (appearProgress < 0.6) {
+          const t = appearProgress / 0.6
+          const r = Math.round(255 * (1 - t * 0.75))
+          const g = Math.round(215 * (1 - t * 0.75))
+          const b = 0
+          ctx.fillStyle = `rgb(${r},${g},${b})`
+        } else {
+          const t = (appearProgress - 0.6) / 0.4
+          const shade = Math.round(64 * (1 - t))
+          ctx.fillStyle = `rgb(${shade},${shade},${shade})`
+        }
+
         ctx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size)
       }
+
+      ctx.globalAlpha = 1.0
 
       rafId.current = requestAnimationFrame(render)
     }
@@ -197,13 +239,13 @@ export default function PixelAssembledHeading({
 
   return (
     <div
-      className={`relative inline-block mx-auto cursor-default ${className}`}
+      className={`relative inline-block ${align === 'left' ? 'w-full text-left' : 'mx-auto'} cursor-default ${className}`}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
       <canvas
         ref={canvasRef}
-        className="block mx-auto pointer-events-auto"
+        className={`block ${align === 'left' ? '' : 'mx-auto'} pointer-events-auto`}
         aria-label={`${line1} ${line2}`}
       />
       {/* Hidden accessible heading for screen readers & SEO */}
