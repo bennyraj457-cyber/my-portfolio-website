@@ -97,20 +97,11 @@ export default function PixelArtBackground({
         textCtx.textAlign = 'center'
         textCtx.textBaseline = 'middle'
 
-        // Render Headline Line 1 & Line 2
+        // Render Headline Line 1 & Line 2 (Only headline, bio removed)
         textCtx.font = `italic 700 ${textFontSize}px "TRJN DaVinci", "TRJN DaVinci Text", serif`
         textCtx.fillStyle = '#0a0a0a'
         textCtx.fillText(headlineLine1 || 'Designer who', textCenterX, textCenterY - textFontSize * 0.65)
         textCtx.fillText(headlineLine2 || 'ships with Code', textCenterX, textCenterY + textFontSize * 0.65)
-
-        // Render Paragraph Bio directly beneath
-        if (bio) {
-          textCtx.font = `normal 400 ${bioFontSize}px "Geist", system-ui, sans-serif`
-          textCtx.fillStyle = '#222222'
-          const maxChars = isPortrait ? 38 : 55
-          const bioLines = bio.length > maxChars ? [bio.slice(0, maxChars) + '...', bio.slice(maxChars)] : [bio]
-          textCtx.fillText(bioLines[0], textCenterX, textCenterY + textFontSize * 1.55)
-        }
 
         const textData = textCtx.getImageData(0, 0, cols, rows).data
 
