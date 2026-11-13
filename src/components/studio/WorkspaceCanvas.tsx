@@ -1,14 +1,13 @@
-import { Component, Suspense, useEffect, useRef, useState, useCallback, type ReactNode } from 'react'
+import { Component, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Camera, Lighting, Room } from './scene'
 import { WorkspaceFocusProvider, useWorkspaceFocus } from '@/context/WorkspaceFocusContext'
-import { RoomEntranceProvider, useRoomEntrance } from '@/context/RoomEntranceContext'
+import { RoomEntranceProvider } from '@/context/RoomEntranceContext'
 import { StudioLightingProvider } from '@/context/StudioLightingContext'
-import { StoryScrollProvider, useStoryScroll } from '@/context/StoryScrollContext'
+import { StoryScrollProvider } from '@/context/StoryScrollContext'
 import { StoryScrollHUD } from './StoryScrollHUD'
 import { StoryScrollBridge } from './StoryScrollBridge'
 import { EntranceOverlay } from './EntranceOverlay'
-import { STORY_STEPS } from '@/data/storySteps'
 
 interface ErrorBoundaryProps {
   fallback: ReactNode
@@ -155,17 +154,15 @@ interface WorkspaceCanvasProps {
 }
 
 export function WorkspaceCanvas({ onBackToHome, onSceneReady }: WorkspaceCanvasProps) {
-  const [webglSupported, setWebglSupported] = useState<boolean>(true)
+  const [webglSupported, setWebglSupported] = useState<boolean>(() => checkWebGLSupport())
   const [isCanvasInView, setIsCanvasInView] = useState<boolean>(true)
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const supported = checkWebGLSupport()
-    setWebglSupported(supported)
-    if (!supported) {
+    if (!webglSupported) {
       onSceneReady?.()
     }
-  }, [onSceneReady])
+  }, [webglSupported, onSceneReady])
 
   // Pause WebGL frameloop when user scrolls away from the 3D section
   useEffect(() => {

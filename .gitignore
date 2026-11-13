@@ -27,3 +27,6 @@ dist-ssr
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# External source repo
+my-portfolio/

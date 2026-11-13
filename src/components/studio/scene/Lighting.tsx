@@ -122,7 +122,5 @@ export function Lighting() {
 }
 
 function useMemoColor(hex: string) {
-  const ref = useRef<THREE.Color>(new THREE.Color(hex))
-  ref.current.set(hex)
-  return ref.current
+  return useMemo(() => new THREE.Color(hex), [hex])
 }

@@ -1,7 +1,9 @@
+import React, { lazy, Suspense } from 'react'
 import { createBrowserRouter } from 'react-router-dom'
 import RootLayout from './layouts/RootLayout'
 import HomePage from './pages/Home'
-import AboutPage from './pages/About'
+
+const AboutPage = lazy(() => import('./pages/About'))
 
 export const router = createBrowserRouter([
   {
@@ -14,7 +16,11 @@ export const router = createBrowserRouter([
       },
       {
         path: 'about',
-        element: <AboutPage />,
+        element: (
+          <Suspense fallback={<div className="min-h-screen bg-[#0077b6]" />}>
+            <AboutPage />
+          </Suspense>
+        ),
       },
     ],
   },

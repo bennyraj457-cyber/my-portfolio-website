@@ -50,11 +50,11 @@ export function StoryScrollProvider({
 
   const nextStep = useCallback(() => {
     setCurrentStepIndex((prev) => {
-      const next = Math.min(totalSteps - 1, prev + 1)
+      const next = Math.min(STORY_STEPS.length - 1, prev + 1)
       onScrollToStep?.(next)
       return next
     })
-  }, [totalSteps, onScrollToStep])
+  }, [onScrollToStep])
 
   const prevStep = useCallback(() => {
     setCurrentStepIndex((prev) => {
@@ -62,7 +62,7 @@ export function StoryScrollProvider({
       onScrollToStep?.(next)
       return next
     })
-  }, [totalSteps, onScrollToStep])
+  }, [onScrollToStep])
 
   const currentStep = STORY_STEPS[currentStepIndex]
 

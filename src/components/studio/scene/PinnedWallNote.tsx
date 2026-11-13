@@ -78,7 +78,11 @@ function createPinnedNoteTexture(): THREE.CanvasTexture {
   const badgeX = (width - badgeW) / 2
   const badgeY = 142
   ctx.beginPath()
-  ctx.roundRect ? ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 8) : ctx.rect(badgeX, badgeY, badgeW, badgeH)
+  if (typeof ctx.roundRect === 'function') {
+    ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 8)
+  } else {
+    ctx.rect(badgeX, badgeY, badgeW, badgeH)
+  }
   ctx.fill()
 
   ctx.fillStyle = '#ffffff'

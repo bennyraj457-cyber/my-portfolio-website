@@ -12,7 +12,6 @@ import React, { useEffect, useRef } from 'react'
 export default function SeaWaterBackground({ className = '' }) {
   const canvasRef = useRef(null)
   const rafId = useRef(null)
-  const mouseRef = useRef({ x: -1000, y: -1000, isMoving: false })
   const ripplesRef = useRef([])
 
   useEffect(() => {
