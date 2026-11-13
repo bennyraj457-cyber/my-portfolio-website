@@ -567,9 +567,8 @@ export default function PixelCloudBackground({
           }
         }
 
-        // Notify hero section when center pixels have cleared so hero content smoothly appears
-        const dissolveRatio = grid.length > 0 ? dissolvedCount / grid.length : 1
-        if (dissolveRatio > 0.65 && !window.__introHeroRevealed) {
+        // Notify hero section ONLY AFTER all intro pixels have completely finished dissolving
+        if (!hasRemainingIntroPixels && !window.__introHeroRevealed) {
           window.__introHeroRevealed = true
           window.dispatchEvent(new CustomEvent('introHeroRevealed'))
         }
