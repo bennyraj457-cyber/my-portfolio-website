@@ -44,7 +44,7 @@ export default function HeroSection() {
 
       {/* Foreground Razor-Sharp Vector Typography Overlay */}
       <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 flex flex-col items-center select-text pointer-events-auto">
-        <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-heading font-normal tracking-tight text-[#0a0a0a] leading-[1.08] transition-all duration-500">
+        <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-heading italic tracking-tight text-black leading-[1.08] transition-all duration-500">
           <span
             className={`inline-block transition-all duration-500 ease-out transform ${
               fadeState === 'in' ? 'opacity-100 translate-y-0 filter-none' : 'opacity-0 -translate-y-2 blur-[2px]'
@@ -52,15 +52,11 @@ export default function HeroSection() {
           >
             {phraseState === 0 ? (
               <>
-                <span className="italic font-bold text-[#0a0a0a]">Designer</span>{' '}
-                <span className="font-normal text-[#1a1a1a]">who ships with</span>{' '}
-                <span className="italic font-bold text-[#b45309] underline decoration-[#ffd700] decoration-wavy decoration-2 underline-offset-4">Code</span>
+                Designer who ships with Code
               </>
             ) : (
               <>
-                <span className="italic font-bold text-[#0a0a0a]">Coder</span>{' '}
-                <span className="font-normal text-[#1a1a1a]">who ships with</span>{' '}
-                <span className="italic font-bold text-[#b45309] underline decoration-[#ffd700] decoration-wavy decoration-2 underline-offset-4">Designer</span>
+                Coder who ships with Designer
               </>
             )}
           </span>
