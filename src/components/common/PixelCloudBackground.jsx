@@ -34,6 +34,17 @@ export default function PixelCloudBackground({
   const timeRef = useRef(0)
   const islandSpawnTimer = useRef(0)
 
+  // Floating Word Formation State
+  const wordState = useRef({
+    words: ['BENNY', 'CREATE', 'DESIGN'],
+    currentIndex: 0,
+    timer: 0,
+    cycleDuration: 360, // ~6 seconds per cycle at 60fps
+    dots: [],
+    pixelSize: 4,
+    dotSpacing: 6,
+  })
+
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -111,6 +122,51 @@ export default function PixelCloudBackground({
       }
       driftingIslands.current = list
     }
+
+    // Build pixel raster coordinates for the given word
+    const sampleWordPixels = (word) => {
+      const offCanvas = document.createElement('canvas')
+      const offCtx = offCanvas.getContext('2d')
+      const fontSize = Math.max(28, Math.min(width * 0.08, 64))
+      offCanvas.width = width
+      offCanvas.height = Math.round(fontSize * 2)
+
+      offCtx.font = `bold ${fontSize}px "Geist", -apple-system, sans-serif`
+      offCtx.fillStyle = '#ffffff'
+      offCtx.textAlign = 'center'
+      offCtx.textBaseline = 'middle'
+      offCtx.fillText(word, width / 2, offCanvas.height / 2)
+
+      const imgData = offCtx.getImageData(0, 0, offCanvas.width, offCanvas.height).data
+      const step = 6 // Discrete step distance between pixel points
+      const points = []
+
+      // Choose vertical positioning above or below hero text in open negative space
+      const anchorY = height > 650 ? height * 0.16 : height * 0.12
+
+      for (let y = 0; y < offCanvas.height; y += step) {
+        for (let x = 0; x < offCanvas.width; x += step) {
+          const idx = (y * offCanvas.width + x) * 4
+          if (imgData[idx + 3] > 120) {
+            points.push({
+              targetX: x,
+              targetY: anchorY + (y - offCanvas.height / 2),
+              // Initial spawn scatter position
+              x: x + (Math.random() - 0.5) * 80,
+              y: anchorY + (y - offCanvas.height / 2) + (Math.random() - 0.5) * 50,
+              size: Math.random() > 0.4 ? 4 : 2,
+              color: Math.random() > 0.4 ? '#ffd700' : '#ffe766',
+              scatterVx: (Math.random() - 0.5) * 1.5 - 0.4,
+              scatterVy: (Math.random() - 0.5) * 1.2,
+              seed: Math.random() * Math.PI * 2,
+            })
+          }
+        }
+      }
+      return points
+    }
+
+    wordState.current.dots = sampleWordPixels(wordState.current.words[0])
 
     const updateObstacles = () => {
       const canvasRect = canvas.getBoundingClientRect()
@@ -468,7 +524,71 @@ export default function PixelCloudBackground({
       }
       ctx.globalAlpha = 1.0
 
-      // 4. Render & Update Cursor Dust / Dither Wake Particles
+      // 4. Render & Animate Rotating Pixel Words ("BENNY" / "CREATE" / "DESIGN")
+      const ws = wordState.current
+      ws.timer++
+      const cycleProgress = (ws.timer % ws.cycleDuration) / ws.cycleDuration
+
+      // Phase transitions:
+      // 0.00 -> 0.20: Assemble (Micro-pixels converge smoothly from scatter into letter shapes)
+      // 0.20 -> 0.75: Fully Formed (Micro-twinkle jitter and slow lateral drift)
+      // 0.75 -> 0.95: Dissolve / Scatter (Particles drift apart into the digital ether)
+      // 0.95 -> 1.00: Switch to next word
+      let wordAlpha = 0
+      let convergence = 0
+      let isDispersing = false
+
+      if (cycleProgress < 0.2) {
+        // Assemble phase
+        const p = cycleProgress / 0.2
+        wordAlpha = p
+        convergence = p
+      } else if (cycleProgress < 0.75) {
+        // Formed & holding
+        wordAlpha = 1.0
+        convergence = 1.0
+      } else if (cycleProgress < 0.95) {
+        // Disperse / dissolve phase
+        const p = (cycleProgress - 0.75) / 0.2
+        wordAlpha = 1.0 - p
+        convergence = 1.0
+        isDispersing = true
+      } else {
+        // Transition to next word
+        if (ws.timer % ws.cycleDuration === ws.cycleDuration - 1) {
+          ws.currentIndex = (ws.currentIndex + 1) % ws.words.length
+          ws.dots = sampleWordPixels(ws.words[ws.currentIndex])
+        }
+      }
+
+      if (wordAlpha > 0.02 && ws.dots.length > 0) {
+        ctx.globalAlpha = Math.min(0.85, wordAlpha * 0.85)
+        for (let i = 0; i < ws.dots.length; i++) {
+          const d = ws.dots[i]
+
+          if (isDispersing) {
+            d.x += d.scatterVx * 1.6
+            d.y += d.scatterVy * 1.6
+          } else {
+            // Smooth lerp to target position
+            d.x += (d.targetX - d.x) * (0.08 * convergence + 0.02)
+            d.y += (d.targetY - d.y) * (0.08 * convergence + 0.02)
+          }
+
+          // Gentle ambient float jitter
+          const jitterX = Math.sin(time * 2 + d.seed) * 0.8
+          const jitterY = Math.cos(time * 2.2 + d.seed) * 0.8
+
+          const snapX = Math.floor((d.x + jitterX) / 2) * 2
+          const snapY = Math.floor((d.y + jitterY) / 2) * 2
+
+          ctx.fillStyle = d.color
+          ctx.fillRect(snapX, snapY, d.size, d.size)
+        }
+      }
+      ctx.globalAlpha = 1.0
+
+      // 5. Render & Update Cursor Dust / Dither Wake Particles
       const pList = particles.current
       for (let i = pList.length - 1; i >= 0; i--) {
         const p = pList[i]
