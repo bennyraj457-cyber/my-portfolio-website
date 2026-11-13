@@ -124,13 +124,13 @@ export default function BoatCursor({
 
       // Update 3D Top-Angle Boat Perspective:
       // - rotateZ: points the bow directly into the movement direction
-      // - rotateX: top-down isometric tilt angle (slanted 35-45 deg from top)
+      // - rotateX: top-down isometric tilt angle (slanted 20-30 deg from top for natural top-angle view)
       // - dynamic banking roll (rotateY) into sharp turns
       if (boatRef.current) {
         // Dynamic lateral banking roll when turning
-        const turnRoll = Math.max(-20, Math.min(20, (velocity.current.x * Math.cos(currentAngle.current * Math.PI / 180) + velocity.current.y * Math.sin(currentAngle.current * Math.PI / 180)) * 1.5))
+        const turnRoll = Math.max(-15, Math.min(15, (velocity.current.x * Math.cos(currentAngle.current * Math.PI / 180) + velocity.current.y * Math.sin(currentAngle.current * Math.PI / 180)) * 1.2))
         
-        boatRef.current.style.transform = `perspective(800px) rotate(${currentAngle.current}deg) rotateX(32deg) rotateY(${turnRoll}deg)`
+        boatRef.current.style.transform = `perspective(800px) rotate(${currentAngle.current}deg) rotateX(15deg) rotateY(${turnRoll}deg)`
       }
 
       // Render Trailing Water Wake on Canvas
@@ -206,106 +206,209 @@ export default function BoatCursor({
       >
         <div
           ref={boatRef}
-          className={`relative -left-5 -top-5 transition-transform duration-75 ease-out select-none ${
+          className={`relative -left-6 -top-10 transition-transform duration-75 ease-out select-none ${
             isHovered ? 'scale-115' : 'scale-100'
           }`}
-          style={{ transformStyle: 'preserve-3d' }}
+          style={{ transformStyle: 'preserve-3d', transformOrigin: '24px 38px' }}
         >
-          {/* 3D Top-Angle / Isometric Boat SVG */}
-          {/* Bow points UP (towards Y=0), stern is at bottom (Y=40) */}
+          {/* Top-Angle 3D Stylized Wooden Rowboat with Oar & Blanket based on reference illustration */}
           <svg
-            width="40"
-            height="40"
-            viewBox="0 0 40 40"
+            width="48"
+            height="76"
+            viewBox="0 0 54 86"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
-            className="filter drop-shadow-[0_10px_16px_rgba(0,0,0,0.35)]"
+            className="filter drop-shadow-[0_12px_20px_rgba(0,0,0,0.38)]"
           >
-            {/* Water Shadow underneath hull */}
-            <ellipse
-              cx="20"
-              cy="23"
-              rx="9"
-              ry="16"
-              fill="rgba(0, 0, 0, 0.22)"
-              className="filter blur-[2px]"
+            <defs>
+              {/* Outer Hull Gradient */}
+              <linearGradient id="hullEdgeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#d97706" />
+                <stop offset="35%" stopColor="#f59e0b" />
+                <stop offset="70%" stopColor="#b45309" />
+                <stop offset="100%" stopColor="#78350f" />
+              </linearGradient>
+
+              {/* Interior Wood Floor Plank Gradient */}
+              <linearGradient id="interiorWoodGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#9a3412" />
+                <stop offset="50%" stopColor="#7c2d12" />
+                <stop offset="100%" stopColor="#6c230e" />
+              </linearGradient>
+
+              {/* Turquoise / Teal Blanket Gradient */}
+              <linearGradient id="blanketGrad" x1="0%" y1="0%" x2="100%" y2="50%">
+                <stop offset="0%" stopColor="#99f6e4" />
+                <stop offset="40%" stopColor="#5eead4" />
+                <stop offset="80%" stopColor="#2dd4bf" />
+                <stop offset="100%" stopColor="#0f766e" />
+              </linearGradient>
+            </defs>
+
+            {/* Ambient Water Shadow Underneath Hull (Offset to Starboard as in reference) */}
+            <path
+              d="M27 8 C40 18, 48 38, 46 72 C41 78, 35 80, 27 80 C19 80, 13 78, 8 72 C6 38, 14 18, 27 8 Z"
+              fill="rgba(10, 25, 47, 0.28)"
+              transform="translate(4, 5)"
+              className="filter blur-[2.5px]"
             />
 
-            {/* Hull Outer Boundary / Waterline Deck Shape */}
-            {/* Port (Left) Hull Surface - Deep Charcoal with ambient shade */}
+            {/* Starboard Outer Cast Shadow Edge on Water */}
             <path
-              d="M20 4 C16 11, 10 20, 11 34 C15 36, 19 36, 20 36 Z"
-              fill="#181818"
-              stroke="#0a0a0a"
+              d="M34 16 C45 28, 47 48, 44 74 L49 76 C53 48, 48 24, 38 12 Z"
+              fill="rgba(15, 23, 42, 0.22)"
+              className="filter blur-[1px]"
+            />
+
+            {/* 1. Outer Boat Hull (Warm Golden-Orange Wood) */}
+            {/* Symmetrical boat silhouette with pointed bow at top (27, 4) and transom at bottom */}
+            <path
+              d="M27 4 C38 14, 46 32, 44 72 C38 78, 32 80, 27 80 C22 80, 16 78, 10 72 C8 32, 16 14, 27 4 Z"
+              fill="url(#hullEdgeGrad)"
+              stroke="#592008"
+              strokeWidth="1.2"
+              strokeLinejoin="round"
+            />
+
+            {/* Dark inner rim shadow bevel */}
+            <path
+              d="M27 6 C36 15, 43 31, 41 70 C36 75, 31 77, 27 77 C23 77, 18 75, 13 70 C11 31, 18 15, 27 6 Z"
+              fill="#521b06"
+            />
+
+            {/* 2. Inner Boat Floor / Cockpit (Rich Warm Mahogany / Dark Wood) */}
+            <path
+              d="M27 9 C34 17, 40 32, 38 68 C34 72, 30 74, 27 74 C24 74, 20 72, 16 68 C14 32, 20 17, 27 9 Z"
+              fill="url(#interiorWoodGrad)"
+              stroke="#431407"
               strokeWidth="0.8"
             />
 
-            {/* Starboard (Right) Hull Surface - Medium Charcoal catching light */}
+            {/* Subtle Floorboard Planking Lines */}
+            <line x1="24" y1="14" x2="24" y2="72" stroke="#541c09" strokeWidth="0.8" />
+            <line x1="27" y1="10" x2="27" y2="73" stroke="#431407" strokeWidth="0.9" />
+            <line x1="30" y1="14" x2="30" y2="72" stroke="#541c09" strokeWidth="0.8" />
+
+            {/* 3. Bow Foredeck Triangle (Solid Golden Wood) */}
             <path
-              d="M20 4 C24 11, 30 20, 29 34 C25 36, 21 36, 20 36 Z"
-              fill="#2c2c2c"
-              stroke="#0a0a0a"
+              d="M27 6 C31 10, 35 15, 36 21 L18 21 C19 15, 23 10, 27 6 Z"
+              fill="#ea580c"
+              stroke="#9a3412"
               strokeWidth="0.8"
             />
+            {/* Bow deck facet highlights */}
+            <polygon points="27,6 36,21 27,21" fill="#f97316" fillOpacity="0.8" />
+            <polygon points="27,6 18,21 27,21" fill="#c2410c" fillOpacity="0.6" />
 
-            {/* Inner Deck Cockpit / Recessed Floor */}
+            {/* 4. Turquoise Draped Cloth / Blanket across Starboard Gunwale */}
+            {/* Main draped blanket body */}
             <path
-              d="M20 8 C17 14, 13 21, 14 31 C17 33, 23 33, 26 31 C27 21, 23 14, 20 8 Z"
-              fill="#0d0d0d"
-              stroke="#1f1f1f"
-              strokeWidth="0.6"
+              d="M19 44 L38 42 C41 43, 44 48, 44 55 C42 61, 38 62, 36 60 L18 52 Z"
+              fill="url(#blanketGrad)"
+              stroke="#134e4a"
+              strokeWidth="0.8"
             />
-
-            {/* Wooden Teak Deck Grate / Accents */}
-            <line x1="17" y1="24" x2="23" y2="24" stroke="#ffd700" strokeWidth="0.9" strokeOpacity="0.8" />
-            <line x1="16" y1="27" x2="24" y2="27" stroke="#ffd700" strokeWidth="0.9" strokeOpacity="0.8" />
-            <line x1="16.5" y1="30" x2="23.5" y2="30" stroke="#ffd700" strokeWidth="0.9" strokeOpacity="0.8" />
-
-            {/* Center Keel / Spine Line */}
-            <line
-              x1="20"
-              y1="4"
-              x2="20"
-              y2="36"
-              stroke="#ffd700"
-              strokeWidth="1"
+            {/* Blanket soft fold ripples */}
+            <path
+              d="M20 47 C26 46, 32 45, 39 46"
+              stroke="#ccfbf1"
+              strokeWidth="1.2"
               strokeLinecap="round"
             />
-
-            {/* Triangular Mainsail (Billowing 3D sail from mast to stern) */}
-            {/* Left Sail Facet - Brand Gold #ffd700 */}
             <path
-              d="M20 12 L12 26 L20 23 Z"
-              fill={isHovered ? '#fff3a8' : '#ffd700'}
-              stroke="#c7a700"
+              d="M19 50 C25 49, 31 48, 38 50"
+              stroke="#115e59"
               strokeWidth="0.8"
-              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+            {/* Hanging over starboard gunwale edge into water */}
+            <path
+              d="M38 42 C42 45, 46 50, 45 58 C44 63, 41 66, 37 63 C39 58, 40 52, 38 46 Z"
+              fill="#2dd4bf"
+              stroke="#0f766e"
+              strokeWidth="0.7"
+            />
+            <path
+              d="M44 56 C46 62, 45 68, 42 72 C41 71, 40 68, 41 64 Z"
+              fill="#14b8a6"
+              opacity="0.8"
             />
 
-            {/* Right Sail Facet - Shaded Gold #d4af37 */}
+            {/* 5. Center Wooden Cross-Seat (Thwart) */}
             <path
-              d="M20 12 L28 26 L20 23 Z"
-              fill={isHovered ? '#ffe766' : '#c9a100'}
-              stroke="#997b00"
+              d="M15 54 L39 52 L38 60 L16 62 Z"
+              fill="#ea580c"
+              stroke="#7c2d12"
+              strokeWidth="0.9"
+            />
+            <path
+              d="M15 54 L39 52 L39 55 L15 57 Z"
+              fill="#fb923c"
+            />
+
+            {/* 6. Stern Triangular / Trapezoid Seat */}
+            <path
+              d="M18 69 L36 69 L34 76 L20 76 Z"
+              fill="#c2410c"
+              stroke="#7c2d12"
               strokeWidth="0.8"
-              strokeLinejoin="round"
             />
 
-            {/* Fore Jib Sail (Front Triangular Sail towards Bow) */}
+            {/* 7. Wooden Oar Resting Vertically inside boat */}
+            {/* Oar paddle blade at top (bow end) */}
             <path
-              d="M20 6 L17 14 L20 13 Z"
-              fill="#ffffff"
-              fillOpacity="0.9"
+              d="M26 21 C25 24, 25 29, 26 33 L29 33 C30 29, 30 24, 29 21 Z"
+              fill="#ea580c"
+              stroke="#7c2d12"
+              strokeWidth="0.8"
             />
-            <path
-              d="M20 6 L23 14 L20 13 Z"
-              fill="#e0e0e0"
-              fillOpacity="0.9"
+            <line x1="27.5" y1="22" x2="27.5" y2="33" stroke="#fed7aa" strokeWidth="0.6" />
+
+            {/* Long wooden oar shaft spanning past center seat to stern */}
+            <rect
+              x="26.5"
+              y="32"
+              width="2"
+              height="38"
+              rx="0.8"
+              fill="#f97316"
+              stroke="#7c2d12"
+              strokeWidth="0.6"
+            />
+            {/* Dark rubber/leather grip section near stern */}
+            <rect
+              x="26.3"
+              y="56"
+              width="2.4"
+              height="11"
+              rx="0.5"
+              fill="#27272a"
+              stroke="#09090b"
+              strokeWidth="0.5"
+            />
+            {/* Wooden handle end */}
+            <rect
+              x="26.5"
+              y="67"
+              width="2"
+              height="3.5"
+              rx="0.5"
+              fill="#ea580c"
             />
 
-            {/* Mast Apex & Bow Tip Pennant */}
-            <circle cx="20" cy="12" r="1.5" fill="#ffffff" stroke="#111111" strokeWidth="0.6" />
-            <polygon points="20,4 23,6 20,7" fill="#ffd700" />
+            {/* Gunwale Oarlock / Rowlock accent */}
+            <rect x="11.5" y="42" width="2" height="6" rx="0.6" fill="#3f3f46" />
+
+            {/* Golden Interactive Hover Sparkle when hovering links */}
+            {isHovered && (
+              <circle
+                cx="27"
+                cy="6"
+                r="3"
+                fill="#ffd700"
+                className="animate-ping opacity-75"
+              />
+            )}
           </svg>
         </div>
       </div>
