@@ -76,21 +76,19 @@ export default function PixelCloudBackground({
           const dy = (midY - cy) / ry
           const dist = Math.sqrt(dx * dx + dy * dy)
 
-          // Only dissolve pixels that fall within the central clearing / hero reveal zone (dist < 1.35)
-          // Pixels beyond 1.35 are naturally part of the ambient perimeter pixel clouds, so they stay!
-          if (dist < 1.35) {
-            // Center pixels start dissolving first, gently unfurling outward in a spiral/wave
-            const randomJitter = Math.random() * 0.35
-            grid.push({
-              r,
-              c,
-              // Delay before this pixel begins dissolving (350ms to ~1600ms)
-              delay: 350 + dist * 950 + randomJitter * 400,
-              // Smooth gradual transition
-              duration: 550 + Math.random() * 300,
-              finalColorTarget: dist > 1.05 ? 'light2' : dist > 0.85 ? 'light3' : 'white',
-            })
-          }
+          // Center pixels dissolve first, perimeter cloud pixels remain or blend
+          const isRevealArea = dist < 1.35
+          const randomJitter = Math.random() * 0.35
+
+          grid.push({
+            r,
+            c,
+            isRevealArea,
+            // Whole screen starts 100% solid yellow.
+            // Center reveal pixels start fading after 450ms. Outer perimeter pixels hold solid or blend into clouds.
+            delay: isRevealArea ? 450 + dist * 950 + randomJitter * 400 : 999999,
+            duration: 600 + Math.random() * 300,
+          })
         }
       }
       introGridRef.current = grid
@@ -539,49 +537,67 @@ export default function PixelCloudBackground({
       }
       ctx.globalAlpha = 1.0
 
-      // 5. Initial Full Solid Yellow Screen Reveal (Only Reveal Area Pixels Dissolve into Ambient Clouds)
+      // 5. Initial Full Solid Yellow Screen Reveal (Full Screen Solid Yellow -> Smooth Center Dissolve)
       if (initialIntro && introStartTimeRef.current) {
         const elapsed = performance.now() - introStartTimeRef.current
         const grid = introGridRef.current
         let hasRemainingIntroPixels = false
-        let dissolvedCount = 0
+        let revealTotal = 0
+        let revealDissolved = 0
 
         for (let i = 0; i < grid.length; i++) {
           const item = grid[i]
           const px = item.c * macroSize
           const py = item.r * macroSize
 
-          if (elapsed < item.delay) {
-            // Still solid yellow pixel covering the screen
-            ctx.fillStyle = tones.primary
-            ctx.fillRect(px, py, macroSize, macroSize)
-            hasRemainingIntroPixels = true
-          } else if (elapsed < item.delay + item.duration) {
-            // Ultra-smooth multi-stage halftone dither dissolve
-            const progress = (elapsed - item.delay) / item.duration
-            hasRemainingIntroPixels = true
-
-            if (progress < 0.22) {
+          if (item.isRevealArea) {
+            revealTotal++
+            if (elapsed < item.delay) {
+              // Still solid yellow in reveal zone
               ctx.fillStyle = tones.primary
-            } else if (progress < 0.45) {
-              ctx.fillStyle = patternPrimary_Light1
-            } else if (progress < 0.68) {
-              ctx.fillStyle = patternLight1_Light2
-            } else if (progress < 0.88) {
-              ctx.fillStyle = patternLight2_Light3
+              ctx.fillRect(px, py, macroSize, macroSize)
+              hasRemainingIntroPixels = true
+            } else if (elapsed < item.delay + item.duration) {
+              // Dissolving pixel transition with halftone dither patterns
+              const progress = (elapsed - item.delay) / item.duration
+              hasRemainingIntroPixels = true
+
+              if (progress < 0.22) {
+                ctx.fillStyle = tones.primary
+              } else if (progress < 0.45) {
+                ctx.fillStyle = patternPrimary_Light1
+              } else if (progress < 0.68) {
+                ctx.fillStyle = patternLight1_Light2
+              } else if (progress < 0.88) {
+                ctx.fillStyle = patternLight2_Light3
+              } else {
+                ctx.fillStyle = patternLight3_White
+              }
+              ctx.fillRect(px, py, macroSize, macroSize)
             } else {
-              ctx.fillStyle = patternLight3_White
+              revealDissolved++
             }
-            ctx.fillRect(px, py, macroSize, macroSize)
           } else {
-            dissolvedCount++
+            // Non-reveal outer perimeter pixels start 100% solid yellow, then smoothly blend into the underlying ambient clouds
+            if (elapsed < 600) {
+              ctx.fillStyle = tones.primary
+              ctx.fillRect(px, py, macroSize, macroSize)
+              hasRemainingIntroPixels = true
+            } else if (elapsed < 1400) {
+              const alphaBlend = 1.0 - (elapsed - 600) / 800
+              ctx.fillStyle = tones.primary
+              ctx.globalAlpha = alphaBlend
+              ctx.fillRect(px, py, macroSize, macroSize)
+              ctx.globalAlpha = 1.0
+              hasRemainingIntroPixels = true
+            }
           }
         }
 
-        // Notify window ONLY after a major portion (>85%) of reveal pixels have cleared
-        // so the hero section text content appears gracefully after the pixel clearing
-        const dissolveRatio = grid.length > 0 ? dissolvedCount / grid.length : 1
-        if (dissolveRatio > 0.82 && !window.__introHeroRevealed) {
+        // Notify window ONLY after center pixels have completed dissolving (>85%)
+        // so hero text content appears cleanly afterward
+        const dissolveRatio = revealTotal > 0 ? revealDissolved / revealTotal : 1
+        if (dissolveRatio > 0.85 && !window.__introHeroRevealed) {
           window.__introHeroRevealed = true
           window.dispatchEvent(new CustomEvent('introHeroRevealed'))
         }
