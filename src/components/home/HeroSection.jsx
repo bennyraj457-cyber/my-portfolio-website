@@ -19,31 +19,30 @@ export default function HeroSection() {
     <section
       id="hero"
       aria-label="Introduction"
-      className="relative w-full min-h-[90svh] md:min-h-screen flex flex-col items-center justify-center text-center px-4 sm:px-6 md:px-12 py-20 sm:py-24 md:py-32 select-none overflow-hidden"
+      className="relative w-full min-h-[90svh] md:min-h-screen flex flex-col items-center justify-end text-center px-4 sm:px-6 md:px-12 pb-12 sm:pb-16 select-none overflow-hidden"
     >
-      {/* Pixelated artwork background matching the retro coder aesthetic */}
+      {/* Background artwork canvas with embedded headline & bio pixels */}
       <PixelArtBackground
         className="w-full h-full"
-        pixelSize={5}
-        opacity={0.35}
+        pixelSize={6}
+        opacity={0.92}
       />
 
-      {/* Hero content sitting cleanly in z-10 above canvas */}
-      <div className="relative z-10 w-full max-w-4xl mx-auto flex flex-col items-center space-y-6 sm:space-y-8">
-        {/* Main Headline with responsive fluid sizing */}
-        <h1 className="fluid-hero-headline font-heading italic font-normal tracking-tight text-text-heading">
-          <span className="block">{headlineLine1}</span>
-          <span className="block mt-1 sm:mt-2">{headlineLine2}</span>
-        </h1>
+      {/* Screen-reader accessible semantic heading */}
+      <h1 className="sr-only">
+        {headlineLine1} {headlineLine2}
+      </h1>
+      <p className="sr-only">
+        {bio}
+      </p>
 
-        {/* Responsive Paragraph Bio */}
-        <p className="max-w-xl mx-auto text-sm sm:text-base md:text-lg lg:text-xl font-normal leading-relaxed text-text-body px-2 sm:px-0">
-          {bio}
-        </p>
-
-        {/* Tools Marquee immediately after paragraph bio */}
-        <div className="w-full pt-4 sm:pt-6 flex flex-col items-center">
-
+      {/* Floating Tools Marquee & Status Indicator cleanly anchored at the bottom */}
+      <div className="relative z-10 w-full max-w-4xl mx-auto flex flex-col items-center pt-8">
+        <div className="w-full flex flex-col items-center">
+          <span className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.25em] text-text-muted font-medium mb-3 select-none">
+            My Skills
+          </span>
+          <ToolsMarquee />
 
           {/* Editorial Minimalist status indicator */}
           <div className="flex items-center gap-3 sm:gap-4 mt-6 sm:mt-7 max-w-lg mx-auto select-none">

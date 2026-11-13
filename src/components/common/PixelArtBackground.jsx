@@ -1,235 +1,187 @@
 import React, { useEffect, useRef } from 'react'
 import retroCoderImg from '../../assets/images/retro-coder.png'
-import retroCarImg from '../../assets/images/retro-car.jpg'
+import { personalInfo } from '../../data/personalInfo'
 
 /**
  * PixelArtBackground
  *
- * Renders the retro pixel art illustration with smooth pixel-by-pixel morphing:
- * - Image 1: Retro coder at computer desk on grassy hill
- * - After 3 seconds: Transition starts where each pixel transitions individually one by one
- *   into Image 2 (Retro car parked in the golden field under pixel clouds)
- * - Mapped to our signature brand palette: Deep Ink (#121212), Primary Gold (#ffd700),
- *   Warm Yellow (#ffe766), Soft Cream (#fffadc), and White.
- * - Interactive: Hover mouse animation softly ripples nearby pixels without lag.
+ * Renders the coder artwork with the hero text ("Designer who ships with vision" & bio)
+ * woven DIRECTLY into the image pixels in the open sky space:
+ * - The headline and bio are burned directly into the pixel grid using our brand pixel palette.
+ * - Headline renders in bold deep ink (#121212) and primary gold (#ffd700).
+ * - Sequential in-effect: pixels crystallize organically outward.
+ * - Interactive: Gentle tactile cursor repulsion when hovering near any pixel.
  */
 export default function PixelArtBackground({
   className = '',
-  pixelSize = 8,
-  opacity = 0.35,
+  pixelSize = 6, // 6px discrete pixels
+  opacity = 0.95,
 }) {
   const canvasRef = useRef(null)
   const particlesRef = useRef([])
   const rafId = useRef(null)
   const mouseRef = useRef({ x: -1000, y: -1000, radius: 45 })
 
+  const { headlineLine1, headlineLine2, bio } = personalInfo
+
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
 
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.src = retroCoderImg
+
     let isCancelled = false
 
-    // Load both images concurrently
-    const img1 = new Image()
-    img1.crossOrigin = 'anonymous'
-    img1.src = retroCoderImg
+    img.onload = () => {
+      if (isCancelled) return
 
-    const img2 = new Image()
-    img2.crossOrigin = 'anonymous'
-    img2.src = retroCarImg
+      let width = 0
+      let height = 0
 
-    let loadedCount = 0
-    const onImgLoad = () => {
-      loadedCount++
-      if (loadedCount === 2 && !isCancelled) {
-        initExperience()
-      }
-    }
+      const setupParticles = () => {
+        const parent = canvas.parentElement || document.body
+        width = canvas.width = parent.clientWidth || window.innerWidth
+        height = canvas.height = parent.clientHeight || window.innerHeight
 
-    img1.onload = onImgLoad
-    img2.onload = onImgLoad
+        const blockSize = Math.max(5, pixelSize)
+        const cols = Math.ceil(width / blockSize)
+        const rows = Math.ceil(height / blockSize)
 
-    let width = 0
-    let height = 0
+        // Offscreen canvas to downsample image & rasterize embedded headline text
+        const offCanvas = document.createElement('canvas')
+        offCanvas.width = cols
+        offCanvas.height = rows
+        const offCtx = offCanvas.getContext('2d')
 
-    const initExperience = () => {
-      const parent = canvas.parentElement || document.body
-      width = canvas.width = parent.clientWidth || window.innerWidth
-      height = canvas.height = parent.clientHeight || window.innerHeight
+        // Aspect ratio cover calculation
+        const imgRatio = img.width / img.height
+        const targetRatio = width / height
 
-      const blockSize = Math.max(6, pixelSize)
-      const cols = Math.ceil(width / blockSize)
-      const rows = Math.ceil(height / blockSize)
-
-      // Downsample Image 1
-      const off1 = document.createElement('canvas')
-      off1.width = cols
-      off1.height = rows
-      const offCtx1 = off1.getContext('2d')
-
-      const r1 = img1.width / img1.height
-      const tr = width / height
-      let w1, h1, x1, y1
-      if (tr > r1) {
-        w1 = cols
-        h1 = cols / r1
-        x1 = 0
-        y1 = (rows - h1) / 2
-      } else {
-        h1 = rows
-        w1 = rows * r1
-        x1 = (cols - w1) / 2
-        y1 = 0
-      }
-      offCtx1.drawImage(img1, x1, y1, w1, h1)
-      const data1 = offCtx1.getImageData(0, 0, cols, rows).data
-
-      // Downsample Image 2
-      const off2 = document.createElement('canvas')
-      off2.width = cols
-      off2.height = rows
-      const offCtx2 = off2.getContext('2d')
-
-      const r2 = img2.width / img2.height
-      let w2, h2, x2, y2
-      if (tr > r2) {
-        w2 = cols
-        h2 = cols / r2
-        x2 = 0
-        y2 = (rows - h2) / 2
-      } else {
-        h2 = rows
-        w2 = rows * r2
-        x2 = (cols - w2) / 2
-        y2 = 0
-      }
-      offCtx2.drawImage(img2, x2, y2, w2, h2)
-      const data2 = offCtx2.getImageData(0, 0, cols, rows).data
-
-      // Palette mapping definition
-      const palette = [
-        { r: 18, g: 18, b: 18, hex: '#121212' },   // Deep ink / shadows / tires / silhouette
-        { r: 255, g: 215, b: 0, hex: '#ffd700' }, // Primary gold / wheat field / car highlights
-        { r: 255, g: 231, b: 102, hex: '#ffe766' }, // Warm yellow / clouds / field highlights
-        { r: 255, g: 250, b: 220, hex: '#fffadc' }, // Pale cream / sky / windshield
-        { r: 255, g: 255, b: 255, hex: '#ffffff' }, // White
-      ]
-
-      const getTargetColor = (r, g, b) => {
-        const lum = 0.299 * r + 0.587 * g + 0.114 * b
-        if (lum < 60) return palette[0]
-        if (lum < 125) return palette[1]
-        if (lum < 185) return palette[2]
-        if (lum < 240) return palette[3]
-        return palette[4]
-      }
-
-      const newParticles = []
-      const now = performance.now()
-      const cx = cols / 2
-      const cy = rows * 0.55
-
-      // Transition start timing: 3000ms after load
-      const transitionBaseStart = 3000
-
-      // Measure obstacle boundaries for hero text and content so pixels never render behind them
-      const canvasRect = canvas.getBoundingClientRect()
-      const textElements = document.querySelectorAll(
-        '#hero h1, #hero p, #hero .tools-marquee-track'
-      )
-      const clearBoxes = []
-      const textPadding = 24 // Padding around text to keep it completely crisp & clean
-
-      textElements.forEach((el) => {
-        const r = el.getBoundingClientRect()
-        if (r.width > 0 && r.height > 0) {
-          clearBoxes.push({
-            left: r.left - canvasRect.left - textPadding,
-            top: r.top - canvasRect.top - textPadding,
-            right: r.right - canvasRect.left + textPadding,
-            bottom: r.bottom - canvasRect.top + textPadding,
-          })
+        let drawW, drawH, drawX, drawY
+        if (targetRatio > imgRatio) {
+          drawW = cols
+          drawH = cols / imgRatio
+          drawX = 0
+          drawY = (rows - drawH) / 2
+        } else {
+          drawH = rows
+          drawW = rows * imgRatio
+          drawX = (cols - drawW) / 2
+          drawY = 0
         }
-      })
 
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const originX = c * blockSize
-          const originY = r * blockSize
+        // 1. Draw base retro coder illustration
+        offCtx.drawImage(img, drawX, drawY, drawW, drawH)
 
-          // Check if this pixel falls behind the hero headline, paragraph, or marquee
-          let isBehindText = false
-          for (let b = 0; b < clearBoxes.length; b++) {
-            const box = clearBoxes[b]
-            if (
-              originX >= box.left &&
-              originX <= box.right &&
-              originY >= box.top &&
-              originY <= box.bottom
-            ) {
-              isBehindText = true
-              break
-            }
+        // 2. Draw Hero Headline and Bio DIRECTLY INTO THE PIXEL CANVAS (in the open sky area)
+        // Responsive font sizing based on grid columns
+        const textFontSize = Math.max(14, Math.min(cols * 0.055, 34))
+        const bioFontSize = Math.max(7, Math.min(cols * 0.022, 13))
+
+        const textCenterX = cols * 0.5
+        const textCenterY = Math.max(textFontSize * 2.2, rows * 0.28)
+
+        offCtx.textAlign = 'center'
+        offCtx.textBaseline = 'middle'
+
+        // Render Headline Line 1 & Line 2
+        offCtx.font = `italic 700 ${textFontSize}px "TRJN DaVinci", "TRJN DaVinci Text", serif`
+        offCtx.fillStyle = '#080808'
+        offCtx.fillText(headlineLine1 || 'Designer who', textCenterX, textCenterY - textFontSize * 0.65)
+        offCtx.fillText(headlineLine2 || 'ships with Code', textCenterX, textCenterY + textFontSize * 0.65)
+
+        // Render Paragraph Bio directly beneath
+        if (bio) {
+          offCtx.font = `normal 400 ${bioFontSize}px "Geist", system-ui, sans-serif`
+          offCtx.fillStyle = '#222222'
+          const bioLines = bio.length > 55 ? [bio.slice(0, 50) + '...', bio.slice(50)] : [bio]
+          offCtx.fillText(bioLines[0], textCenterX, textCenterY + textFontSize * 1.55)
+        }
+
+        const imgData = offCtx.getImageData(0, 0, cols, rows).data
+
+        // Palette mapping:
+        // 0: Deep Ink / Text (#0a0a0a)
+        // 1: Primary Gold (#ffd700)
+        // 2: Warm Light Yellow (#ffe766)
+        // 3: Soft Pale Cream (#fffadc)
+        // 4: Clean White (#ffffff)
+        const palette = [
+          { r: 10, g: 10, b: 10, hex: '#0a0a0a' },
+          { r: 255, g: 215, b: 0, hex: '#ffd700' },
+          { r: 255, g: 231, b: 102, hex: '#ffe766' },
+          { r: 255, g: 250, b: 220, hex: '#fffadc' },
+          { r: 255, g: 255, b: 255, hex: '#ffffff' },
+        ]
+
+        const getTargetColor = (r, g, b) => {
+          const lum = 0.299 * r + 0.587 * g + 0.114 * b
+          if (lum < 52) return palette[0]
+          if (lum < 118) return palette[1]
+          if (lum < 185) return palette[2]
+          if (lum < 240) return palette[3]
+          return palette[4]
+        }
+
+        const newParticles = []
+        const now = performance.now()
+        const cx = cols / 2
+        const cy = rows * 0.5
+
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            const idx = (r * cols + c) * 4
+            const rVal = imgData[idx]
+            const gVal = imgData[idx + 1]
+            const bVal = imgData[idx + 2]
+            const aVal = imgData[idx + 3]
+
+            if (aVal < 20) continue
+
+            const colorObj = getTargetColor(rVal, gVal, bVal)
+            // Leave pure white space clean
+            if (colorObj.hex === '#ffffff') continue
+
+            const originX = c * blockSize
+            const originY = r * blockSize
+
+            // In-Effect: Cascading reveal wave
+            const dx = (c - cx) / (cols / 2)
+            const dy = (r - cy) / (rows / 2)
+            const dist = Math.sqrt(dx * dx + dy * dy)
+            const randomJitter = Math.random() * 220
+            const delay = 120 + dist * 700 + randomJitter
+
+            newParticles.push({
+              originX,
+              originY,
+              x: originX,
+              y: originY + (Math.random() - 0.5) * 6,
+              vx: 0,
+              vy: 0,
+              size: blockSize - 0.4,
+              targetHex: colorObj.hex,
+              targetR: colorObj.r,
+              targetG: colorObj.g,
+              targetB: colorObj.b,
+              delay,
+              startTime: now,
+              fadeInDuration: 280 + Math.random() * 150,
+            })
           }
-
-          if (isBehindText) continue // Remove pixel completely from behind the text!
-
-          const idx = (r * cols + c) * 4
-
-          const a1 = data1[idx + 3]
-          const a2 = data2[idx + 3]
-
-          const col1 = a1 > 25 ? getTargetColor(data1[idx], data1[idx + 1], data1[idx + 2]) : palette[4]
-          const col2 = a2 > 25 ? getTargetColor(data2[idx], data2[idx + 1], data2[idx + 2]) : palette[4]
-
-          // Skip if both images have white space at this pixel
-          if (col1.hex === '#ffffff' && col2.hex === '#ffffff') continue
-
-          // Initial reveal delay
-          const dx = (c - cx) / (cols / 2)
-          const dy = (r - cy) / (rows / 2)
-          const dist = Math.sqrt(dx * dx + dy * dy)
-          const initialDelay = 150 + dist * 700 + Math.random() * 200
-
-          // Image 2 Morph Delay: one by one transition across the grid
-          // Pixels dissolve and transition outward in an organic diagonal wind wave
-          const waveFactor = (c / cols) * 0.6 + (r / rows) * 0.4
-          const randomJitter = Math.random() * 950
-          const morphDelay = transitionBaseStart + waveFactor * 1600 + randomJitter
-
-          newParticles.push({
-            originX,
-            originY,
-            x: originX,
-            y: originY + (Math.random() - 0.5) * 6,
-            vx: 0,
-            vy: 0,
-            size: blockSize - 0.5,
-            // Image 1 color
-            col1Hex: col1.hex,
-            col1R: col1.r,
-            col1G: col1.g,
-            col1B: col1.b,
-            // Image 2 color
-            col2Hex: col2.hex,
-            col2R: col2.r,
-            col2G: col2.g,
-            col2B: col2.b,
-            initialDelay,
-            morphDelay,
-            startTime: now,
-            fadeInDuration: 300 + Math.random() * 150,
-            morphDuration: 450 + Math.random() * 250,
-          })
         }
+
+        particlesRef.current = newParticles
       }
 
-      particlesRef.current = newParticles
+      setupParticles()
 
-      // Render Loop
+      // High-performance animation loop
       const render = () => {
-        const currentTime = performance.now()
+        const now = performance.now()
         const particles = particlesRef.current
         const mouse = mouseRef.current
         const mouseActive = mouse.x > -500
@@ -241,16 +193,15 @@ export default function PixelArtBackground({
 
         for (let i = 0; i < particles.length; i++) {
           const p = particles[i]
-          const elapsed = currentTime - p.startTime
+          const elapsed = now - p.startTime
 
-          if (elapsed < p.initialDelay) {
+          if (elapsed < p.delay) {
             continue
           }
 
-          // Initial emergence progress
-          const initialProgress = Math.min(1, (elapsed - p.initialDelay) / p.fadeInDuration)
+          const rawProgress = Math.min(1, (elapsed - p.delay) / p.fadeInDuration)
 
-          // Mouse ripple interaction
+          // Mouse displacement
           if (mouseActive) {
             const dxM = p.x - mouse.x
             const dyM = p.y - mouse.y
@@ -264,7 +215,7 @@ export default function PixelArtBackground({
             }
           }
 
-          // Spring dampening back to origin
+          // Spring dampening back to origin coordinate
           const dx = p.originX - p.x
           const dy = p.originY - p.y
 
@@ -280,39 +231,15 @@ export default function PixelArtBackground({
             p.y = p.originY
           }
 
-          // Compute Color based on Morph Timeline
-          if (elapsed < p.morphDelay) {
-            // Display Image 1
-            if (initialProgress < 0.6) {
-              const t = initialProgress / 0.6
-              const r = Math.round(255 + (p.col1R - 255) * t)
-              const g = Math.round(215 + (p.col1G - 215) * t)
-              const b = Math.round(0 + (p.col1B - 0) * t)
-              ctx.fillStyle = `rgb(${r},${g},${b})`
-            } else {
-              ctx.fillStyle = p.col1Hex
-            }
+          // Color transition: Starts in gold (#ffd700), transitions into target palette color
+          if (rawProgress < 0.6) {
+            const t = rawProgress / 0.6
+            const r = Math.round(255 + (p.targetR - 255) * t)
+            const g = Math.round(215 + (p.targetG - 215) * t)
+            const b = Math.round(0 + (p.targetB - 0) * t)
+            ctx.fillStyle = `rgb(${r},${g},${b})`
           } else {
-            // One by one smooth pixel morph into Image 2
-            const morphProgress = Math.min(1, (elapsed - p.morphDelay) / p.morphDuration)
-            // Cubic ease out transition
-            const easeMorph = 1 - Math.pow(1 - morphProgress, 3)
-
-            if (morphProgress < 1) {
-              // Interpolate smoothly through brand gold spark into Image 2 color
-              if (morphProgress < 0.35) {
-                // Brief luminous gold pulse
-                ctx.fillStyle = '#ffd700'
-              } else {
-                const t = (morphProgress - 0.35) / 0.65
-                const r = Math.round(255 + (p.col2R - 255) * t)
-                const g = Math.round(215 + (p.col2G - 215) * t)
-                const b = Math.round(0 + (p.col2B - 0) * t)
-                ctx.fillStyle = `rgb(${r},${g},${b})`
-              }
-            } else {
-              ctx.fillStyle = p.col2Hex
-            }
+            ctx.fillStyle = p.targetHex
           }
 
           ctx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size)
@@ -320,18 +247,18 @@ export default function PixelArtBackground({
 
         ctx.globalAlpha = 1.0
 
-        // Soft center vignette so hero typography stands out crisply
+        // Soft outer edge fade
         const gradient = ctx.createRadialGradient(
           width / 2,
-          height * 0.48,
-          Math.min(width, height) * 0.25,
+          height * 0.5,
+          Math.min(width, height) * 0.35,
           width / 2,
-          height * 0.48,
-          Math.max(width, height) * 0.7
+          height * 0.5,
+          Math.max(width, height) * 0.72
         )
-        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.45)')
-        gradient.addColorStop(0.6, 'rgba(255, 255, 255, 0.2)')
-        gradient.addColorStop(1, 'rgba(255, 255, 255, 0.75)')
+        gradient.addColorStop(0, 'rgba(255, 255, 255, 0)')
+        gradient.addColorStop(0.75, 'rgba(255, 255, 255, 0.25)')
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0.85)')
 
         ctx.fillStyle = gradient
         ctx.fillRect(0, 0, width, height)
@@ -341,9 +268,7 @@ export default function PixelArtBackground({
 
       render()
 
-      const handleResize = () => {
-        initExperience()
-      }
+      const handleResize = () => setupParticles()
       window.addEventListener('resize', handleResize)
 
       return () => {
@@ -372,13 +297,13 @@ export default function PixelArtBackground({
       window.removeEventListener('mouseleave', handleMouseLeave)
       if (rafId.current) cancelAnimationFrame(rafId.current)
     }
-  }, [pixelSize, opacity])
+  }, [pixelSize, opacity, headlineLine1, headlineLine2, bio])
 
   return (
     <canvas
       ref={canvasRef}
       className={`absolute inset-0 pointer-events-none z-0 w-full h-full ${className}`}
-      aria-hidden="true"
+      aria-label={`${headlineLine1} ${headlineLine2} - ${bio}`}
     />
   )
 }
