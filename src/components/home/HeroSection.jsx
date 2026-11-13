@@ -15,21 +15,6 @@ import PixelAssembledHeading from './PixelAssembledHeading'
  */
 export default function HeroSection() {
   const { headlineLine1, headlineLine2, bio } = personalInfo
-  const [isRevealed, setIsRevealed] = useState(false)
-
-  useEffect(() => {
-    // Reveal hero elements as the center pixels clear
-    const handleReveal = () => setIsRevealed(true)
-    window.addEventListener('introHeroRevealed', handleReveal)
-
-    // Safety fallback
-    const timer = setTimeout(() => setIsRevealed(true), 1400)
-
-    return () => {
-      window.removeEventListener('introHeroRevealed', handleReveal)
-      clearTimeout(timer)
-    }
-  }, [])
 
   return (
     <section
@@ -46,12 +31,8 @@ export default function HeroSection() {
         initialIntro={true}
       />
 
-      {/* Hero content sitting cleanly in z-10 above canvas */}
-      <div
-        className={`relative z-10 w-full max-w-4xl mx-auto flex flex-col items-center space-y-6 sm:space-y-8 transition-all duration-700 ease-out ${
-          isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'
-        }`}
-      >
+      {/* Hero content sitting cleanly in z-10 above canvas with no fade-in delay */}
+      <div className="relative z-10 w-full max-w-4xl mx-auto flex flex-col items-center space-y-6 sm:space-y-8">
         {/* Main Headline assembled from discrete micro-pixels */}
         <PixelAssembledHeading
           line1={headlineLine1}
