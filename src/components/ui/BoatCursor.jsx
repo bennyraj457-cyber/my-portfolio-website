@@ -22,6 +22,7 @@ export default function BoatCursor({
 
   const [isVisible, setIsVisible] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
+  const [isMobileDevice, setIsMobileDevice] = useState(false)
 
   const mousePos = useRef({ x: -200, y: -200 })
   const currentPos = useRef({ x: -200, y: -200 })
@@ -29,17 +30,49 @@ export default function BoatCursor({
   const smoothAngle = useRef(0)
   const smoothRoll = useRef(0)
   const wakeParticles = useRef([])
+  const activeControl = useRef({ up: false, down: false, left: false, right: false })
   const rafId = useRef(null)
 
-  const isEligibleDevice = useCallback(() => {
+  const checkIsMobile = useCallback(() => {
     if (typeof window === 'undefined') return false
-    const hasFinePointer = window.matchMedia('(pointer: fine) and (hover: hover)').matches
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    return hasFinePointer && !prefersReducedMotion
+    return window.matchMedia('(pointer: coarse)').matches || window.innerWidth <= 768
   }, [])
 
   useEffect(() => {
-    if (!enabled || !isEligibleDevice()) return
+    if (!enabled) return
+
+    const mobile = checkIsMobile()
+    setIsMobileDevice(mobile)
+
+    if (mobile) {
+      // In mobile mode: place boat at viewport center
+      currentPos.current.x = window.innerWidth / 2
+      currentPos.current.y = window.innerHeight * 0.42
+      mousePos.current.x = currentPos.current.x
+      mousePos.current.y = currentPos.current.y
+      setIsVisible(true)
+
+      // Prevent hand scrolling on mobile: page can only be steered with boat
+      const preventTouchScroll = (e) => {
+        // Allow clicks on buttons/inputs or the controller itself
+        if (e.target.closest('#mobile-boat-controller, a, button, input')) return
+        e.preventDefault()
+      }
+
+      document.body.style.overscrollBehavior = 'none'
+      document.documentElement.style.overscrollBehavior = 'none'
+      window.addEventListener('touchmove', preventTouchScroll, { passive: false })
+
+      return () => {
+        document.body.style.overscrollBehavior = 'auto'
+        document.documentElement.style.overscrollBehavior = 'auto'
+        window.removeEventListener('touchmove', preventTouchScroll)
+      }
+    }
+  }, [enabled, checkIsMobile])
+
+  useEffect(() => {
+    if (!enabled) return
 
     const canvas = wakeCanvasRef.current
     const ctx = canvas ? canvas.getContext('2d') : null
@@ -53,6 +86,7 @@ export default function BoatCursor({
     updateCanvasSize()
 
     const handleMouseMove = (e) => {
+      if (isMobileDevice) return
       mousePos.current.x = e.clientX
       mousePos.current.y = e.clientY
 
@@ -65,7 +99,7 @@ export default function BoatCursor({
     }
 
     const handleMouseLeave = () => {
-      setIsVisible(false)
+      if (!isMobileDevice) setIsVisible(false)
     }
 
     const handleMouseEnter = () => {
@@ -73,42 +107,74 @@ export default function BoatCursor({
     }
 
     const animate = () => {
-      // 1. High-precision spring lerp for silky smooth boat movement
-      const posLerp = 0.12
-      const dx = mousePos.current.x - currentPos.current.x
-      const dy = mousePos.current.y - currentPos.current.y
+      // 1. Mobile controller driving physics
+      if (isMobileDevice) {
+        const driveSpeed = 3.6
+        const ctrl = activeControl.current
 
-      velocity.current.x += (dx * posLerp - velocity.current.x) * 0.4
-      velocity.current.y += (dy * posLerp - velocity.current.y) * 0.4
+        let inputX = 0
+        let inputY = 0
 
-      currentPos.current.x += velocity.current.x
-      currentPos.current.y += velocity.current.y
+        if (ctrl.up) inputY -= driveSpeed
+        if (ctrl.down) inputY += driveSpeed
+        if (ctrl.left) inputX -= driveSpeed
+        if (ctrl.right) inputX += driveSpeed
+
+        // Control acceleration
+        velocity.current.x += (inputX - velocity.current.x) * 0.18
+        velocity.current.y += (inputY - velocity.current.y) * 0.18
+
+        currentPos.current.x += velocity.current.x
+        currentPos.current.y += velocity.current.y
+
+        // Keep boat in safe screen boundaries on mobile
+        const marginX = 35
+        const marginY = 60
+        currentPos.current.x = Math.max(marginX, Math.min(window.innerWidth - marginX, currentPos.current.x))
+        currentPos.current.y = Math.max(marginY, Math.min(window.innerHeight - 150, currentPos.current.y))
+
+        // When moving DOWN (or any vertical navigation), move page scroll organically!
+        // Down button sails boat downward and scrolls page down to reveal content
+        if (ctrl.down || velocity.current.y > 0.5) {
+          const scrollStep = Math.max(1, velocity.current.y * 1.8)
+          window.scrollBy({ top: scrollStep, behavior: 'instant' })
+        } else if (ctrl.up || velocity.current.y < -0.5) {
+          const scrollStep = Math.min(-1, velocity.current.y * 1.8)
+          window.scrollBy({ top: scrollStep, behavior: 'instant' })
+        }
+      } else {
+        // Desktop mouse tracking with spring lerp
+        const posLerp = 0.12
+        const dx = mousePos.current.x - currentPos.current.x
+        const dy = mousePos.current.y - currentPos.current.y
+
+        velocity.current.x += (dx * posLerp - velocity.current.x) * 0.4
+        velocity.current.y += (dy * posLerp - velocity.current.y) * 0.4
+
+        currentPos.current.x += velocity.current.x
+        currentPos.current.y += velocity.current.y
+      }
 
       const speedSq = velocity.current.x * velocity.current.x + velocity.current.y * velocity.current.y
       const speed = Math.sqrt(speedSq)
 
       // 2. Smooth heading direction tracking:
-      // Only steer when there is real motion (speed > 0.35) to avoid jitter when idling
       if (speed > 0.35) {
-        // Boat SVG bow points UP (negative Y), so atan2(vy, vx) + 90 deg gives exact bow direction
         const targetAngle = Math.atan2(velocity.current.y, velocity.current.x) * (180 / Math.PI) + 90
         
         let angleDiff = targetAngle - smoothAngle.current
         while (angleDiff < -180) angleDiff += 360
         while (angleDiff > 180) angleDiff -= 360
 
-        // Adaptive rotational smoothing: faster response when moving fast, velvety when cruising
         const rotLerp = Math.min(0.24, 0.08 + speed * 0.015)
         smoothAngle.current += angleDiff * rotLerp
 
-        // Dynamic 3D banking roll into turns (smoothly filtered)
         const targetRoll = Math.max(-14, Math.min(14, (angleDiff * 0.4) + (velocity.current.x * 0.3)))
         smoothRoll.current += (targetRoll - smoothRoll.current) * 0.1
 
         // Spawn trailing water wake particles behind the stern
         if (Math.random() > 0.45 && speed > 1.2) {
           const sternDistance = 22
-          // Stern is opposite to bow
           const sternRad = (smoothAngle.current + 90) * (Math.PI / 180)
           wakeParticles.current.push({
             x: currentPos.current.x + Math.cos(sternRad) * sternDistance,
@@ -122,7 +188,6 @@ export default function BoatCursor({
           })
         }
       } else {
-        // Gently return roll to flat when stopped
         smoothRoll.current += (0 - smoothRoll.current) * 0.08
       }
 
@@ -132,7 +197,6 @@ export default function BoatCursor({
       }
 
       // 4. Update 3D Top-Angle Boat Perspective:
-      // Direct JS matrix transform without conflicting CSS transition lag
       if (boatRef.current) {
         boatRef.current.style.transform = `perspective(800px) rotate(${smoothAngle.current.toFixed(2)}deg) rotateX(15deg) rotateY(${smoothRoll.current.toFixed(2)}deg)`
       }
@@ -167,12 +231,14 @@ export default function BoatCursor({
       rafId.current = requestAnimationFrame(animate)
     }
 
-    window.addEventListener('mousemove', handleMouseMove, { passive: true })
-    window.addEventListener('resize', updateCanvasSize)
-    document.addEventListener('mouseleave', handleMouseLeave)
-    document.addEventListener('mouseenter', handleMouseEnter)
+    if (!isMobileDevice) {
+      window.addEventListener('mousemove', handleMouseMove, { passive: true })
+      document.addEventListener('mouseleave', handleMouseLeave)
+      document.addEventListener('mouseenter', handleMouseEnter)
+      document.body.style.cursor = 'none'
+    }
 
-    document.body.style.cursor = 'none'
+    window.addEventListener('resize', updateCanvasSize)
     rafId.current = requestAnimationFrame(animate)
 
     return () => {
@@ -183,7 +249,7 @@ export default function BoatCursor({
       document.removeEventListener('mouseenter', handleMouseEnter)
       if (rafId.current) cancelAnimationFrame(rafId.current)
     }
-  }, [enabled, isEligibleDevice, isVisible])
+  }, [enabled, isMobileDevice, isVisible])
 
   if (!enabled || !isEligibleDevice()) return null
 
@@ -420,6 +486,85 @@ export default function BoatCursor({
           </svg>
         </div>
       </div>
+
+      {/* Mobile Floating Gamepad Controller for Steering the Boat & Scrolling the Page */}
+      {isMobileDevice && (
+        <div
+          id="mobile-boat-controller"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center select-none pointer-events-auto touch-manipulation"
+          style={{ touchAction: 'none' }}
+        >
+          {/* Subtle Label */}
+          <div className="mb-2 px-3 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-[#ffd700] text-[10px] font-mono tracking-widest uppercase border border-[#ffd700]/30 shadow-lg pointer-events-none flex items-center gap-1.5">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#ffd700] animate-pulse"></span>
+            Navigate by Boat
+          </div>
+
+          {/* D-Pad Controller Wheel */}
+          <div className="relative w-36 h-36 rounded-full bg-black/80 backdrop-blur-xl border border-white/15 p-2 shadow-[0_12px_32px_rgba(0,0,0,0.6)] flex items-center justify-center">
+            {/* Center Decorative Boat Compass Hub */}
+            <div className="absolute w-12 h-12 rounded-full bg-gradient-to-b from-[#222222] to-[#111111] border border-[#ffd700]/40 flex items-center justify-center pointer-events-none shadow-inner">
+              <span className="text-[#ffd700] text-sm">⚓</span>
+            </div>
+
+            {/* UP BUTTON */}
+            <button
+              type="button"
+              aria-label="Steer boat up"
+              onPointerDown={(e) => { e.preventDefault(); activeControl.current.up = true }}
+              onPointerUp={(e) => { e.preventDefault(); activeControl.current.up = false }}
+              onPointerLeave={() => { activeControl.current.up = false }}
+              className="absolute top-1 left-1/2 -translate-x-1/2 w-11 h-10 rounded-t-xl bg-white/10 hover:bg-[#ffd700]/25 active:bg-[#ffd700]/40 text-white flex items-center justify-center transition-colors active:scale-95"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="18 15 12 9 6 15"></polyline>
+              </svg>
+            </button>
+
+            {/* DOWN BUTTON (Sail Down & Scroll Page Down) */}
+            <button
+              type="button"
+              aria-label="Steer boat down & scroll"
+              onPointerDown={(e) => { e.preventDefault(); activeControl.current.down = true }}
+              onPointerUp={(e) => { e.preventDefault(); activeControl.current.down = false }}
+              onPointerLeave={() => { activeControl.current.down = false }}
+              className="absolute bottom-1 left-1/2 -translate-x-1/2 w-11 h-10 rounded-b-xl bg-white/10 hover:bg-[#ffd700]/25 active:bg-[#ffd700]/40 text-[#ffd700] flex items-center justify-center transition-colors active:scale-95 border-b border-[#ffd700]/40"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+
+            {/* LEFT BUTTON */}
+            <button
+              type="button"
+              aria-label="Steer boat left"
+              onPointerDown={(e) => { e.preventDefault(); activeControl.current.left = true }}
+              onPointerUp={(e) => { e.preventDefault(); activeControl.current.left = false }}
+              onPointerLeave={() => { activeControl.current.left = false }}
+              className="absolute left-1 top-1/2 -translate-y-1/2 w-10 h-11 rounded-l-xl bg-white/10 hover:bg-[#ffd700]/25 active:bg-[#ffd700]/40 text-white flex items-center justify-center transition-colors active:scale-95"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+
+            {/* RIGHT BUTTON */}
+            <button
+              type="button"
+              aria-label="Steer boat right"
+              onPointerDown={(e) => { e.preventDefault(); activeControl.current.right = true }}
+              onPointerUp={(e) => { e.preventDefault(); activeControl.current.right = false }}
+              onPointerLeave={() => { activeControl.current.right = false }}
+              className="absolute right-1 top-1/2 -translate-y-1/2 w-10 h-11 rounded-r-xl bg-white/10 hover:bg-[#ffd700]/25 active:bg-[#ffd700]/40 text-white flex items-center justify-center transition-colors active:scale-95"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
     </>
   )
 }
