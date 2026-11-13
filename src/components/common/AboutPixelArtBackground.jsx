@@ -51,24 +51,25 @@ export default function AboutPixelArtBackground({
         offCanvas.height = rows
         const offCtx = offCanvas.getContext('2d')
 
-        // Responsive image fit calculation:
-        // Use 'contain' with max bounds so the thoughts profile is fully visible
-        // and centered without clipping off the top or bottom edges
         const imgRatio = img.width / img.height
         const targetRatio = width / height
 
         let drawW, drawH, drawX, drawY
-        // Contain with slight padding factor (0.92) for elegant framing
-        const scale = Math.min((cols * 0.92) / img.width, (rows * 0.92) / img.height)
-        drawW = img.width * scale
-        drawH = img.height * scale
-        drawX = (cols - drawW) / 2
-        drawY = (rows - drawH) / 2
+        if (targetRatio > imgRatio) {
+          drawW = cols
+          drawH = cols / imgRatio
+          drawX = 0
+          drawY = (rows - drawH) / 2
+        } else {
+          drawH = rows
+          drawW = rows * imgRatio
+          drawX = (cols - drawW) / 2
+          drawY = 0
+        }
 
         offCtx.drawImage(img, drawX, drawY, drawW, drawH)
 
         // Clear out the top-left printed text ("THOUGHTS ARE NOT REAL") from the offscreen canvas
-        // The text occupies the top-left quadrant (roughly 0% to 56% horizontally and 0% to 42% vertically of the image)
         const textRegionW = drawW * 0.58
         const textRegionH = drawH * 0.40
         offCtx.fillStyle = '#ffffff'
@@ -76,21 +77,22 @@ export default function AboutPixelArtBackground({
 
         const bgImgData = offCtx.getImageData(0, 0, cols, rows).data
 
-        // High-contrast ink & graphite palette
+        // Brand palette matching the hero section:
+        // Rich brand gold, light gold, soft pale cream, and deep charcoal
         const palette = [
           { r: 10, g: 10, b: 10, hex: '#0a0a0a' },
-          { r: 42, g: 42, b: 42, hex: '#2a2a2a' },
-          { r: 115, g: 115, b: 115, hex: '#737373' },
-          { r: 212, g: 212, b: 216, hex: '#d4d4d8' },
+          { r: 255, g: 215, b: 0, hex: '#ffd700' },
+          { r: 255, g: 231, b: 102, hex: '#ffe766' },
+          { r: 255, g: 250, b: 220, hex: '#fffadc' },
           { r: 255, g: 255, b: 255, hex: '#ffffff' },
         ]
 
         const getTargetColor = (r, g, b) => {
           const lum = 0.299 * r + 0.587 * g + 0.114 * b
-          if (lum < 45) return palette[0]
-          if (lum < 100) return palette[1]
-          if (lum < 170) return palette[2]
-          if (lum < 235) return palette[3]
+          if (lum < 52) return palette[0]
+          if (lum < 118) return palette[1]
+          if (lum < 185) return palette[2]
+          if (lum < 240) return palette[3]
           return palette[4]
         }
 
