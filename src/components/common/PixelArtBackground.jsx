@@ -73,10 +73,16 @@ export default function PixelArtBackground({
           drawY = 0
         }
 
-        // 1. Draw base retro coder illustration
+        // 1. First capture the pure background image data (without text)
         offCtx.drawImage(img, drawX, drawY, drawW, drawH)
+        const bgImgData = offCtx.getImageData(0, 0, cols, rows).data
 
-        // 2. Draw Hero Headline and Bio DIRECTLY INTO THE PIXEL CANVAS (in the open sky area)
+        // 2. Now render the text onto a separate text canvas to detect text pixels
+        const textCanvas = document.createElement('canvas')
+        textCanvas.width = cols
+        textCanvas.height = rows
+        const textCtx = textCanvas.getContext('2d')
+
         // Responsive font sizing based on grid columns & portrait/landscape mode
         const isPortrait = height > width
         const baseRatio = isPortrait ? cols * 0.08 : cols * 0.045
@@ -88,25 +94,25 @@ export default function PixelArtBackground({
           ? Math.max(textFontSize * 2.5, rows * 0.22)
           : Math.max(textFontSize * 2.0, rows * 0.26)
 
-        offCtx.textAlign = 'center'
-        offCtx.textBaseline = 'middle'
+        textCtx.textAlign = 'center'
+        textCtx.textBaseline = 'middle'
 
         // Render Headline Line 1 & Line 2
-        offCtx.font = `italic 700 ${textFontSize}px "TRJN DaVinci", "TRJN DaVinci Text", serif`
-        offCtx.fillStyle = '#080808'
-        offCtx.fillText(headlineLine1 || 'Designer who', textCenterX, textCenterY - textFontSize * 0.65)
-        offCtx.fillText(headlineLine2 || 'ships with Code', textCenterX, textCenterY + textFontSize * 0.65)
+        textCtx.font = `italic 700 ${textFontSize}px "TRJN DaVinci", "TRJN DaVinci Text", serif`
+        textCtx.fillStyle = '#0a0a0a'
+        textCtx.fillText(headlineLine1 || 'Designer who', textCenterX, textCenterY - textFontSize * 0.65)
+        textCtx.fillText(headlineLine2 || 'ships with Code', textCenterX, textCenterY + textFontSize * 0.65)
 
         // Render Paragraph Bio directly beneath
         if (bio) {
-          offCtx.font = `normal 400 ${bioFontSize}px "Geist", system-ui, sans-serif`
-          offCtx.fillStyle = '#222222'
+          textCtx.font = `normal 400 ${bioFontSize}px "Geist", system-ui, sans-serif`
+          textCtx.fillStyle = '#222222'
           const maxChars = isPortrait ? 38 : 55
           const bioLines = bio.length > maxChars ? [bio.slice(0, maxChars) + '...', bio.slice(maxChars)] : [bio]
-          offCtx.fillText(bioLines[0], textCenterX, textCenterY + textFontSize * 1.55)
+          textCtx.fillText(bioLines[0], textCenterX, textCenterY + textFontSize * 1.55)
         }
 
-        const imgData = offCtx.getImageData(0, 0, cols, rows).data
+        const textData = textCtx.getImageData(0, 0, cols, rows).data
 
         // Palette mapping:
         // 0: Deep Ink / Text (#0a0a0a)
@@ -139,26 +145,40 @@ export default function PixelArtBackground({
         for (let r = 0; r < rows; r++) {
           for (let c = 0; c < cols; c++) {
             const idx = (r * cols + c) * 4
-            const rVal = imgData[idx]
-            const gVal = imgData[idx + 1]
-            const bVal = imgData[idx + 2]
-            const aVal = imgData[idx + 3]
+            const rVal = bgImgData[idx]
+            const gVal = bgImgData[idx + 1]
+            const bVal = bgImgData[idx + 2]
+            const aVal = bgImgData[idx + 3]
 
-            if (aVal < 20) continue
+            // Check if this pixel has embedded text on it
+            const textAlpha = textData[idx + 3]
+            const isTextPixel = textAlpha > 30
 
-            const colorObj = getTargetColor(rVal, gVal, bVal)
-            // Leave pure white space clean
-            if (colorObj.hex === '#ffffff') continue
+            // If it's outside the artwork and has no text, skip
+            if (aVal < 20 && !isTextPixel) continue
+
+            // Initial color from background image (what shows when image pixels first appear)
+            const bgDefault = aVal >= 20 ? getTargetColor(rVal, gVal, bVal) : palette[3]
+            // Skip pure white pixels
+            if (bgDefault.hex === '#ffffff' && !isTextPixel) continue
+
+            // Target text color: deep dark ink (#0a0a0a) or primary gold accent
+            const targetColor = isTextPixel ? palette[0] : bgDefault
 
             const originX = c * blockSize
             const originY = r * blockSize
 
-            // In-Effect: Cascading reveal wave
+            // Image pixel arrival delay (waves in first: 100ms - 900ms)
             const dx = (c - cx) / (cols / 2)
             const dy = (r - cy) / (rows / 2)
             const dist = Math.sqrt(dx * dx + dy * dy)
-            const randomJitter = Math.random() * 220
-            const delay = 120 + dist * 700 + randomJitter
+            const initialDelay = 100 + dist * 600 + Math.random() * 180
+
+            // Text reveal delay: after image arrives (starts at ~1200ms - 2200ms)
+            // Text color shifts smoothly letter by letter across x axis
+            const textRevealDelay = isTextPixel
+              ? 1100 + (c / cols) * 900 + Math.random() * 120
+              : 0
 
             newParticles.push({
               originX,
@@ -168,13 +188,22 @@ export default function PixelArtBackground({
               vx: 0,
               vy: 0,
               size: blockSize - 0.4,
-              targetHex: colorObj.hex,
-              targetR: colorObj.r,
-              targetG: colorObj.g,
-              targetB: colorObj.b,
-              delay,
+              // Initial image colors
+              initHex: bgDefault.hex,
+              initR: bgDefault.r,
+              initG: bgDefault.g,
+              initB: bgDefault.b,
+              // Final target colors (switches to ink if text pixel)
+              targetHex: targetColor.hex,
+              targetR: targetColor.r,
+              targetG: targetColor.g,
+              targetB: targetColor.b,
+              isTextPixel,
+              initialDelay,
+              textRevealDelay,
               startTime: now,
-              fadeInDuration: 280 + Math.random() * 150,
+              fadeInDuration: 280 + Math.random() * 120,
+              textShiftDuration: 350 + Math.random() * 150,
             })
           }
         }
@@ -200,11 +229,13 @@ export default function PixelArtBackground({
           const p = particles[i]
           const elapsed = now - p.startTime
 
-          if (elapsed < p.delay) {
+          // 1. Initial Image Pixel Arrival Check
+          if (elapsed < p.initialDelay) {
             continue
           }
 
-          const rawProgress = Math.min(1, (elapsed - p.delay) / p.fadeInDuration)
+          const rawAppear = Math.min(1, (elapsed - p.initialDelay) / p.fadeInDuration)
+          const appearProgress = 1 - Math.pow(1 - rawAppear, 3)
 
           // Mouse displacement
           if (mouseActive) {
@@ -236,15 +267,33 @@ export default function PixelArtBackground({
             p.y = p.originY
           }
 
-          // Color transition: Starts in gold (#ffd700), transitions into target palette color
-          if (rawProgress < 0.6) {
-            const t = rawProgress / 0.6
-            const r = Math.round(255 + (p.targetR - 255) * t)
-            const g = Math.round(215 + (p.targetG - 215) * t)
-            const b = Math.round(0 + (p.targetB - 0) * t)
+          // 2. Determine Color:
+          // Phase A: Pixel emerges as the image's original color (cream/yellow/ink)
+          let currentR = p.initR
+          let currentG = p.initG
+          let currentB = p.initB
+          let currentHex = p.initHex
+
+          // Phase B: If this pixel represents text, smoothly shift color to deep ink (#0a0a0a) to reveal the letters
+          if (p.isTextPixel && elapsed > p.textRevealDelay) {
+            const rawTextShift = Math.min(1, (elapsed - p.textRevealDelay) / p.textShiftDuration)
+            const textShiftProgress = 1 - Math.pow(1 - rawTextShift, 3) // smooth cubic easeOut
+
+            currentR = Math.round(p.initR + (p.targetR - p.initR) * textShiftProgress)
+            currentG = Math.round(p.initG + (p.targetG - p.initG) * textShiftProgress)
+            currentB = Math.round(p.initB + (p.targetB - p.initB) * textShiftProgress)
+            currentHex = `rgb(${currentR},${currentG},${currentB})`
+          }
+
+          // In-Effect fade when pixel first lands
+          if (appearProgress < 0.6) {
+            const t = appearProgress / 0.6
+            const r = Math.round(255 + (currentR - 255) * t)
+            const g = Math.round(215 + (currentG - 215) * t)
+            const b = Math.round(0 + (currentB - 0) * t)
             ctx.fillStyle = `rgb(${r},${g},${b})`
           } else {
-            ctx.fillStyle = p.targetHex
+            ctx.fillStyle = currentHex
           }
 
           ctx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size)
