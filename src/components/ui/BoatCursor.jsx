@@ -119,10 +119,14 @@ export default function BoatCursor({
         containerRef.current.style.transform = `translate3d(${x}px, ${y}px, 0)`
       }
 
-      // Update Boat Body rotation and heel (tilt)
+      // Update 3D Boat Isometric Pitch, Roll, and Yaw
       if (boatRef.current) {
-        const heel = Math.max(-12, Math.min(12, velocity.current.x * 0.8))
-        boatRef.current.style.transform = `rotate(${currentAngle.current}deg) skewX(${heel}deg)`
+        // Roll (lean into turns): proportional to angular velocity & lateral speed
+        const roll = Math.max(-28, Math.min(28, velocity.current.x * 1.5))
+        // Pitch (bow rise/dip with acceleration)
+        const pitch = Math.max(-20, Math.min(20, -velocity.current.y * 1.2))
+        
+        boatRef.current.style.transform = `perspective(600px) rotate(${currentAngle.current}deg) rotateX(${pitch}deg) rotateY(${roll}deg)`
       }
 
       // Render Trailing Water Wake on Canvas
@@ -198,66 +202,98 @@ export default function BoatCursor({
       >
         <div
           ref={boatRef}
-          className={`relative -left-3.5 -top-3.5 transition-transform duration-75 ease-out select-none ${
+          className={`relative -left-4 -top-4 transition-transform duration-75 ease-out select-none ${
             isHovered ? 'scale-115' : 'scale-100'
           }`}
+          style={{ transformStyle: 'preserve-3d' }}
         >
-          {/* Geometric Origami Sailboat SVG */}
+          {/* 3D Isometric Origami Boat SVG with Multi-Planar Shading */}
           <svg
-            width="28"
-            height="28"
-            viewBox="0 0 32 32"
+            width="34"
+            height="34"
+            viewBox="0 0 36 36"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
-            className="filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.25)]"
+            className="filter drop-shadow-[0_8px_14px_rgba(0,0,0,0.32)]"
           >
-            {/* Main Tall Sail (Yellow Brand Gold #ffd700 with subtle gradient) */}
+            {/* Cast Shadow on Water */}
+            <ellipse
+              cx="18"
+              cy="28"
+              rx="12"
+              ry="4"
+              fill="rgba(0, 0, 0, 0.18)"
+              className="filter blur-[1.5px]"
+            />
+
+            {/* Left Hull Facet (Deep Charcoal #141414 with dark shadow) */}
             <path
-              d="M16 4 L16 20 L25 20 Z"
-              fill={isHovered ? '#ffe766' : '#ffd700'}
-              stroke="#111111"
-              strokeWidth="1.2"
+              d="M18 31 L6 22 L18 24 Z"
+              fill="#141414"
+              stroke="#0a0a0a"
+              strokeWidth="0.8"
               strokeLinejoin="round"
             />
 
-            {/* Small Front Jib Sail (Cream White #fffadc) */}
+            {/* Right Hull Facet (Medium Charcoal #262626 with light hit) */}
             <path
-              d="M14 8 L14 20 L7 20 Z"
-              fill="#fffadc"
-              stroke="#111111"
-              strokeWidth="1.2"
+              d="M18 31 L30 22 L18 24 Z"
+              fill="#2a2a2a"
+              stroke="#0a0a0a"
+              strokeWidth="0.8"
               strokeLinejoin="round"
             />
 
-            {/* Mast */}
-            <line
-              x1="15"
-              y1="3"
-              x2="15"
-              y2="21"
-              stroke="#111111"
-              strokeWidth="1.5"
+            {/* Inside Deck Cavity / Floor */}
+            <path
+              d="M6 22 L18 24 L30 22 L18 21 Z"
+              fill="#0d0d0d"
+              stroke="#0a0a0a"
+              strokeWidth="0.6"
+            />
+
+            {/* Hull Waterline Gold Trim */}
+            <path
+              d="M8 23.5 L18 25 L28 23.5"
+              stroke="#ffd700"
+              strokeWidth="1.2"
               strokeLinecap="round"
             />
 
-            {/* Boat Hull / Cockpit (Deep Charcoal #161616 with crisp yellow waterline trim) */}
+            {/* Tall Main Sail - Left Fold (Luminous Gold #ffd700) */}
             <path
-              d="M5 21 L27 21 L23 27 L9 27 Z"
-              fill="#181818"
-              stroke="#111111"
-              strokeWidth="1.2"
+              d="M18 3 L18 22 L8 21 Z"
+              fill={isHovered ? '#fff3a8' : '#ffd700'}
+              stroke="#b39700"
+              strokeWidth="0.8"
               strokeLinejoin="round"
             />
 
-            {/* Hull Waterline Accent Line */}
+            {/* Tall Main Sail - Right Fold (Warm Shade #e6c200) */}
+            <path
+              d="M18 3 L27 20 L18 22 Z"
+              fill={isHovered ? '#ffe766' : '#e6b800'}
+              stroke="#b39700"
+              strokeWidth="0.8"
+              strokeLinejoin="round"
+            />
+
+            {/* Sail Crease Highlight Spine */}
             <line
-              x1="8"
-              y1="23.5"
-              x2="24"
-              y2="23.5"
-              stroke="#ffd700"
+              x1="18"
+              y1="3"
+              x2="18"
+              y2="23"
+              stroke="#ffffff"
               strokeWidth="1"
               strokeLinecap="round"
+              strokeOpacity="0.75"
+            />
+
+            {/* Floating Top Pennant / Flag (#111111) */}
+            <path
+              d="M18 3 L22 5 L18 7 Z"
+              fill="#111111"
             />
           </svg>
         </div>
@@ -265,3 +301,4 @@ export default function BoatCursor({
     </>
   )
 }
+
