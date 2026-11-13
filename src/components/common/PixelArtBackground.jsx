@@ -46,7 +46,7 @@ export default function PixelArtBackground({
         width = canvas.width = parent.clientWidth || window.innerWidth
         height = canvas.height = parent.clientHeight || window.innerHeight
 
-        const blockSize = Math.max(5, pixelSize)
+        const blockSize = Math.max(4, pixelSize)
         const cols = Math.ceil(width / blockSize)
         const rows = Math.ceil(height / blockSize)
 
@@ -84,22 +84,24 @@ export default function PixelArtBackground({
         const textCtx = textCanvas.getContext('2d')
 
         // Responsive font sizing based on grid columns & portrait/landscape mode
+        // Make font robust and bold so pixel font glyphs are distinct and readable
         const isPortrait = height > width
-        const baseRatio = isPortrait ? cols * 0.08 : cols * 0.045
-        const textFontSize = Math.max(16, Math.min(baseRatio, 36))
+        const baseRatio = isPortrait ? cols * 0.11 : cols * 0.065
+        const textFontSize = Math.max(22, Math.min(baseRatio, 50))
 
         const textCenterX = cols * 0.5
         const textCenterY = isPortrait
-          ? Math.max(textFontSize * 2.5, rows * 0.22)
-          : Math.max(textFontSize * 2.0, rows * 0.26)
+          ? Math.max(textFontSize * 2.2, rows * 0.22)
+          : Math.max(textFontSize * 1.8, rows * 0.25)
 
-        const fontStr = `italic 700 ${textFontSize}px "TRJN DaVinci", "TRJN DaVinci Text", serif`
+        // Use standard clear sans-serif/serif fallback stack with 900 bold weight
+        const fontStr = `900 ${textFontSize}px "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`
         textCtx.font = fontStr
         textCtx.textBaseline = 'middle'
 
         const lines = [
-          { text: headlineLine1 || 'Designer who', y: textCenterY - textFontSize * 0.65 },
-          { text: headlineLine2 || 'ships with Code', y: textCenterY + textFontSize * 0.65 },
+          { text: headlineLine1 || 'Designer who', y: textCenterY - textFontSize * 0.7 },
+          { text: headlineLine2 || 'ships with Code', y: textCenterY + textFontSize * 0.7 },
         ]
 
         // Map pixel key -> letter reveal delay
@@ -119,30 +121,30 @@ export default function PixelArtBackground({
             if (char.trim() !== '') {
               // Draw single character to offscreen canvas
               textCtx.clearRect(0, 0, cols, rows)
+              textCtx.fillStyle = '#000000'
               textCtx.fillText(char, curX, lineObj.y)
 
-              const x1 = Math.max(0, Math.floor(curX - 2))
-              const x2 = Math.min(cols, Math.ceil(curX + charWidth + 2))
-              const y1 = Math.max(0, Math.floor(lineObj.y - textFontSize * 0.7))
-              const y2 = Math.min(rows, Math.ceil(lineObj.y + textFontSize * 0.7))
+              const x1 = Math.max(0, Math.floor(curX - 1))
+              const x2 = Math.min(cols, Math.ceil(curX + charWidth + 1))
+              const y1 = Math.max(0, Math.floor(lineObj.y - textFontSize * 0.8))
+              const y2 = Math.min(rows, Math.ceil(lineObj.y + textFontSize * 0.8))
 
               const cData = textCtx.getImageData(0, 0, cols, rows).data
-              // Letter reveal cadence: 85ms between letter starts
-              const letterDelay = baseStartDelay + globalLetterIdx * 85
+              // Letter reveal cadence: 80ms between letter starts
+              const letterDelay = baseStartDelay + globalLetterIdx * 80
 
               for (let y = y1; y < y2; y++) {
                 for (let x = x1; x < x2; x++) {
                   const idx = (y * cols + x) * 4
-                  if (cData[idx + 3] > 30) {
-                    // Small micro jitter within character so pixels in the letter don't look artificial
-                    const jitter = Math.random() * 60
-                    textPixelTimings.set(`${y},${x}`, letterDelay + jitter)
+                  // Increased threshold so pixel edges are crisp and not fuzzy
+                  if (cData[idx + 3] > 60) {
+                    textPixelTimings.set(`${y},${x}`, letterDelay)
                   }
                 }
               }
               globalLetterIdx++
             } else {
-              globalLetterIdx += 0.4 // Small space pause
+              globalLetterIdx += 0.35 // Space pause
             }
 
             curX += charWidth
@@ -176,7 +178,6 @@ export default function PixelArtBackground({
         const now = performance.now()
         const cx = cols / 2
         const cy = rows * 0.5
-        const textColliders = []
 
         for (let r = 0; r < rows; r++) {
           for (let c = 0; c < cols; c++) {
@@ -198,21 +199,11 @@ export default function PixelArtBackground({
             // Skip pure white pixels
             if (bgDefault.hex === '#ffffff' && !isTextPixel) continue
 
-            // Target text color: deep dark ink (#0a0a0a)
-            const targetColor = isTextPixel ? palette[0] : bgDefault
+            // Target text color: solid pitch-black ink (#000000) for maximum punchy contrast against bright sky
+            const targetColor = isTextPixel ? { r: 0, g: 0, b: 0, hex: '#000000' } : bgDefault
 
             const originX = c * blockSize
             const originY = r * blockSize
-
-            // If it's a text pixel, record it for boat cursor obstacle collision
-            if (isTextPixel) {
-              textColliders.push({
-                x: originX + blockSize * 0.5,
-                y: originY + blockSize * 0.5,
-                r: blockSize * 0.55,
-                revealTime: now + (letterTiming || 0),
-              })
-            }
 
             // Image pixel arrival delay (waves in first: 100ms - 900ms)
             const dx = (c - cx) / (cols / 2)
@@ -252,11 +243,6 @@ export default function PixelArtBackground({
         }
 
         particlesRef.current = newParticles
-
-        // Expose text collision obstacles to the global window for BoatCursor collision physics
-        if (typeof window !== 'undefined') {
-          window.__TEXT_PIXEL_COLLIDERS__ = textColliders
-        }
       }
 
       setupParticles()
@@ -375,45 +361,14 @@ export default function PixelArtBackground({
 
       return () => {
         window.removeEventListener('resize', handleResize)
-        if (typeof window !== 'undefined') {
-          delete window.__TEXT_PIXEL_COLLIDERS__
-        }
         if (rafId.current) cancelAnimationFrame(rafId.current)
       }
     }
 
     const handleMouseMove = (e) => {
       const rect = canvas.getBoundingClientRect()
-      let mouseX = e.clientX - rect.left
-      let mouseY = e.clientY - rect.top
-
-      // Clamp mouse coordinate from penetrating revealed text pixels
-      const colliders = window.__TEXT_PIXEL_COLLIDERS__
-      if (colliders && colliders.length > 0) {
-        const clampRadius = 14
-        const now = performance.now()
-        for (let pass = 0; pass < 2; pass++) {
-          for (let i = 0; i < colliders.length; i++) {
-            const c = colliders[i]
-            if (c.revealTime && now < c.revealTime) continue
-
-            const dx = mouseX - c.x
-            const dy = mouseY - c.y
-            const distSq = dx * dx + dy * dy
-            const minDist = clampRadius + c.r
-
-            if (distSq < minDist * minDist && distSq > 0.001) {
-              const dist = Math.sqrt(distSq)
-              const push = minDist - dist
-              mouseX += (dx / dist) * push
-              mouseY += (dy / dist) * push
-            }
-          }
-        }
-      }
-
-      mouseRef.current.x = mouseX
-      mouseRef.current.y = mouseY
+      mouseRef.current.x = e.clientX - rect.left
+      mouseRef.current.y = e.clientY - rect.top
     }
 
     const handleMouseLeave = () => {

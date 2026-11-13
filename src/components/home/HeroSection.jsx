@@ -21,8 +21,8 @@ export default function HeroSection() {
       {/* Background artwork canvas with embedded headline & bio pixels */}
       <PixelArtBackground
         className="w-full h-full"
-        pixelSize={6}
-        opacity={0.92}
+        pixelSize={4.5}
+        opacity={0.94}
       />
 
       {/* Screen-reader accessible semantic heading */}
