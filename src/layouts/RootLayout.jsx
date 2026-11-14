@@ -1,4 +1,5 @@
 import { Outlet } from 'react-router-dom'
+import { Analytics } from '@vercel/analytics/react'
 import { Header } from '../components/layout/Header'
 import Footer from '../components/layout/Footer'
 import BoatCursor from '../components/ui/BoatCursor'
@@ -20,6 +21,9 @@ export default function RootLayout() {
 
       {/* Floating Animated Sailboat Cursor */}
       <BoatCursor />
+
+      {/* Vercel Web Analytics tracker */}
+      <Analytics />
     </div>
   )
 }
