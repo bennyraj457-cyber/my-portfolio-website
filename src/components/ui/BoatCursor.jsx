@@ -23,7 +23,7 @@ export default function BoatCursor({
   const [isVisible, setIsVisible] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const [isMobileDevice, setIsMobileDevice] = useState(false)
-  const [isInStudio, setIsInStudio] = useState(false)
+  const [isInHero, setIsInHero] = useState(true)
 
   const mousePos = useRef({ x: -200, y: -200 })
   const currentPos = useRef({ x: -200, y: -200 })
@@ -86,31 +86,47 @@ export default function BoatCursor({
     }
     updateCanvasSize()
 
-    // Detect if user has scrolled inside the 3D Studio section
-    const checkStudioVisibility = () => {
-      const studioEl = document.getElementById('studio-workspace')
-      if (studioEl) {
-        const rect = studioEl.getBoundingClientRect()
-        // Studio is in view
-        const inside = rect.top <= window.innerHeight * 0.4 && rect.bottom >= window.innerHeight * 0.4
-        setIsInStudio((prev) => (prev !== inside ? inside : prev))
+    // Detect whether pointer/scroll is strictly within the Hero section (#hero)
+    const checkHeroSection = (clientY) => {
+      const heroEl = document.getElementById('hero')
+      let inside = false
 
-        if (inside && !isMobileDevice) {
-          // Restore normal browser cursor inside the 3D Studio so user can interact with 3D elements
-          document.body.style.cursor = 'auto'
-        } else if (!inside && !isMobileDevice) {
-          document.body.style.cursor = 'none'
+      if (heroEl) {
+        const rect = heroEl.getBoundingClientRect()
+        if (isMobileDevice) {
+          // On mobile, active when hero is visible in the viewport
+          inside = rect.bottom > 60 && rect.top < window.innerHeight - 60
+        } else {
+          // On desktop, check if the mouse pointer Y is within the hero bounds
+          const currentY = typeof clientY === 'number' ? clientY : mousePos.current.y
+          inside = currentY >= rect.top && currentY <= rect.bottom
         }
       }
+
+      setIsInHero((prev) => {
+        if (prev !== inside) {
+          if (!isMobileDevice) {
+            document.body.style.cursor = inside ? 'none' : 'auto'
+          }
+          return inside
+        }
+        return prev
+      })
     }
 
-    window.addEventListener('scroll', checkStudioVisibility, { passive: true })
-    checkStudioVisibility()
+    const handleScroll = () => {
+      checkHeroSection()
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    checkHeroSection()
 
     const handleMouseMove = (e) => {
       if (isMobileDevice) return
       mousePos.current.x = e.clientX
       mousePos.current.y = e.clientY
+
+      checkHeroSection(e.clientY)
 
       if (!isVisible) setIsVisible(true)
 
@@ -121,11 +137,15 @@ export default function BoatCursor({
     }
 
     const handleMouseLeave = () => {
-      if (!isMobileDevice) setIsVisible(false)
+      if (!isMobileDevice) {
+        setIsVisible(false)
+        document.body.style.cursor = 'auto'
+      }
     }
 
-    const handleMouseEnter = () => {
+    const handleMouseEnter = (e) => {
       setIsVisible(true)
+      checkHeroSection(e.clientY)
     }
 
     const animate = () => {
@@ -265,7 +285,6 @@ export default function BoatCursor({
       window.addEventListener('mousemove', handleMouseMove, { passive: true })
       document.addEventListener('mouseleave', handleMouseLeave)
       document.addEventListener('mouseenter', handleMouseEnter)
-      document.body.style.cursor = 'none'
     }
 
     window.addEventListener('resize', updateCanvasSize)
@@ -273,7 +292,7 @@ export default function BoatCursor({
 
     return () => {
       document.body.style.cursor = 'auto'
-      window.removeEventListener('scroll', checkStudioVisibility)
+      window.removeEventListener('scroll', handleScroll)
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('resize', updateCanvasSize)
       document.removeEventListener('mouseleave', handleMouseLeave)
@@ -282,7 +301,7 @@ export default function BoatCursor({
     }
   }, [enabled, isMobileDevice, isVisible])
 
-  if (!enabled || isInStudio) return null
+  if (!enabled || !isInHero) return null
 
   return (
     <>
