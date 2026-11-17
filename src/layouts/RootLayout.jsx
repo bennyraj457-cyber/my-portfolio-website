@@ -7,19 +7,16 @@ import { SeaWaterBackground } from '../components/common'
 
 export default function RootLayout() {
   return (
-    <div className="relative min-h-screen flex flex-col overflow-x-hidden bg-[#0077b6]">
+    <div className="relative min-h-screen flex flex-col overflow-x-hidden bg-white">
       {/* Fixed Header with Name Logo & Let's Talk CTA */}
       <Header />
-
-      {/* Living Animated Sea Water Canvas across the entire website */}
-      <SeaWaterBackground />
 
       <main className="flex-1 relative z-10">
         <Outlet />
       </main>
       <Footer />
 
-      {/* Floating Animated Sailboat Cursor */}
+      {/* Floating Animated Sailboat Cursor (Hero only) */}
       <BoatCursor />
 
       {/* Vercel Web Analytics tracker */}
