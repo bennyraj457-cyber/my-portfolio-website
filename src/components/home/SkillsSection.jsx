@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react'
 import { skillCategoryGroups, skillPizzaData } from '../../data/skills'
 
-const CHART_CX = 380
+const CHART_CX = 400
 const CHART_CY = 330
 const HUB_RADIUS = 38
-const OUTER_RADIUS = 222
+const OUTER_RADIUS = 214
 const RING_STEPS = [25, 50, 75]
 const BENCHMARK_RING = 85
 
@@ -16,146 +16,176 @@ const FILTER_OPTIONS = [
   { key: 'WordPress Dev', label: 'WordPress Dev' },
 ]
 
-const HUB_PETAL_COLORS = [
-  '#A259FF',
-  '#FFD700',
-  '#21759B',
-  '#0ACF83',
-  '#E34F26',
-  '#00B4D8',
-  '#0055FF',
-  '#95BF47',
-  '#FF7262',
-  '#FF9A00',
-]
-
-function renderSkillIcon(skillId) {
-  switch (skillId) {
+/**
+ * Shared 24x24 geometric icon glyphs used in both SVG chart labels and HTML cards/pills.
+ */
+function renderSkillGlyph(iconKey) {
+  switch (iconKey) {
     case 'ui-ux-figma':
+    case 'Figma':
       return (
-        <g transform="translate(4 0) scale(0.42)">
-          <path d="M19 28.5a9.5 9.5 0 1 1 19 0 9.5 9.5 0 0 1-19 0z" fill="#1ABCFE" />
-          <path d="M0 47.5A9.5 9.5 0 0 1 9.5 38H19v9.5a9.5 9.5 0 1 1-19 0z" fill="#0ACF83" />
-          <path d="M19 0v19h9.5a9.5 9.5 0 1 0 0-19H19z" fill="#FF7262" />
-          <path d="M0 9.5A9.5 9.5 0 0 0 9.5 19H19V0H9.5A9.5 9.5 0 0 0 0 9.5z" fill="#F24E1E" />
-          <path d="M0 28.5A9.5 9.5 0 0 0 9.5 38H19V19H9.5A9.5 9.5 0 0 0 0 28.5z" fill="#A259FF" />
-        </g>
+        <>
+          <path d="M9 4h3v5H9a2.5 2.5 0 0 1 0-5z" />
+          <path d="M12 4h3a2.5 2.5 0 0 1 0 5h-3V4z" />
+          <path d="M9 9.5h3v5H9a2.5 2.5 0 0 1 0-5z" />
+          <circle cx="14.5" cy="12" r="2.5" />
+          <path d="M9 15h3v2.5a2.5 2.5 0 1 1-3-2.5z" />
+        </>
       )
     case 'responsive-design':
+    case 'Responsive Design':
+    case 'Mobile-First Grid':
       return (
-        <g>
-          <rect x="2" y="4" width="14" height="10" rx="1.8" fill="#0a0a0a" />
-          <rect x="3.5" y="5.5" width="11" height="7" rx="0.8" fill="#ffd700" />
-          <path d="M6 16h6M9 14v2" stroke="#0a0a0a" strokeWidth="1.6" strokeLinecap="round" />
-          <rect x="15.5" y="9" width="6.5" height="11" rx="1.4" fill="#0a0a0a" stroke="#ffffff" strokeWidth="0.8" />
-          <rect x="17" y="10.8" width="3.5" height="6.2" rx="0.4" fill="#ffd700" />
-          <circle cx="18.75" cy="18.5" r="0.6" fill="#ffd700" />
-        </g>
+        <>
+          <rect x="2.5" y="4.5" width="13" height="10" rx="1.8" />
+          <path d="M6.5 18.5h5M9 14.5v4" />
+          <rect x="16.5" y="8.5" width="5" height="10" rx="1.2" />
+        </>
       )
     case 'wordpress-elementor':
+    case 'WordPress':
+    case 'Elementor':
+    case 'Elementor Pro':
       return (
-        <g transform="scale(0.046875)">
-          <circle cx="256" cy="256" r="248" fill="#21759B" />
-          <path
-            fill="#FFF"
-            d="M47 256c0 86 52 161 127 193L69 164c-14 27-22 58-22 92zm369-12c0-33-12-56-22-73-14-22-27-41-27-63 0-24 18-47 44-47 1 0 3 0 4 0-41-37-96-60-157-60-67 0-127 28-169 73 3 0 6 1 8 1 22 0 56-3 56-3 11-1 13 16 2 17 0 0-12 1-24 2l78 232 47-140-33-92c-11-1-22-2-22-2-11-1-10-18 1-17 0 0 35 3 55 3 22 0 56-3 56-3 11-1 13 16 2 17 0 0-12 1-25 2l77 228 22-73c9-32 16-55 16-75zm-155 31l-64 186c20 6 42 9 64 9 26 0 50-5 73-13l-73-182zm191-76c7 18 11 38 11 57 0 69-37 130-92 164l61-175c13-34 20-46 20-46z"
-          />
-        </g>
+        <>
+          <circle cx="12" cy="12" r="9" />
+          <path d="M6.5 8.5l3 9 2.5-6.5 2.5 6.5 3-9" />
+        </>
       )
     case 'custom-wp-dev':
+    case 'WordPress Dev':
+    case 'Custom Theme Development':
+    case 'Custom Plugin Development':
       return (
-        <g>
-          <rect x="2.5" y="3.5" width="19" height="17" rx="3.5" fill="#0a0a0a" />
-          <path
-            d="M8.5 9L5.2 12l3.3 3M15.5 9l3.3 3-3.3 3M13.2 8.2l-2.4 7.6"
-            fill="none"
-            stroke="#21759B"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <circle cx="18.5" cy="5.5" r="3.2" fill="#21759B" stroke="#ffffff" strokeWidth="1" />
-        </g>
+        <>
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.1-3.1a5 5 0 0 1-6.6 6.6l-6.9 6.9a1.8 1.8 0 0 1-2.5-2.5l6.9-6.9a5 5 0 0 1 6.6-6.6l-3.6 3.6z" />
+        </>
       )
     case 'html-css':
+    case 'HTML5':
+    case 'CSS3':
+    case 'Semantic Markup':
+    case 'Modern Layouts':
       return (
-        <g>
-          <path d="M2 3h9l-1 13.5L6.5 18 3 16.5 2 3z" fill="#E34F26" />
-          <path d="M4.3 6.5h4.4l-.2 2H6.3l.2 2h2l-.3 3.2-1.7.6-1.7-.6-.1-1.3h1.3l.1.5.4.2.5-.2.1-1.2H5l-.7-5.2z" fill="#FFF" />
-          <path d="M13 6h9l-1 13.5L17.5 21 14 19.5 13 6z" fill="#1572B6" />
-          <path d="M15.3 9.5h4.4l-.2 2h-2.2l.2 2h2l-.3 3.2-1.7.6-1.7-.6-.1-1.3H17l.1.5.4.2.5-.2.1-1.2H16l-.7-5.2z" fill="#FFF" />
-        </g>
+        <>
+          <path d="M4.5 4h15l-1.4 13.5L12 20l-6.1-2.5L4.5 4z" />
+          <path d="M8.5 9h7l-.4 4.5L12 14.8l-3.1-1.3" />
+        </>
       )
     case 'js-react':
+    case 'Frontend':
+    case 'JavaScript':
+    case 'React':
+    case 'Interactive UI':
       return (
-        <g>
-          <rect x="1.5" y="1.5" width="10" height="10" rx="2" fill="#F7DF1E" />
-          <text x="6.5" y="9" textAnchor="middle" fontSize="6.5" fontWeight="900" fontFamily="sans-serif" fill="#0a0a0a">
-            JS
-          </text>
-          <g transform="translate(15 15)">
-            <circle cx="0" cy="0" r="1.4" fill="#00b4d8" />
-            <g stroke="#00b4d8" strokeWidth="0.9" fill="none">
-              <ellipse rx="7" ry="2.7" />
-              <ellipse rx="7" ry="2.7" transform="rotate(60)" />
-              <ellipse rx="7" ry="2.7" transform="rotate(120)" />
-            </g>
-          </g>
-        </g>
+        <>
+          <polyline points="8 8 3.5 12 8 16" />
+          <polyline points="16 8 20.5 12 16 16" />
+          <line x1="13.5" y1="6" x2="10.5" y2="18" />
+        </>
       )
     case 'webflow-framer':
+    case 'Webflow':
+    case 'Framer':
+    case 'Motion & CMS':
       return (
-        <g transform="translate(2 1) scale(0.88)">
-          <path d="M4 0h16v8h-8zM4 8h8l8 8H4zM4 16h8v8z" fill="#0055FF" />
-        </g>
+        <>
+          <polygon points="13 2.5 5 13.5 11.5 13.5 10.5 21.5 19 10.5 12.5 10.5 13 2.5" />
+        </>
       )
     case 'shopify-wix':
+    case 'CMS & E-commerce':
+    case 'Shopify':
+    case 'Wix':
+    case 'WooCommerce':
+    case 'Storefront Customization':
       return (
-        <g transform="translate(1.5 1) scale(0.18)">
-          <path
-            d="M79.2 18.8c-.3-.2-3.1-.3-3.1-.3s-2.1-2.1-3.2-3.2c-3.7-3.7-9.5-4.7-14.5-2.6-1.5.7-3 1.7-4.4 3-4.2-3.1-9.7-4.4-15-3.3-8 1.6-14.2 8.4-15.3 16.5l-18.4 6c-3.1 1-3.3 2.1-3.6 4.9C5.3 48.7.2 92.5 0 94.6c-.4 3.7 2.1 4.7 3.9 5.3l50.8 17.6c5.5 1.9 11.4 1.9 16.9 0l33.6-11.6c3.4-1.2 3.8-3.4 3.8-5.3-.2-2.1-20.9-88-29.8-81.8z"
-            fill="#95BF47"
-          />
-          <path
-            d="M76.1 18.5s-2.1-2.1-3.2-3.2c-3.7-3.7-9.5-4.7-14.5-2.6l-3.3 110.1 12.8-4.4c5.5-1.9 11.4-1.9 16.9 0l33.6-11.6c3.4-1.2 3.8-3.4 3.8-5.3-.2-2.1-20.9-88-29.8-81.8-.3-.2-3.1-1.2-3.1-1.2z"
-            fill="#5E8E3E"
-          />
-          <path
-            d="M54.7 39.5l-6.8 14.8s-6.7-3.5-14.3-3.5c-11.1 0-11.7 7-11.7 8.7 0 9.6 25 13.3 25 35.9 0 17.8-11.2 28.7-26.6 28.7-18.6 0-27.9-11.6-27.9-11.6l4.9-16.2s9.8 8.4 18.2 8.4c5.5 0 7.8-4.4 7.8-7.7 0-13.6-25-14.4-25-36.2 0-17.7 12.8-30.8 32-30.8 10.9 0 16.5 4.3 16.5 4.3z"
-            fill="#FFF"
-          />
-        </g>
+        <>
+          <path d="M6 8h12l1 12H5L6 8z" />
+          <path d="M9 8V6a3 3 0 0 1 6 0v2" />
+        </>
       )
     case 'web-app-ui':
+    case 'HRMS':
+    case 'CRM':
+    case 'Billing':
+    case 'Asset & Admin Dashboards':
       return (
-        <g>
-          <rect x="2" y="3" width="20" height="18" rx="2.5" fill="#0a0a0a" />
-          <rect x="4" y="6" width="6" height="6" rx="1" fill="#ffd700" />
-          <rect x="12" y="6" width="8" height="3" rx="1" fill="#ffffff" />
-          <rect x="12" y="10.5" width="8" height="1.5" rx="0.7" fill="#ffd700" />
-          <rect x="4" y="14" width="16" height="4.5" rx="1" fill="#ffd700" fillOpacity="0.85" />
-        </g>
+        <>
+          <rect x="3.5" y="4" width="7.5" height="7" rx="1.5" />
+          <rect x="13" y="4" width="7.5" height="4.5" rx="1.5" />
+          <rect x="13" y="10.5" width="7.5" height="9.5" rx="1.5" />
+          <rect x="3.5" y="13" width="7.5" height="7" rx="1.5" />
+        </>
       )
     case 'adobe-illustrator':
+    case 'UI/UX & Design':
+    case 'Adobe Illustrator':
+    case 'Vector Graphics':
+    case 'Brand Assets':
+    case 'Design Systems':
+    case 'UI Design':
+    case 'UX Design':
       return (
-        <g>
-          <rect x="2" y="2" width="20" height="20" rx="4" fill="#330000" />
-          <text
-            x="12"
-            y="16"
-            textAnchor="middle"
-            fontSize="11.5"
-            fontWeight="800"
-            fontFamily="sans-serif"
-            fill="#FF9A00"
-          >
-            Ai
-          </text>
-        </g>
+        <>
+          <path d="M12 3l6.5 6.5-8 8L4 20l2.5-6.5 5.5-10.5z" />
+          <circle cx="12" cy="11" r="1.4" />
+        </>
       )
+    case 'Wireframing':
+    case 'Interactive Prototyping':
+      return (
+        <>
+          <rect x="3.5" y="4.5" width="17" height="15" rx="2" />
+          <line x1="3.5" y1="9.5" x2="20.5" y2="9.5" />
+          <line x1="9.5" y1="9.5" x2="9.5" y2="19.5" />
+        </>
+      )
+    case 'Accessibility':
+    case 'Cross-Device UX':
+      return (
+        <>
+          <circle cx="12" cy="6.5" r="2" />
+          <path d="M5.5 10.5h13M12 10.5v5l-3 4.5M12 15.5l3 4.5" />
+        </>
+      )
+    case 'PHP':
+      return (
+        <>
+          <ellipse cx="12" cy="12" rx="9" ry="5.5" />
+          <path d="M9 12h1.5a1 1 0 0 0 0-2H9v4M13.5 10v4M15.5 12h1.5a1 1 0 0 0 0-2h-1.5v4" />
+        </>
+      )
+    case 'All':
     default:
-      return <circle cx="12" cy="12" r="6" fill="#0a0a0a" />
+      return (
+        <>
+          <circle cx="12" cy="12" r="8.5" />
+          <circle cx="12" cy="12" r="3" />
+          <line x1="12" y1="3.5" x2="12" y2="6.5" />
+          <line x1="12" y1="17.5" x2="12" y2="20.5" />
+          <line x1="3.5" y1="12" x2="6.5" y2="12" />
+          <line x1="17.5" y1="12" x2="20.5" y2="12" />
+        </>
+      )
   }
+}
+
+function SkillIcon({ iconKey, className = 'w-4 h-4' }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      {renderSkillGlyph(iconKey)}
+    </svg>
+  )
 }
 
 function polarToCartesian(cx, cy, radius, angleRad) {
@@ -209,39 +239,57 @@ export default function SkillsSection() {
         endAngle
       )
 
-      // Icon medallion centered inside the middle of each wedge
-      const iconRadius = HUB_RADIUS + (wedgeRadius - HUB_RADIUS) * 0.5
-      const iconPos = polarToCartesian(CHART_CX, CHART_CY, iconRadius, midAngle)
-
       // Badge anchored near outer arc of the wedge
-      const badgeRadius = Math.max(HUB_RADIUS + 46, wedgeRadius - 14)
+      const badgeRadius = Math.max(HUB_RADIUS + 34, wedgeRadius - 18)
       const badgePos = polarToCartesian(CHART_CX, CHART_CY, badgeRadius, midAngle)
 
       // Spoke endpoints from hub to 100% ring
       const spokeInner = polarToCartesian(CHART_CX, CHART_CY, HUB_RADIUS, startAngle)
       const spokeOuter = polarToCartesian(CHART_CX, CHART_CY, OUTER_RADIUS, startAngle)
 
-      // Outer perimeter label position
-      const labelPos = polarToCartesian(
+      // Outer perimeter anchor for icon + text label
+      const anchorPos = polarToCartesian(
         CHART_CX,
         CHART_CY,
-        OUTER_RADIUS + 28,
+        OUTER_RADIUS + 26,
         midAngle
       )
       const cosMid = Math.cos(midAngle)
       const textAnchor =
         Math.abs(cosMid) < 0.22 ? 'middle' : cosMid > 0 ? 'start' : 'end'
 
+      const iconSize = 22
+      const gap = 8
+      let iconX = anchorPos.x
+      let iconY = anchorPos.y - iconSize / 2
+      let textX = anchorPos.x
+      let textY = anchorPos.y - (skill.label.length > 1 ? 7 : 0)
+
+      if (textAnchor === 'start') {
+        iconX = anchorPos.x
+        textX = anchorPos.x + iconSize + gap
+      } else if (textAnchor === 'end') {
+        iconX = anchorPos.x - iconSize
+        textX = anchorPos.x - iconSize - gap
+      } else {
+        iconX = anchorPos.x - iconSize / 2
+        iconY = anchorPos.y - iconSize - 10
+        textX = anchorPos.x
+        textY = anchorPos.y + 4
+      }
+
       return {
         skill,
         path,
-        iconPos,
         badgePos,
         spokeInner,
         spokeOuter,
-        labelPos,
+        iconX,
+        iconY,
+        iconSize,
+        textX,
+        textY,
         textAnchor,
-        midAngle,
       }
     })
   }, [])
@@ -281,7 +329,7 @@ export default function SkillsSection() {
           </p>
         </header>
 
-        {/* Interactive Domain Filter Pills */}
+        {/* Interactive Domain Filter Pills with Icons */}
         <div
           className="mt-7 flex flex-wrap items-center justify-center gap-2"
           role="group"
@@ -294,22 +342,23 @@ export default function SkillsSection() {
                 key={option.key}
                 type="button"
                 onClick={() => handleFilterClick(option.key)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-mono transition-all duration-200 border cursor-pointer ${
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-mono transition-all duration-200 border cursor-pointer ${
                   isSelected
                     ? 'bg-black text-[#ffd700] border-black shadow-sm'
                     : 'bg-white text-black/75 border-black/15 hover:border-black/40 hover:text-black'
                 }`}
               >
-                {option.label}
+                <SkillIcon iconKey={option.key} className="w-3.5 h-3.5 shrink-0" />
+                <span>{option.label}</span>
               </button>
             )
           })}
         </div>
 
         {/* Polar Area / Nightingale Rose ("Pizza") Chart */}
-        <div className="mt-6 w-full max-w-[760px]">
+        <div className="mt-6 w-full max-w-[800px]">
           <svg
-            viewBox="0 0 760 660"
+            viewBox="0 0 800 660"
             className="w-full h-auto overflow-visible"
             role="img"
             aria-label="Polar proficiency radar chart of Benny R.'s core skills"
@@ -396,40 +445,6 @@ export default function SkillsSection() {
               ))}
             </g>
 
-            {/* Skill Icon Medallions inside each Wedge */}
-            <g>
-              {sliceGeometry.map(({ skill, iconPos }) => {
-                const isActive = skill.id === selectedSkillId
-                const matchesFilter =
-                  activeFilter === 'All' ||
-                  skill.filterKey === activeFilter ||
-                  skill.category === activeFilter
-
-                return (
-                  <g
-                    key={`icon-${skill.id}`}
-                    transform={`translate(${iconPos.x.toFixed(2)}, ${iconPos.y.toFixed(2)})`}
-                    className="cursor-pointer transition-opacity duration-300"
-                    opacity={matchesFilter ? 1 : 0.28}
-                    onMouseEnter={() => setSelectedSkillId(skill.id)}
-                    onClick={() => setSelectedSkillId(skill.id)}
-                  >
-                    <circle
-                      cx="0"
-                      cy="0"
-                      r="16"
-                      fill="#ffffff"
-                      stroke={isActive ? '#ffd700' : '#0a0a0a'}
-                      strokeWidth="1.5"
-                    />
-                    <svg x="-10" y="-10" width="20" height="20" viewBox="0 0 24 24">
-                      {renderSkillIcon(skill.id)}
-                    </svg>
-                  </g>
-                )
-              })}
-            </g>
-
             {/* Perimeter Percentage Badges on each Wedge */}
             <g>
               {sliceGeometry.map(({ skill, badgePos }) => {
@@ -474,42 +489,79 @@ export default function SkillsSection() {
               })}
             </g>
 
-            {/* Outer Skill Labels */}
+            {/* Outer Skill Icons + Titles */}
             <g>
-              {sliceGeometry.map(({ skill, labelPos, textAnchor }) => {
-                const isActive = skill.id === selectedSkillId
-                const matchesFilter =
-                  activeFilter === 'All' ||
-                  skill.filterKey === activeFilter ||
-                  skill.category === activeFilter
+              {sliceGeometry.map(
+                ({
+                  skill,
+                  iconX,
+                  iconY,
+                  iconSize,
+                  textX,
+                  textY,
+                  textAnchor,
+                }) => {
+                  const isActive = skill.id === selectedSkillId
+                  const matchesFilter =
+                    activeFilter === 'All' ||
+                    skill.filterKey === activeFilter ||
+                    skill.category === activeFilter
 
-                return (
-                  <text
-                    key={`label-${skill.id}`}
-                    x={labelPos.x}
-                    y={labelPos.y - (skill.label.length > 1 ? 6 : 0)}
-                    textAnchor={textAnchor}
-                    dominantBaseline="central"
-                    fontSize="12.5"
-                    fontWeight={isActive ? '700' : '600'}
-                    fill={isActive ? '#000000' : '#333333'}
-                    opacity={matchesFilter ? 1 : 0.35}
-                    className="cursor-pointer font-sans transition-opacity duration-300"
-                    onMouseEnter={() => setSelectedSkillId(skill.id)}
-                    onClick={() => setSelectedSkillId(skill.id)}
-                  >
-                    {skill.label.map((line, i) => (
-                      <tspan
-                        key={line}
-                        x={labelPos.x}
-                        dy={i === 0 ? 0 : 15}
+                  return (
+                    <g
+                      key={`label-${skill.id}`}
+                      opacity={matchesFilter ? 1 : 0.35}
+                      className="cursor-pointer transition-opacity duration-300"
+                      onMouseEnter={() => setSelectedSkillId(skill.id)}
+                      onClick={() => setSelectedSkillId(skill.id)}
+                    >
+                      {/* Icon Badge next to Skill Title */}
+                      <rect
+                        x={iconX}
+                        y={iconY}
+                        width={iconSize}
+                        height={iconSize}
+                        rx="6"
+                        fill={isActive ? '#0a0a0a' : '#ffd700'}
+                        stroke="#0a0a0a"
+                        strokeWidth="1.2"
+                      />
+                      <svg
+                        x={iconX + 4}
+                        y={iconY + 4}
+                        width={iconSize - 8}
+                        height={iconSize - 8}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke={isActive ? '#ffd700' : '#0a0a0a'}
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
                       >
-                        {line}
-                      </tspan>
-                    ))}
-                  </text>
-                )
-              })}
+                        {renderSkillGlyph(skill.id)}
+                      </svg>
+
+                      {/* Multi-line Skill Title */}
+                      <text
+                        x={textX}
+                        y={textY}
+                        textAnchor={textAnchor}
+                        dominantBaseline="central"
+                        fontSize="12"
+                        fontWeight={isActive ? '700' : '600'}
+                        fill={isActive ? '#000000' : '#262626'}
+                        className="font-sans"
+                      >
+                        {skill.label.map((line, i) => (
+                          <tspan key={line} x={textX} dy={i === 0 ? 0 : 14}>
+                            {line}
+                          </tspan>
+                        ))}
+                      </text>
+                    </g>
+                  )
+                }
+              )}
             </g>
 
             {/* Center Hub Crest Emblem */}
@@ -522,45 +574,29 @@ export default function SkillsSection() {
                 stroke="#000000"
                 strokeWidth="2"
               />
-              {HUB_PETAL_COLORS.map((color, idx) => {
-                const angle = -Math.PI / 2 + idx * ((Math.PI * 2) / HUB_PETAL_COLORS.length) + Math.PI / 10
-                const petalPos = polarToCartesian(CHART_CX, CHART_CY, HUB_RADIUS - 7.5, angle)
-                return (
-                  <circle
-                    key={`hub-petal-${idx}`}
-                    cx={petalPos.x}
-                    cy={petalPos.y}
-                    r="3.2"
-                    fill={color}
-                    stroke="#0a0a0a"
-                    strokeWidth="0.7"
-                  />
-                )
-              })}
               <circle
                 cx={CHART_CX}
                 cy={CHART_CY}
-                r={HUB_RADIUS - 15}
-                fill="#0a0a0a"
-                stroke="#ffd700"
+                r={HUB_RADIUS - 6}
+                fill="#ffd700"
+                stroke="#000000"
                 strokeWidth="1.5"
               />
-              <path
-                d={`M ${CHART_CX - 9} ${CHART_CY - 3} L ${CHART_CX - 12.5} ${CHART_CY} L ${CHART_CX - 9} ${CHART_CY + 3} M ${CHART_CX + 9} ${CHART_CY - 3} L ${CHART_CX + 12.5} ${CHART_CY} L ${CHART_CX + 9} ${CHART_CY + 3}`}
-                fill="none"
-                stroke="#ffd700"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+              <circle
+                cx={CHART_CX}
+                cy={CHART_CY}
+                r={HUB_RADIUS - 13}
+                fill="#0a0a0a"
               />
               <text
                 x={CHART_CX}
-                y={CHART_CY + 3.5}
+                y={CHART_CY + 4}
                 textAnchor="middle"
-                fontSize="10"
+                fontSize="13"
                 fontWeight="800"
                 fontFamily="monospace"
-                fill="#ffffff"
+                letterSpacing="1"
+                fill="#ffd700"
               >
                 BR
               </text>
@@ -572,16 +608,14 @@ export default function SkillsSection() {
         <div className="mt-6 w-full max-w-3xl rounded-2xl border border-black/15 bg-[#fffdf5] p-5 sm:p-6 shadow-sm select-text">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-black/10 pb-3.5">
             <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-full bg-white border border-black/15 shadow-xs flex items-center justify-center shrink-0">
-                <svg className="w-6 h-6" viewBox="0 0 24 24" aria-hidden="true">
-                  {renderSkillIcon(activeSkill.id)}
-                </svg>
-              </div>
+              <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-[#ffd700] border border-black/20 text-black shrink-0 shadow-xs">
+                <SkillIcon iconKey={activeSkill.id} className="w-5 h-5" />
+              </span>
               <div>
-                <span className="inline-block text-[10px] font-mono uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-[#ffd700] text-black font-semibold mb-1">
+                <span className="inline-block text-[10px] font-mono uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-black text-[#ffd700] font-semibold mb-1">
                   {activeSkill.category}
                 </span>
-                <h3 className="text-lg sm:text-xl font-heading font-bold text-black">
+                <h3 className="text-lg sm:text-xl font-heading font-bold text-black leading-tight">
                   {activeSkill.title}
                 </h3>
               </div>
@@ -602,9 +636,10 @@ export default function SkillsSection() {
             {activeSkill.tools.map((tool) => (
               <span
                 key={tool}
-                className="px-2.5 py-1 rounded-md bg-black/5 border border-black/10 text-xs font-mono text-black/80"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-black/5 border border-black/10 text-xs font-mono text-black/80"
               >
-                {tool}
+                <SkillIcon iconKey={tool} className="w-3.5 h-3.5 text-black/70" />
+                <span>{tool}</span>
               </span>
             ))}
           </div>
@@ -627,19 +662,27 @@ export default function SkillsSection() {
                     : 'border-black/10 bg-white hover:border-black/30'
                 }`}
               >
-                <div className="flex items-center justify-between mb-2.5">
-                  <h4 className="text-xs font-mono uppercase tracking-wider font-bold text-black">
-                    {group.title}
-                  </h4>
-                  <span className="w-2 h-2 rounded-full bg-[#ffd700] border border-black/30" />
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-[#ffd700] border border-black/20 text-black shrink-0">
+                      <SkillIcon iconKey={group.key} className="w-3.5 h-3.5" />
+                    </span>
+                    <h4 className="text-xs font-mono uppercase tracking-wider font-bold text-black">
+                      {group.title}
+                    </h4>
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {group.items.map((item) => (
                     <span
                       key={item}
-                      className="text-[11px] font-sans text-black/75 bg-black/[0.04] px-2 py-0.5 rounded"
+                      className="inline-flex items-center gap-1 text-[11px] font-sans text-black/80 bg-black/[0.04] px-2 py-0.5 rounded"
                     >
-                      {item}
+                      <SkillIcon
+                        iconKey={item}
+                        className="w-3 h-3 text-black/65 shrink-0"
+                      />
+                      <span>{item}</span>
                     </span>
                   ))}
                 </div>
