@@ -427,7 +427,7 @@ export default function SkillsSection() {
       const spokeInner = polarToCartesian(CHART_CX, CHART_CY, HUB_RADIUS, startAngle)
       const spokeOuter = polarToCartesian(CHART_CX, CHART_CY, OUTER_RADIUS, startAngle)
 
-      // Outer perimeter anchor for icon + text label
+      // Outer perimeter anchor for text label
       const anchorPos = polarToCartesian(
         CHART_CX,
         CHART_CY,
@@ -438,25 +438,8 @@ export default function SkillsSection() {
       const textAnchor =
         Math.abs(cosMid) < 0.22 ? 'middle' : cosMid > 0 ? 'start' : 'end'
 
-      const iconSize = 26
-      const gap = 8
-      let iconX = anchorPos.x
-      let iconY = anchorPos.y - iconSize / 2
-      let textX = anchorPos.x
-      let textY = anchorPos.y - (skill.label.length > 1 ? 7 : 0)
-
-      if (textAnchor === 'start') {
-        iconX = anchorPos.x
-        textX = anchorPos.x + iconSize + gap
-      } else if (textAnchor === 'end') {
-        iconX = anchorPos.x - iconSize
-        textX = anchorPos.x - iconSize - gap
-      } else {
-        iconX = anchorPos.x - iconSize / 2
-        iconY = anchorPos.y - iconSize - 10
-        textX = anchorPos.x
-        textY = anchorPos.y + 4
-      }
+      const textX = anchorPos.x
+      const textY = anchorPos.y - (skill.label.length > 1 ? 7 : 0)
 
       return {
         skill,
@@ -464,9 +447,6 @@ export default function SkillsSection() {
         badgePos,
         spokeInner,
         spokeOuter,
-        iconX,
-        iconY,
-        iconSize,
         textX,
         textY,
         textAnchor,
@@ -522,11 +502,10 @@ export default function SkillsSection() {
                 key={option.key}
                 type="button"
                 onClick={() => handleFilterClick(option.key)}
-                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-mono transition-all duration-200 border cursor-pointer ${
-                  isSelected
-                    ? 'bg-black text-[#ffd700] border-black shadow-sm'
-                    : 'bg-white text-black/75 border-black/15 hover:border-black/40 hover:text-black'
-                }`}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-mono transition-all duration-200 border cursor-pointer ${isSelected
+                  ? 'bg-black text-[#ffd700] border-black shadow-sm'
+                  : 'bg-white text-black/75 border-black/15 hover:border-black/40 hover:text-black'
+                  }`}
               >
                 <span className="inline-flex items-center justify-center w-4 h-4 rounded-sm bg-white p-0.5 shrink-0">
                   <RealColorSkillIcon
@@ -674,76 +653,38 @@ export default function SkillsSection() {
               })}
             </g>
 
-            {/* Outer Real-Color Brand Icons + Titles */}
+            {/* Outer Skill Titles */}
             <g>
-              {sliceGeometry.map(
-                ({
-                  skill,
-                  iconX,
-                  iconY,
-                  iconSize,
-                  textX,
-                  textY,
-                  textAnchor,
-                }) => {
-                  const isActive = skill.id === selectedSkillId
-                  const matchesFilter =
-                    activeFilter === 'All' ||
-                    skill.filterKey === activeFilter ||
-                    skill.category === activeFilter
+              {sliceGeometry.map(({ skill, textX, textY, textAnchor }) => {
+                const isActive = skill.id === selectedSkillId
+                const matchesFilter =
+                  activeFilter === 'All' ||
+                  skill.filterKey === activeFilter ||
+                  skill.category === activeFilter
 
-                  const brandIcon = renderBrandIconSvg(skill.id)
-
-                  return (
-                    <g
-                      key={`label-${skill.id}`}
-                      opacity={matchesFilter ? 1 : 0.35}
-                      className="cursor-pointer transition-opacity duration-300"
-                      onMouseEnter={() => setSelectedSkillId(skill.id)}
-                      onClick={() => setSelectedSkillId(skill.id)}
-                    >
-                      {/* Clean White Brand Card so Real Colors Pop */}
-                      <rect
-                        x={iconX}
-                        y={iconY}
-                        width={iconSize}
-                        height={iconSize}
-                        rx="7"
-                        fill="#ffffff"
-                        stroke={isActive ? '#0a0a0a' : '#d4d4d8'}
-                        strokeWidth={isActive ? '1.6' : '1'}
-                      />
-                      <svg
-                        x={iconX + 4}
-                        y={iconY + 4}
-                        width={iconSize - 8}
-                        height={iconSize - 8}
-                        viewBox={brandIcon.viewBox}
-                      >
-                        {brandIcon.content}
-                      </svg>
-
-                      {/* Multi-line Skill Title */}
-                      <text
-                        x={textX}
-                        y={textY}
-                        textAnchor={textAnchor}
-                        dominantBaseline="central"
-                        fontSize="12"
-                        fontWeight={isActive ? '700' : '600'}
-                        fill={isActive ? '#000000' : '#262626'}
-                        className="font-sans"
-                      >
-                        {skill.label.map((line, i) => (
-                          <tspan key={line} x={textX} dy={i === 0 ? 0 : 14}>
-                            {line}
-                          </tspan>
-                        ))}
-                      </text>
-                    </g>
-                  )
-                }
-              )}
+                return (
+                  <text
+                    key={`label-${skill.id}`}
+                    x={textX}
+                    y={textY}
+                    textAnchor={textAnchor}
+                    dominantBaseline="central"
+                    fontSize="12.5"
+                    fontWeight={isActive ? '700' : '600'}
+                    fill={isActive ? '#000000' : '#262626'}
+                    opacity={matchesFilter ? 1 : 0.35}
+                    className="cursor-pointer font-sans transition-opacity duration-300"
+                    onMouseEnter={() => setSelectedSkillId(skill.id)}
+                    onClick={() => setSelectedSkillId(skill.id)}
+                  >
+                    {skill.label.map((line, i) => (
+                      <tspan key={line} x={textX} dy={i === 0 ? 0 : 15}>
+                        {line}
+                      </tspan>
+                    ))}
+                  </text>
+                )
+              })}
             </g>
 
             {/* Center Hub Crest Emblem */}
