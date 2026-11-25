@@ -46,9 +46,9 @@ export default function HeroSection() {
       <div className="relative w-full md:w-1/2 h-1/2 md:h-full overflow-hidden">
         <PixelArtBackground
           className="w-full h-full"
-          pixelSize={6}
+          pixelSize={6}               
           opacity={1.0}
-        />
+        />    
       </div>
     </section>
   )
