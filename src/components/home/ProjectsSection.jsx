@@ -2,13 +2,13 @@ import React, { useState } from 'react'
 import { projects } from '../../data/projects'
 
 /**
- * ProjectsSection
+ * ProjectsSection ("My Works")
  *
- * Fully Responsive Editorial Split Showcase:
- * - Fluid grid layout: Single column on mobile/tablet, 12-col split on desktop (lg+)
- * - Responsive typography for titles and bottom "Work" wordmark
- * - Touch-friendly navigation controls
- * - No horizontal overflow on smaller screens
+ * Bento-cluster showcase inspired by modern design-studio layouts:
+ * - Displays Benny's resume projects one by one
+ * - Left: Compact visual badge + clickable 3-item project stack around the active work
+ * - Center: Dark #111111 hero showcase card with subtle grid, accent doodles, title, and metadata
+ * - Right: Editorial insight note card + compact Prev/Next one-by-one controls
  */
 export default function ProjectsSection() {
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -24,128 +24,225 @@ export default function ProjectsSection() {
     setCurrentIndex((prev) => (prev - 1 + total) % total)
   }
 
+  // Show a 3-item window of projects on the left list centered around currentIndex
+  const visibleWindow = [0, 1, 2].map((offset) => {
+    const idx = (currentIndex + offset) % total
+    return { project: projects[idx], idx }
+  })
+
   return (
-    <div className="relative w-full py-8 sm:py-12 md:py-16 select-none border-t border-border-subtle">
-      {/* Top Control Bar: Navigation Arrows & Index */}
-      <div className="flex items-center justify-between pb-6 sm:pb-8">
-        <div className="flex items-center gap-2.5 sm:gap-3">
-          <button
-            type="button"
-            onClick={prevProject}
-            aria-label="Previous Project"
-            data-cursor="link"
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-black/15 bg-white hover:bg-black hover:text-white transition-all flex items-center justify-center cursor-pointer shadow-sm active:scale-95"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-              <line x1="19" y1="12" x2="5" y2="12" />
-              <polyline points="12 19 5 12 12 5" />
-            </svg>
-          </button>
-          <button
-            type="button"
-            onClick={nextProject}
-            aria-label="Next Project"
-            data-cursor="link"
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-black/15 bg-white hover:bg-black hover:text-white transition-all flex items-center justify-center cursor-pointer shadow-sm active:scale-95"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-              <line x1="5" y1="12" x2="19" y2="12" />
-              <polyline points="12 5 19 12 12 19" />
-            </svg>
-          </button>
-        </div>
+    <section
+      id="works"
+      aria-label="My Works"
+      className="relative w-full py-16 sm:py-24 px-4 sm:px-8 md:px-14 border-t border-black/10 bg-gradient-to-b from-[#f7f5ff] via-[#ffffff] to-[#fff9eb] select-none overflow-hidden"
+    >
+      <div className="max-w-5xl mx-auto flex flex-col items-center">
+        {/* Centered Studio Tagline */}
+        <p className="text-center text-lg sm:text-2xl font-sans font-normal text-black/75 tracking-tight leading-snug max-w-md mb-10 sm:mb-12">
+          Selected works &amp; digital
+          <br />
+          products built with craft.
+        </p>
 
-        <div className="text-[11px] sm:text-xs uppercase tracking-widest font-semibold text-text-muted">
-          <span className="text-text-heading font-bold text-xs sm:text-sm">{currentProject.id}</span>
-          <span className="mx-1">/</span>
-          <span>0{total}</span>
-        </div>
-      </div>
-
-      {/* Main Responsive Split Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-        {/* ================= LEFT COLUMN: EDITORIAL SHEET & TITLE ================= */}
-        <div className="lg:col-span-5 flex flex-col justify-between space-y-6 sm:space-y-8 order-2 lg:order-1">
-          {/* Project Card Preview Sheet */}
-          <div
-            data-cursor="project"
-            className="relative w-full max-w-md bg-white border border-black/10 rounded-lg p-5 sm:p-6 shadow-[0_15px_35px_rgba(0,0,0,0.06)] hover:shadow-xl transition-all duration-500 cursor-pointer group"
-          >
-            {/* Card Header metadata */}
-            <div className="flex justify-between items-start text-[10px] uppercase font-mono tracking-wider text-black/40 pb-3 sm:pb-4 border-b border-black/5">
-              <span>FILTER: SHOWCASE</span>
-              <span className="font-semibold text-black/70">A3 — {currentProject.id}</span>
+        {/* Bento Showcase Cluster */}
+        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-stretch">
+          {/* ================= LEFT COLUMN: MINI BADGE + 3-ITEM LIST ================= */}
+          <div className="lg:col-span-4 flex flex-col justify-between gap-4 order-2 lg:order-1">
+            {/* Top-Right Aligned Mini Visual Tile */}
+            <div className="flex items-center justify-between lg:justify-end gap-3">
+              <div className="lg:hidden text-xs font-mono uppercase tracking-widest text-black/50">
+                Work {currentProject.id} / {String(total).padStart(2, '0')}
+              </div>
+              <div className="w-20 h-20 rounded-2xl bg-white border border-black/10 shadow-[0_10px_30px_rgba(0,0,0,0.05)] flex flex-col items-center justify-center p-2">
+                <span
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-mono font-bold text-black border border-black/15"
+                  style={{ backgroundColor: currentProject.accent || '#ffd700' }}
+                >
+                  {currentProject.id}
+                </span>
+                <span className="mt-1.5 text-[10px] font-mono text-black/60">
+                  {currentProject.year}
+                </span>
+              </div>
             </div>
 
-            {/* Editorial Title */}
-            <div className="py-4 sm:py-6">
-              <h3 className="text-2xl sm:text-3xl font-heading italic font-normal text-text-heading group-hover:text-primary transition-colors">
-                {currentProject.title}
-              </h3>
-              <p className="text-[11px] sm:text-xs text-text-muted mt-1 font-mono">
-                {currentProject.year} / {currentProject.subtitle}
+            {/* Stacked Project Selector Pills */}
+            <div className="flex flex-col gap-2.5">
+              {visibleWindow.map(({ project, idx }) => {
+                const isSelected = idx === currentIndex
+                return (
+                  <button
+                    key={project.id}
+                    type="button"
+                    onClick={() => setCurrentIndex(idx)}
+                    className={`w-full text-left rounded-2xl px-4 py-3.5 transition-all duration-200 border flex items-center gap-3.5 cursor-pointer ${
+                      isSelected
+                        ? 'bg-white border-black shadow-[0_10px_25px_rgba(0,0,0,0.08)] scale-[1.01]'
+                        : 'bg-white/80 border-black/10 hover:bg-white hover:border-black/25'
+                    }`}
+                  >
+                    <span
+                      className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-xs font-mono font-bold text-black border border-black/15"
+                      style={{
+                        backgroundColor: isSelected ? '#ffd700' : project.accent,
+                      }}
+                    >
+                      {project.id}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs sm:text-sm font-sans font-semibold text-black truncate">
+                        {project.title}
+                      </div>
+                      <div className="text-[11px] font-mono text-black/50 truncate">
+                        {project.subtitle}
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* ================= CENTER COLUMN: DARK FEATURE SHOWCASE CARD ================= */}
+          <div className="lg:col-span-5 order-1 lg:order-2">
+            <div className="relative h-full min-h-[300px] sm:min-h-[340px] rounded-3xl bg-[#111111] text-white p-6 sm:p-8 flex flex-col justify-between overflow-hidden shadow-[0_24px_55px_rgba(0,0,0,0.18)] border border-white/10">
+              {/* Subtle Architectural Grid Overlay */}
+              <div
+                className="pointer-events-none absolute inset-0 opacity-20"
+                style={{
+                  backgroundImage:
+                    'linear-gradient(to right, rgba(255,255,255,0.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.12) 1px, transparent 1px)',
+                  backgroundSize: '48px 48px',
+                }}
+              />
+
+              {/* Top Accent Doodles */}
+              <div className="relative z-10 flex items-center justify-between">
+                {/* Sunburst / Spark Accent */}
+                <svg
+                  viewBox="0 0 36 24"
+                  className="w-8 h-6 text-[#ffd700]"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="M4 18h28M9 14l-3-6M15 12l-1-7M21 12l1-7M27 14l3-6" />
+                </svg>
+
+                {/* Folder Outline Accent */}
+                <svg
+                  viewBox="0 0 36 28"
+                  className="w-8 h-7 text-[#38bdf8]"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M3 7a2 2 0 0 1 2-2h8l3 3h15a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
+                </svg>
+              </div>
+
+              {/* Main Project Title */}
+              <div className="relative z-10 my-6">
+                <div className="inline-flex items-center gap-1.5 mb-2">
+                  <span className="w-1.5 h-3 rounded-full bg-[#38bdf8] -rotate-12" />
+                  <span className="w-1.5 h-3.5 rounded-full bg-[#ffd700]" />
+                  <span className="w-1.5 h-3 rounded-full bg-[#fb923c] rotate-12" />
+                </div>
+                <h3 className="text-3xl sm:text-4xl font-heading font-bold tracking-tight text-white leading-tight">
+                  {currentProject.title}
+                </h3>
+                <p className="mt-2 text-xs sm:text-sm font-sans text-white/70">
+                  {currentProject.subtitle}
+                </p>
+              </div>
+
+              {/* Bottom Metadata & Tags */}
+              <div className="relative z-10 flex flex-col gap-3 pt-4 border-t border-white/10">
+                <div className="flex flex-wrap gap-1.5">
+                  {currentProject.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="px-2.5 py-0.5 rounded-full bg-white/10 text-[10px] font-mono text-white/85"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between text-[11px] font-mono text-white/60">
+                  <span>{currentProject.category}</span>
+                  <span className="text-[#ffd700] font-semibold">
+                    {currentProject.id} / {String(total).padStart(2, '0')}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ================= RIGHT COLUMN: NOTE CARD + ONE-BY-ONE CONTROLS ================= */}
+          <div className="lg:col-span-3 flex flex-col justify-between gap-4 order-3">
+            {/* Editorial Note Card */}
+            <div className="flex-1 rounded-3xl bg-white border border-black/10 p-5 sm:p-6 shadow-[0_12px_32px_rgba(0,0,0,0.06)] flex flex-col justify-between select-text">
+              <p className="text-xs sm:text-sm font-sans text-black/80 leading-relaxed">
+                {currentProject.note}
               </p>
+              <div className="mt-5 pt-3 border-t border-black/5 flex items-center justify-between text-[11px] font-mono text-black/50">
+                <span>@benny_r</span>
+                <span>{currentProject.year}</span>
+              </div>
             </div>
 
-            {/* Card Paragraph Summary */}
-            <p className="text-[11px] sm:text-xs leading-relaxed text-text-body pt-3 sm:pt-4 border-t border-black/5 font-sans">
-              {currentProject.cardSnippet.summary}
-            </p>
-          </div>
+            {/* Bottom-Left Aligned Compact Stepper Card */}
+            <div className="rounded-2xl bg-white border border-black/10 p-4 shadow-[0_10px_28px_rgba(0,0,0,0.05)] flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={prevProject}
+                aria-label="Previous Work"
+                className="w-9 h-9 rounded-full border border-black/15 bg-white hover:bg-black hover:text-[#ffd700] transition-all flex items-center justify-center cursor-pointer active:scale-95"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="w-4 h-4"
+                >
+                  <line x1="19" y1="12" x2="5" y2="12" />
+                  <polyline points="12 19 5 12 12 5" />
+                </svg>
+              </button>
 
-          {/* Metadata Line */}
-          <div className="flex items-center justify-between text-[11px] sm:text-xs font-mono uppercase tracking-wider text-text-body py-3 sm:py-4 border-b border-border-subtle">
-            <span>{currentProject.category}</span>
-            <span className="font-semibold text-text-heading">{currentProject.year}</span>
-            <span className="font-bold text-xs sm:text-sm text-text-heading">{currentProject.id}</span>
-          </div>
+              {/* 3-Dot Accent Indicator */}
+              <div className="flex items-center gap-1.5" aria-hidden="true">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#fb923c]" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[#38bdf8]" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[#ffd700]" />
+              </div>
 
-          {/* Bottom Wordmark: "Work" */}
-          <div className="pt-2 select-none overflow-hidden">
-            <h2 className="fluid-giant-wordmark font-bold tracking-tighter text-text-heading">
-              Work
-            </h2>
-          </div>
-        </div>
-
-        {/* ================= RIGHT COLUMN: PHOTOGRAPHY & FLOATING CARD ================= */}
-        <div
-          data-cursor="project"
-          className="lg:col-span-7 relative h-[42vh] sm:h-[52vh] lg:h-[66vh] w-full rounded-xl sm:rounded-2xl overflow-hidden border border-black/10 shadow-2xl group cursor-pointer order-1 lg:order-2"
-        >
-          {/* Background Project Photography */}
-          <img
-            key={currentProject.id}
-            src={currentProject.image}
-            alt={currentProject.title}
-            className="absolute inset-0 w-full h-full object-cover object-center filter saturate-[0.95] contrast-[1.05] group-hover:scale-105 transition-transform duration-700 ease-out"
-          />
-
-          {/* Subtle Gradient Veil */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10" />
-
-          {/* Floating Typographic Card Overlay */}
-          <div className="absolute bottom-4 right-4 sm:bottom-8 sm:right-8 left-4 sm:left-auto bg-white/95 backdrop-blur-md border border-black/10 rounded-xl p-4 sm:p-6 md:p-8 max-w-sm sm:max-w-md shadow-2xl transition-transform duration-500 group-hover:-translate-y-1">
-            <div className="flex items-center justify-between text-[9px] sm:text-[10px] font-mono uppercase tracking-widest text-black/40 mb-2 sm:mb-3">
-              <span>INTERACTIVE DESIGN</span>
-              <span>{currentProject.category}</span>
-            </div>
-
-            {/* Typographic Keywords */}
-            <div className="text-base sm:text-xl md:text-2xl font-heading font-medium tracking-tight text-text-heading leading-snug">
-              {currentProject.heroCard.items.slice(0, 4).join(' — ')}
-              <br className="hidden sm:block" />
-              {' — ' + currentProject.heroCard.items.slice(4).join(' — ')}
-            </div>
-
-            {/* View Project Action Link with Gold Accent */}
-            <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3 border-t border-black/10 flex items-center justify-between text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-text-heading group-hover:text-primary transition-colors">
-              <span>Explore Project</span>
-              <span className="text-xs sm:text-sm">→</span>
+              <button
+                type="button"
+                onClick={nextProject}
+                aria-label="Next Work"
+                className="w-9 h-9 rounded-full bg-black text-[#ffd700] hover:bg-[#ffd700] hover:text-black border border-black transition-all flex items-center justify-center cursor-pointer active:scale-95"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="w-4 h-4"
+                >
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
+              </button>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </section>
   )
 }

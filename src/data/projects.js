@@ -1,90 +1,122 @@
 export const projects = [
   {
     id: '01',
-    title: 'Homework',
-    subtitle: 'Design System & Creative Front-End',
-    category: 'Archive: Portfolio',
-    year: '2024',
+    title: 'Sree Mookambika Ayurveda',
+    subtitle: 'Healthcare Website & Admin Dashboard',
+    category: 'Healthcare • WordPress & UI/UX',
+    year: '2025',
+    accent: '#10B981',
     description:
-      'A bespoke portfolio & component library exploring modern layout ergonomics, generative themes, and editorial typography.',
-    tags: ['React', 'Tailwind', 'Design Systems', 'Vite'],
-    cardSnippet: {
-      headline: 'Homework',
-      tagline: '2024 / Project Showcase',
-      summary:
-        'Interactive prototype and digital archive built with micro-interactions, custom cursor physics, and high-performance layout trees.',
-    },
-    heroCard: {
-      items: ['CSS', 'JS', 'REACT', 'FIGMA', 'TAILWIND', 'MOTION', 'UI/UX'],
-    },
-    image:
-      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1400&q=80',
-    link: '#',
+      'Designed and delivered a responsive healthcare website alongside a comprehensive Admin Dashboard for managing appointments, patients, services, enquiries, and reporting.',
+    tags: ['WordPress', 'Figma', 'Admin Dashboard', 'Responsive UI'],
+    note: 'Unified patient booking experience with a clean clinical admin dashboard for appointments, enquiries, and daily reporting.',
   },
   {
     id: '02',
-    title: 'Aura Cloud',
-    subtitle: 'Enterprise AI & Workflow Platform',
-    category: 'Web Application',
-    year: '2024',
+    title: 'Enigma Tours & Travel',
+    subtitle: 'Travel Website & Custom CRM',
+    category: 'Travel • Web & CRM Design',
+    year: '2025',
+    accent: '#0EA5E9',
     description:
-      'Next-generation collaborative workspace enabling autonomous agentic workflows and real-time canvas coordination.',
-    tags: ['Full Stack', 'Next.js', 'AI Agents', 'Canvas API'],
-    cardSnippet: {
-      headline: 'Aura',
-      tagline: 'Autonomous AI Workspace',
-      summary:
-        'Architecting fluid, multi-agent orchestrations with low-latency state synchronizations and modular design patterns.',
-    },
-    heroCard: {
-      items: ['AGENTIC', 'SYSTEMS', 'CANVAS', 'REALTIME', 'GRAPHQL', 'SCALE'],
-    },
-    image:
-      'https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1400&q=80',
-    link: '#',
+      'Crafted an engaging travel showcase website paired with a custom CRM interface for lead management, customer profiles, tour bookings, follow-ups, quotations, and reporting.',
+    tags: ['UI/UX', 'CRM System', 'Figma', 'Frontend'],
+    note: 'Designed both the customer-facing travel storefront and the internal CRM pipeline for leads, quotations, and bookings.',
   },
   {
     id: '03',
-    title: 'Kroma Studio',
-    subtitle: 'Generative Typography & Identity',
-    category: 'Brand & Creative Tech',
-    year: '2023',
+    title: 'Vini Fashion Boutique',
+    subtitle: 'E-Commerce Fashion Storefront',
+    category: 'Fashion • E-Commerce',
+    year: '2024',
+    accent: '#EC4899',
     description:
-      'Experimental dynamic identity system and visual tooling built for luxury brands and avant-garde creative studios.',
-    tags: ['WebGL', 'Typography', 'Three.js', 'Creative Dev'],
-    cardSnippet: {
-      headline: 'Kroma',
-      tagline: 'Variable Type Lab',
-      summary:
-        'Procedural font rendering engine reacting in real time to audio frequencies, cursor velocity, and ambient spatial lighting.',
-    },
-    heroCard: {
-      items: ['WEBGL', 'VARIABLE', 'TYPE', 'SHADERS', 'INTERACTIVE', 'AUDIO'],
-    },
-    image:
-      'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1400&q=80',
-    link: '#',
+      'Built a stylish, conversion-focused online fashion boutique with curated collections, smooth product filtering, and mobile-first checkout flows.',
+    tags: ['Shopify', 'WooCommerce', 'UI Design', 'E-Commerce'],
+    note: 'Editorial lookbook layout engineered for effortless mobile browsing and fast product discovery.',
   },
   {
     id: '04',
-    title: 'Verve Mobile',
-    subtitle: 'Fintech & Wealth Orchestration',
-    category: 'Product Design',
-    year: '2023',
+    title: 'TradeBox Capital',
+    subtitle: 'Finance & Investment Platform',
+    category: 'Finance • Web Design',
+    year: '2024',
+    accent: '#F59E0B',
     description:
-      'Comprehensive iOS and Web finance platform simplifying high-yield investments, tokenized equities, and smart treasuries.',
-    tags: ['React Native', 'Fintech', 'Micro-Interactions', 'iOS'],
-    cardSnippet: {
-      headline: 'Verve',
-      tagline: 'Autonomous Capital',
-      summary:
-        'Zero-clutter investment dashboard engineering biometric authentication and frictionless global payments.',
-    },
-    heroCard: {
-      items: ['FINTECH', 'MOBILE', 'GLOBAL', 'BIOMETRIC', 'CRYPTO', 'AUDIT'],
-    },
-    image:
-      'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1400&q=80',
-    link: '#',
+      'Designed a high-trust financial web presence featuring clear service breakdowns, data-forward layouts, and accessible typography.',
+    tags: ['Figma', 'Webflow', 'Design Systems', 'Responsive'],
+    note: 'Structured complex financial offerings into crisp, scannable sections that build immediate visitor trust.',
+  },
+  {
+    id: '05',
+    title: 'My Tour Compass',
+    subtitle: 'Interactive Travel Discovery',
+    category: 'Travel • UI/UX & Web',
+    year: '2024',
+    accent: '#6366F1',
+    description:
+      'Created an intuitive travel discovery website helping travelers explore curated itineraries, destinations, and custom tour packages.',
+    tags: ['WordPress', 'Elementor Pro', 'UX Design', 'Prototyping'],
+    note: 'Streamlined multi-destination itinerary browsing with clear visual hierarchy and quick inquiry flows.',
+  },
+  {
+    id: '06',
+    title: 'Make Your Cruise',
+    subtitle: 'Cruise Booking Experience',
+    category: 'Travel • Frontend & UX',
+    year: '2024',
+    accent: '#0284C7',
+    description:
+      'Designed and built a responsive cruise booking portal highlighting cabin tiers, routes, and seamless reservation inquiries.',
+    tags: ['UI/UX', 'HTML5', 'CSS3', 'WordPress'],
+    note: 'Focused on frictionless package comparison and responsive booking cards across mobile and desktop.',
+  },
+  {
+    id: '07',
+    title: 'Eloiacs & Eloiacs Tech',
+    subtitle: 'Corporate & Technology Agency Sites',
+    category: 'Agency • Brand & Web',
+    year: '2025',
+    accent: '#FFD700',
+    description:
+      'Led UI/UX and frontend implementation for Eloiacs Soft Solutions and Eloiacs Tech, delivering modern agency sites with custom interactive components.',
+    tags: ['React', 'Figma', 'Frontend', 'Design Systems'],
+    note: 'Cohesive digital identity across two flagship company websites with fast, responsive front-end architecture.',
+  },
+  {
+    id: '08',
+    title: 'FlowCorrect',
+    subtitle: 'SaaS Workflow Platform',
+    category: 'SaaS • Product & Web',
+    year: '2024',
+    accent: '#8B5CF6',
+    description:
+      'Designed clean SaaS product interfaces and marketing pages focused on workflow clarity, onboarding simplicity, and modern component systems.',
+    tags: ['Figma', 'Framer', 'SaaS UI', 'Prototyping'],
+    note: 'Translated SaaS product capabilities into clear visual storytelling and interactive UI previews.',
+  },
+  {
+    id: '09',
+    title: 'HRMS & Billing Systems',
+    subtitle: 'Enterprise Web Applications',
+    category: 'Web App • Dashboard UI',
+    year: '2024',
+    accent: '#14B8A6',
+    description:
+      'Designed end-to-end interfaces for an HR Management System (attendance, leave, payroll) and a Billing Application (invoices, products, payment tracking, financial reports).',
+    tags: ['HRMS', 'Billing UI', 'Figma', 'Design Systems'],
+    note: 'Data-dense enterprise workflows simplified into clean, role-friendly dashboard modules.',
+  },
+  {
+    id: '10',
+    title: 'Car Rental & Asset Systems',
+    subtitle: 'Operations & Inventory Dashboards',
+    category: 'Web App • Product Design',
+    year: '2023',
+    accent: '#F97316',
+    description:
+      'Crafted UI systems for a Car Rental Management platform (fleet inventory, bookings, pricing) and an Asset Management System (tracking, maintenance, employee allocation).',
+    tags: ['Dashboard UI', 'Wireframing', 'UX Design', 'Figma'],
+    note: 'Built structured inventory tables, status tracking views, and allocation workflows for operations teams.',
   },
 ]
