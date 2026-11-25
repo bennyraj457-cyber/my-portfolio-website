@@ -2,7 +2,6 @@ import React from 'react'
 import HeroSection from '../../components/home/HeroSection'
 import AboutSection from '../../components/home/AboutPixelSection'
 import SkillsSection from '../../components/home/SkillsSection'
-import MyWorksSection from '../../components/home/MyWorksSection'
 
 export default function HomePage() {
   return (
@@ -15,9 +14,6 @@ export default function HomePage() {
 
       {/* Polar Area / Nightingale Rose Chart Skills section */}
       <SkillsSection />
-
-      {/* Interactive Device-Mockup My Works Showcase */}
-      <MyWorksSection />
     </div>
   )
 }
