@@ -727,50 +727,6 @@ export default function SkillsSection() {
           </svg>
         </div>
 
-        {/* Selected Skill Inspector Card */}
-        <div className="mt-6 w-full max-w-3xl rounded-2xl border border-black/15 bg-[#fffdf5] p-5 sm:p-6 shadow-sm select-text">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-black/10 pb-3.5">
-            <div className="flex items-center gap-3.5">
-              <span className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-white border border-black/15 p-2 shrink-0 shadow-xs">
-                <RealColorSkillIcon
-                  iconKey={activeSkill.id}
-                  className="w-full h-full"
-                />
-              </span>
-              <div>
-                <span className="inline-block text-[10px] font-mono uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-black text-[#ffd700] font-semibold mb-1">
-                  {activeSkill.category}
-                </span>
-                <h3 className="text-lg sm:text-xl font-heading font-bold text-black leading-tight">
-                  {activeSkill.title}
-                </h3>
-              </div>
-            </div>
-            <div className="flex items-baseline gap-1.5 font-mono">
-              <span className="text-2xl sm:text-3xl font-bold text-black">
-                {activeSkill.level}%
-              </span>
-              <span className="text-xs text-black/55 uppercase">Proficiency</span>
-            </div>
-          </div>
-
-          <p className="mt-3 text-sm text-black/75 font-sans leading-relaxed">
-            {activeSkill.summary}
-          </p>
-
-          <div className="mt-3.5 flex flex-wrap gap-1.5">
-            {activeSkill.tools.map((tool) => (
-              <span
-                key={tool}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white border border-black/10 text-xs font-mono text-black/85 shadow-2xs"
-              >
-                <RealColorSkillIcon iconKey={tool} className="w-3.5 h-3.5 shrink-0" />
-                <span>{tool}</span>
-              </span>
-            ))}
-          </div>
-        </div>
-
         {/* Resume Core Skills Matrix Breakdown */}
         <div className="mt-10 w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 select-text">
           {skillCategoryGroups.map((group) => {
@@ -782,11 +738,10 @@ export default function SkillsSection() {
                 onClick={() =>
                   handleFilterClick(isHighlighted ? 'All' : group.key)
                 }
-                className={`text-left rounded-xl border p-4 transition-all duration-200 cursor-pointer ${
-                  isHighlighted
-                    ? 'border-black bg-[#ffd700]/20 shadow-sm'
-                    : 'border-black/10 bg-white hover:border-black/30'
-                }`}
+                className={`text-left rounded-xl border p-4 transition-all duration-200 cursor-pointer ${isHighlighted
+                  ? 'border-black bg-[#ffd700]/20 shadow-sm'
+                  : 'border-black/10 bg-white hover:border-black/30'
+                  }`}
               >
                 <div className="flex items-center justify-between gap-2 mb-3">
                   <div className="flex items-center gap-2">
