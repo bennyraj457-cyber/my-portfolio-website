@@ -1,6 +1,7 @@
 import React from 'react'
 import HeroSection from '../../components/home/HeroSection'
 import AboutSection from '../../components/home/AboutPixelSection'
+import SkillsSection from '../../components/home/SkillsSection'
 
 export default function HomePage() {
   return (
@@ -8,8 +9,11 @@ export default function HomePage() {
       {/* Full-width edge-to-edge Hero section with retro coder pixel-art */}
       <HeroSection />
 
-      {/* Full-width edge-to-edge About Me section with Thoughts Are Not Real pixel-art */}
+      {/* Full-width edge-to-edge About Me section */}
       <AboutSection />
+
+      {/* Polar Area / Nightingale Rose Chart Skills section */}
+      <SkillsSection />
     </div>
   )
 }
