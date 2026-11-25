@@ -97,36 +97,8 @@ export default function MyWorksSection() {
       className="relative w-full bg-[#fafafa] text-black py-16 sm:py-24 px-4 sm:px-8 md:px-12 border-t border-black/10 overflow-hidden select-none"
     >
       <div className="max-w-6xl mx-auto flex flex-col items-center">
-        {/* 1. Device Selection Tabs */}
-        <div
-          className="inline-flex items-center gap-1.5 p-1.5 rounded-full bg-white border border-black/10 shadow-sm"
-          role="tablist"
-          aria-label="Select device preview"
-        >
-          {DEVICES.map((device) => {
-            const isActive = selectedDevice === device.id
-            return (
-              <button
-                key={device.id}
-                type="button"
-                role="tab"
-                aria-selected={isActive}
-                onClick={() => setSelectedDevice(device.id)}
-                className={`inline-flex items-center gap-2 px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-mono font-medium transition-all duration-300 cursor-pointer ${
-                  isActive
-                    ? 'bg-black text-[#ffd700] shadow-sm'
-                    : 'text-black/70 hover:text-black hover:bg-black/5'
-                }`}
-              >
-                {device.icon}
-                <span>{device.label}</span>
-              </button>
-            )
-          })}
-        </div>
-
         {/* Project Details & Open Live Project CTA */}
-        <div className="mt-8 w-full max-w-3xl rounded-2xl border border-black/10 bg-white p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-5 select-text">
+        <div className="w-full max-w-3xl rounded-2xl border border-black/10 bg-white p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-5 select-text">
           <div className="space-y-2">
             <div className="flex items-center gap-2.5 text-[11px] font-mono uppercase tracking-wider text-black/55">
               <span className="font-bold text-black">{currentProject.id}</span>
@@ -269,6 +241,34 @@ export default function MyWorksSection() {
                         <line x1="10" y1="14" x2="21" y2="3" />
                       </svg>
                     </a>
+                  </div>
+
+                  {/* Device Switcher Bar inside the Screen */}
+                  <div
+                    className="shrink-0 bg-[#fafafa] border-b border-black/10 px-2.5 py-1.5 flex items-center justify-center gap-1"
+                    role="tablist"
+                    aria-label="Select device preview"
+                  >
+                    {DEVICES.map((device) => {
+                      const isActive = selectedDevice === device.id
+                      return (
+                        <button
+                          key={device.id}
+                          type="button"
+                          role="tab"
+                          aria-selected={isActive}
+                          onClick={() => setSelectedDevice(device.id)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono font-medium transition-all duration-200 cursor-pointer ${
+                            isActive
+                              ? 'bg-black text-[#ffd700] shadow-2xs'
+                              : 'text-black/65 hover:text-black hover:bg-black/5'
+                          }`}
+                        >
+                          {device.icon}
+                          <span>{device.label}</span>
+                        </button>
+                      )
+                    })}
                   </div>
 
                   {/* Animated Project Viewport */}
