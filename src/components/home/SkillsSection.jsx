@@ -16,6 +16,148 @@ const FILTER_OPTIONS = [
   { key: 'WordPress Dev', label: 'WordPress Dev' },
 ]
 
+const HUB_PETAL_COLORS = [
+  '#A259FF',
+  '#FFD700',
+  '#21759B',
+  '#0ACF83',
+  '#E34F26',
+  '#00B4D8',
+  '#0055FF',
+  '#95BF47',
+  '#FF7262',
+  '#FF9A00',
+]
+
+function renderSkillIcon(skillId) {
+  switch (skillId) {
+    case 'ui-ux-figma':
+      return (
+        <g transform="translate(4 0) scale(0.42)">
+          <path d="M19 28.5a9.5 9.5 0 1 1 19 0 9.5 9.5 0 0 1-19 0z" fill="#1ABCFE" />
+          <path d="M0 47.5A9.5 9.5 0 0 1 9.5 38H19v9.5a9.5 9.5 0 1 1-19 0z" fill="#0ACF83" />
+          <path d="M19 0v19h9.5a9.5 9.5 0 1 0 0-19H19z" fill="#FF7262" />
+          <path d="M0 9.5A9.5 9.5 0 0 0 9.5 19H19V0H9.5A9.5 9.5 0 0 0 0 9.5z" fill="#F24E1E" />
+          <path d="M0 28.5A9.5 9.5 0 0 0 9.5 38H19V19H9.5A9.5 9.5 0 0 0 0 28.5z" fill="#A259FF" />
+        </g>
+      )
+    case 'responsive-design':
+      return (
+        <g>
+          <rect x="2" y="4" width="14" height="10" rx="1.8" fill="#0a0a0a" />
+          <rect x="3.5" y="5.5" width="11" height="7" rx="0.8" fill="#ffd700" />
+          <path d="M6 16h6M9 14v2" stroke="#0a0a0a" strokeWidth="1.6" strokeLinecap="round" />
+          <rect x="15.5" y="9" width="6.5" height="11" rx="1.4" fill="#0a0a0a" stroke="#ffffff" strokeWidth="0.8" />
+          <rect x="17" y="10.8" width="3.5" height="6.2" rx="0.4" fill="#ffd700" />
+          <circle cx="18.75" cy="18.5" r="0.6" fill="#ffd700" />
+        </g>
+      )
+    case 'wordpress-elementor':
+      return (
+        <g transform="scale(0.046875)">
+          <circle cx="256" cy="256" r="248" fill="#21759B" />
+          <path
+            fill="#FFF"
+            d="M47 256c0 86 52 161 127 193L69 164c-14 27-22 58-22 92zm369-12c0-33-12-56-22-73-14-22-27-41-27-63 0-24 18-47 44-47 1 0 3 0 4 0-41-37-96-60-157-60-67 0-127 28-169 73 3 0 6 1 8 1 22 0 56-3 56-3 11-1 13 16 2 17 0 0-12 1-24 2l78 232 47-140-33-92c-11-1-22-2-22-2-11-1-10-18 1-17 0 0 35 3 55 3 22 0 56-3 56-3 11-1 13 16 2 17 0 0-12 1-25 2l77 228 22-73c9-32 16-55 16-75zm-155 31l-64 186c20 6 42 9 64 9 26 0 50-5 73-13l-73-182zm191-76c7 18 11 38 11 57 0 69-37 130-92 164l61-175c13-34 20-46 20-46z"
+          />
+        </g>
+      )
+    case 'custom-wp-dev':
+      return (
+        <g>
+          <rect x="2.5" y="3.5" width="19" height="17" rx="3.5" fill="#0a0a0a" />
+          <path
+            d="M8.5 9L5.2 12l3.3 3M15.5 9l3.3 3-3.3 3M13.2 8.2l-2.4 7.6"
+            fill="none"
+            stroke="#21759B"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <circle cx="18.5" cy="5.5" r="3.2" fill="#21759B" stroke="#ffffff" strokeWidth="1" />
+        </g>
+      )
+    case 'html-css':
+      return (
+        <g>
+          <path d="M2 3h9l-1 13.5L6.5 18 3 16.5 2 3z" fill="#E34F26" />
+          <path d="M4.3 6.5h4.4l-.2 2H6.3l.2 2h2l-.3 3.2-1.7.6-1.7-.6-.1-1.3h1.3l.1.5.4.2.5-.2.1-1.2H5l-.7-5.2z" fill="#FFF" />
+          <path d="M13 6h9l-1 13.5L17.5 21 14 19.5 13 6z" fill="#1572B6" />
+          <path d="M15.3 9.5h4.4l-.2 2h-2.2l.2 2h2l-.3 3.2-1.7.6-1.7-.6-.1-1.3H17l.1.5.4.2.5-.2.1-1.2H16l-.7-5.2z" fill="#FFF" />
+        </g>
+      )
+    case 'js-react':
+      return (
+        <g>
+          <rect x="1.5" y="1.5" width="10" height="10" rx="2" fill="#F7DF1E" />
+          <text x="6.5" y="9" textAnchor="middle" fontSize="6.5" fontWeight="900" fontFamily="sans-serif" fill="#0a0a0a">
+            JS
+          </text>
+          <g transform="translate(15 15)">
+            <circle cx="0" cy="0" r="1.4" fill="#00b4d8" />
+            <g stroke="#00b4d8" strokeWidth="0.9" fill="none">
+              <ellipse rx="7" ry="2.7" />
+              <ellipse rx="7" ry="2.7" transform="rotate(60)" />
+              <ellipse rx="7" ry="2.7" transform="rotate(120)" />
+            </g>
+          </g>
+        </g>
+      )
+    case 'webflow-framer':
+      return (
+        <g transform="translate(2 1) scale(0.88)">
+          <path d="M4 0h16v8h-8zM4 8h8l8 8H4zM4 16h8v8z" fill="#0055FF" />
+        </g>
+      )
+    case 'shopify-wix':
+      return (
+        <g transform="translate(1.5 1) scale(0.18)">
+          <path
+            d="M79.2 18.8c-.3-.2-3.1-.3-3.1-.3s-2.1-2.1-3.2-3.2c-3.7-3.7-9.5-4.7-14.5-2.6-1.5.7-3 1.7-4.4 3-4.2-3.1-9.7-4.4-15-3.3-8 1.6-14.2 8.4-15.3 16.5l-18.4 6c-3.1 1-3.3 2.1-3.6 4.9C5.3 48.7.2 92.5 0 94.6c-.4 3.7 2.1 4.7 3.9 5.3l50.8 17.6c5.5 1.9 11.4 1.9 16.9 0l33.6-11.6c3.4-1.2 3.8-3.4 3.8-5.3-.2-2.1-20.9-88-29.8-81.8z"
+            fill="#95BF47"
+          />
+          <path
+            d="M76.1 18.5s-2.1-2.1-3.2-3.2c-3.7-3.7-9.5-4.7-14.5-2.6l-3.3 110.1 12.8-4.4c5.5-1.9 11.4-1.9 16.9 0l33.6-11.6c3.4-1.2 3.8-3.4 3.8-5.3-.2-2.1-20.9-88-29.8-81.8-.3-.2-3.1-1.2-3.1-1.2z"
+            fill="#5E8E3E"
+          />
+          <path
+            d="M54.7 39.5l-6.8 14.8s-6.7-3.5-14.3-3.5c-11.1 0-11.7 7-11.7 8.7 0 9.6 25 13.3 25 35.9 0 17.8-11.2 28.7-26.6 28.7-18.6 0-27.9-11.6-27.9-11.6l4.9-16.2s9.8 8.4 18.2 8.4c5.5 0 7.8-4.4 7.8-7.7 0-13.6-25-14.4-25-36.2 0-17.7 12.8-30.8 32-30.8 10.9 0 16.5 4.3 16.5 4.3z"
+            fill="#FFF"
+          />
+        </g>
+      )
+    case 'web-app-ui':
+      return (
+        <g>
+          <rect x="2" y="3" width="20" height="18" rx="2.5" fill="#0a0a0a" />
+          <rect x="4" y="6" width="6" height="6" rx="1" fill="#ffd700" />
+          <rect x="12" y="6" width="8" height="3" rx="1" fill="#ffffff" />
+          <rect x="12" y="10.5" width="8" height="1.5" rx="0.7" fill="#ffd700" />
+          <rect x="4" y="14" width="16" height="4.5" rx="1" fill="#ffd700" fillOpacity="0.85" />
+        </g>
+      )
+    case 'adobe-illustrator':
+      return (
+        <g>
+          <rect x="2" y="2" width="20" height="20" rx="4" fill="#330000" />
+          <text
+            x="12"
+            y="16"
+            textAnchor="middle"
+            fontSize="11.5"
+            fontWeight="800"
+            fontFamily="sans-serif"
+            fill="#FF9A00"
+          >
+            Ai
+          </text>
+        </g>
+      )
+    default:
+      return <circle cx="12" cy="12" r="6" fill="#0a0a0a" />
+  }
+}
+
 function polarToCartesian(cx, cy, radius, angleRad) {
   return {
     x: cx + radius * Math.cos(angleRad),
@@ -67,8 +209,12 @@ export default function SkillsSection() {
         endAngle
       )
 
+      // Icon medallion centered inside the middle of each wedge
+      const iconRadius = HUB_RADIUS + (wedgeRadius - HUB_RADIUS) * 0.5
+      const iconPos = polarToCartesian(CHART_CX, CHART_CY, iconRadius, midAngle)
+
       // Badge anchored near outer arc of the wedge
-      const badgeRadius = Math.max(HUB_RADIUS + 34, wedgeRadius - 18)
+      const badgeRadius = Math.max(HUB_RADIUS + 46, wedgeRadius - 14)
       const badgePos = polarToCartesian(CHART_CX, CHART_CY, badgeRadius, midAngle)
 
       // Spoke endpoints from hub to 100% ring
@@ -89,6 +235,7 @@ export default function SkillsSection() {
       return {
         skill,
         path,
+        iconPos,
         badgePos,
         spokeInner,
         spokeOuter,
@@ -249,6 +396,40 @@ export default function SkillsSection() {
               ))}
             </g>
 
+            {/* Skill Icon Medallions inside each Wedge */}
+            <g>
+              {sliceGeometry.map(({ skill, iconPos }) => {
+                const isActive = skill.id === selectedSkillId
+                const matchesFilter =
+                  activeFilter === 'All' ||
+                  skill.filterKey === activeFilter ||
+                  skill.category === activeFilter
+
+                return (
+                  <g
+                    key={`icon-${skill.id}`}
+                    transform={`translate(${iconPos.x.toFixed(2)}, ${iconPos.y.toFixed(2)})`}
+                    className="cursor-pointer transition-opacity duration-300"
+                    opacity={matchesFilter ? 1 : 0.28}
+                    onMouseEnter={() => setSelectedSkillId(skill.id)}
+                    onClick={() => setSelectedSkillId(skill.id)}
+                  >
+                    <circle
+                      cx="0"
+                      cy="0"
+                      r="16"
+                      fill="#ffffff"
+                      stroke={isActive ? '#ffd700' : '#0a0a0a'}
+                      strokeWidth="1.5"
+                    />
+                    <svg x="-10" y="-10" width="20" height="20" viewBox="0 0 24 24">
+                      {renderSkillIcon(skill.id)}
+                    </svg>
+                  </g>
+                )
+              })}
+            </g>
+
             {/* Perimeter Percentage Badges on each Wedge */}
             <g>
               {sliceGeometry.map(({ skill, badgePos }) => {
@@ -341,29 +522,45 @@ export default function SkillsSection() {
                 stroke="#000000"
                 strokeWidth="2"
               />
+              {HUB_PETAL_COLORS.map((color, idx) => {
+                const angle = -Math.PI / 2 + idx * ((Math.PI * 2) / HUB_PETAL_COLORS.length) + Math.PI / 10
+                const petalPos = polarToCartesian(CHART_CX, CHART_CY, HUB_RADIUS - 7.5, angle)
+                return (
+                  <circle
+                    key={`hub-petal-${idx}`}
+                    cx={petalPos.x}
+                    cy={petalPos.y}
+                    r="3.2"
+                    fill={color}
+                    stroke="#0a0a0a"
+                    strokeWidth="0.7"
+                  />
+                )
+              })}
               <circle
                 cx={CHART_CX}
                 cy={CHART_CY}
-                r={HUB_RADIUS - 6}
-                fill="#ffd700"
-                stroke="#000000"
+                r={HUB_RADIUS - 15}
+                fill="#0a0a0a"
+                stroke="#ffd700"
                 strokeWidth="1.5"
               />
-              <circle
-                cx={CHART_CX}
-                cy={CHART_CY}
-                r={HUB_RADIUS - 13}
-                fill="#0a0a0a"
+              <path
+                d={`M ${CHART_CX - 9} ${CHART_CY - 3} L ${CHART_CX - 12.5} ${CHART_CY} L ${CHART_CX - 9} ${CHART_CY + 3} M ${CHART_CX + 9} ${CHART_CY - 3} L ${CHART_CX + 12.5} ${CHART_CY} L ${CHART_CX + 9} ${CHART_CY + 3}`}
+                fill="none"
+                stroke="#ffd700"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               />
               <text
                 x={CHART_CX}
-                y={CHART_CY + 4}
+                y={CHART_CY + 3.5}
                 textAnchor="middle"
-                fontSize="13"
+                fontSize="10"
                 fontWeight="800"
                 fontFamily="monospace"
-                letterSpacing="1"
-                fill="#ffd700"
+                fill="#ffffff"
               >
                 BR
               </text>
@@ -374,13 +571,20 @@ export default function SkillsSection() {
         {/* Selected Skill Inspector Card */}
         <div className="mt-6 w-full max-w-3xl rounded-2xl border border-black/15 bg-[#fffdf5] p-5 sm:p-6 shadow-sm select-text">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-black/10 pb-3.5">
-            <div>
-              <span className="inline-block text-[10px] font-mono uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-[#ffd700] text-black font-semibold mb-1.5">
-                {activeSkill.category}
-              </span>
-              <h3 className="text-lg sm:text-xl font-heading font-bold text-black">
-                {activeSkill.title}
-              </h3>
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-full bg-white border border-black/15 shadow-xs flex items-center justify-center shrink-0">
+                <svg className="w-6 h-6" viewBox="0 0 24 24" aria-hidden="true">
+                  {renderSkillIcon(activeSkill.id)}
+                </svg>
+              </div>
+              <div>
+                <span className="inline-block text-[10px] font-mono uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-[#ffd700] text-black font-semibold mb-1">
+                  {activeSkill.category}
+                </span>
+                <h3 className="text-lg sm:text-xl font-heading font-bold text-black">
+                  {activeSkill.title}
+                </h3>
+              </div>
             </div>
             <div className="flex items-baseline gap-1.5 font-mono">
               <span className="text-2xl sm:text-3xl font-bold text-black">
