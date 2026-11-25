@@ -2,6 +2,7 @@ import React from 'react'
 import HeroSection from '../../components/home/HeroSection'
 import AboutSection from '../../components/home/AboutPixelSection'
 import SkillsSection from '../../components/home/SkillsSection'
+import WorksSection from '../../components/home/WorksSection'
 
 export default function HomePage() {
   return (
@@ -14,6 +15,9 @@ export default function HomePage() {
 
       {/* Polar Area / Nightingale Rose Chart Skills section */}
       <SkillsSection />
+
+      {/* Editorial My Works showcase section */}
+      <WorksSection />
     </div>
   )
 }
