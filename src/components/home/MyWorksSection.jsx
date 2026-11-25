@@ -125,8 +125,47 @@ export default function MyWorksSection() {
           })}
         </div>
 
+        {/* Project Details & Open Live Project CTA */}
+        <div className="mt-8 w-full max-w-3xl rounded-2xl border border-black/10 bg-white p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-5 select-text">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2.5 text-[11px] font-mono uppercase tracking-wider text-black/55">
+              <span className="font-bold text-black">{currentProject.id}</span>
+              <span>•</span>
+              <span>{currentProject.category}</span>
+              <span>•</span>
+              <span>{currentProject.year}</span>
+            </div>
+            <h3 className="text-xl sm:text-2xl font-heading font-bold text-black">
+              {currentProject.title}
+            </h3>
+            <p className="text-sm text-black/75 font-sans leading-relaxed max-w-xl">
+              {currentProject.description}
+            </p>
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {currentProject.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="px-2.5 py-0.5 rounded-md bg-black/[0.04] border border-black/10 text-[11px] font-mono text-black/80"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <a
+            href={currentProject.liveUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-black text-[#ffd700] hover:bg-[#ffd700] hover:text-black border border-black font-mono text-xs sm:text-sm font-semibold transition-all duration-200 shadow-sm active:scale-95"
+          >
+            <span>Open Live Project</span>
+            <span>↗</span>
+          </a>
+        </div>
+
         {/* 2. Showcase Stage with Left/Right Carousel Arrows & Device Mockup */}
-        <div className="mt-10 w-full flex items-center justify-center gap-2 sm:gap-5">
+        <div className="mt-8 w-full flex items-center justify-center gap-2 sm:gap-5">
           {/* Previous Project Arrow */}
           <button
             type="button"
@@ -358,44 +397,6 @@ export default function MyWorksSection() {
           </button>
         </div>
 
-        {/* Project Details & Open Live Project CTA */}
-        <div className="mt-8 w-full max-w-3xl rounded-2xl border border-black/10 bg-white p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-5 select-text">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2.5 text-[11px] font-mono uppercase tracking-wider text-black/55">
-              <span className="font-bold text-black">{currentProject.id}</span>
-              <span>•</span>
-              <span>{currentProject.category}</span>
-              <span>•</span>
-              <span>{currentProject.year}</span>
-            </div>
-            <h3 className="text-xl sm:text-2xl font-heading font-bold text-black">
-              {currentProject.title}
-            </h3>
-            <p className="text-sm text-black/75 font-sans leading-relaxed max-w-xl">
-              {currentProject.description}
-            </p>
-            <div className="flex flex-wrap gap-1.5 pt-1">
-              {currentProject.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="px-2.5 py-0.5 rounded-md bg-black/[0.04] border border-black/10 text-[11px] font-mono text-black/80"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <a
-            href={currentProject.liveUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="shrink-0 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-black text-[#ffd700] hover:bg-[#ffd700] hover:text-black border border-black font-mono text-xs sm:text-sm font-semibold transition-all duration-200 shadow-sm active:scale-95"
-          >
-            <span>Open Live Project</span>
-            <span>↗</span>
-          </a>
-        </div>
       </div>
     </section>
   )
