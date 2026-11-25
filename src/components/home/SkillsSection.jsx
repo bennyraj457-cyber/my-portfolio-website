@@ -476,22 +476,9 @@ export default function SkillsSection() {
       className="relative w-full bg-white text-black py-16 sm:py-24 px-4 sm:px-8 md:px-14 border-t border-black/10 select-none"
     >
       <div className="max-w-5xl mx-auto flex flex-col items-center">
-        {/* Reference-Inspired Editorial Header */}
-        <header className="text-center space-y-2 max-w-2xl">
-          <h2 className="text-2xl sm:text-4xl font-heading font-bold tracking-tight text-black">
-            Benny R. — Core Skills &amp; Proficiency
-          </h2>
-          <p className="text-xs sm:text-sm font-sans text-black/75 font-medium">
-            3+ Years Experience | 25+ Websites &amp; 6+ Web Apps Delivered
-          </p>
-          <p className="text-[11px] sm:text-xs font-mono uppercase tracking-wider text-black/55">
-            UI/UX Design • Frontend • CMS &amp; E-Commerce • WordPress Development
-          </p>
-        </header>
-
         {/* Interactive Domain Filter Pills with Real-Color Icons */}
         <div
-          className="mt-7 flex flex-wrap items-center justify-center gap-2"
+          className="flex flex-wrap items-center justify-center gap-2"
           role="group"
           aria-label="Filter skills by domain"
         >
