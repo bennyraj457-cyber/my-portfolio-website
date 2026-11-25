@@ -97,22 +97,9 @@ export default function MyWorksSection() {
       className="relative w-full bg-[#fafafa] text-black py-16 sm:py-24 px-4 sm:px-8 md:px-12 border-t border-black/10 overflow-hidden select-none"
     >
       <div className="max-w-6xl mx-auto flex flex-col items-center">
-        {/* Section Header */}
-        <header className="text-center space-y-2 max-w-2xl">
-          <span className="inline-block text-[11px] font-mono uppercase tracking-[0.2em] px-3 py-1 rounded-full bg-[#ffd700] text-black font-semibold">
-            Interactive Showcase
-          </span>
-          <h2 className="text-3xl sm:text-5xl font-heading italic tracking-tight text-black pt-1">
-            My Works
-          </h2>
-          <p className="text-xs sm:text-sm font-sans text-black/65">
-            Switch between Laptop, Tablet, and Mobile to preview live projects inside a realistic browser.
-          </p>
-        </header>
-
         {/* 1. Device Selection Tabs */}
         <div
-          className="mt-8 inline-flex items-center gap-1.5 p-1.5 rounded-full bg-white border border-black/10 shadow-sm"
+          className="inline-flex items-center gap-1.5 p-1.5 rounded-full bg-white border border-black/10 shadow-sm"
           role="tablist"
           aria-label="Select device preview"
         >
